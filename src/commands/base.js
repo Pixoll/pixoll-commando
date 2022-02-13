@@ -1,8 +1,8 @@
 const path = require('path');
-const { escapeMarkdown } = require('discord.js');
-const { oneLine, stripIndents } = require('common-tags');
+const { MessageEmbed } = require('discord.js');
+const { stripIndent } = require('common-tags');
 const ArgumentCollector = require('./collector');
-const { permissions } = require('../util');
+const { permissions, noReplyInDMs } = require('../util');
 
 /** A command that can be run in a client */
 class Command {
@@ -55,17 +55,17 @@ class Command {
 	 * @param {CommandoClient} client - The client the command is for
 	 * @param {CommandInfo} info - The command information
 	 */
-	// eslint-disable-next-line complexity
 	constructor(client, info) {
 		this.constructor.validateInfo(client, info);
 
+		Object.defineProperty(this, 'client', { value: client });
+
 		/**
 		 * Client that this command is for
-		 * @name Command#client
 		 * @type {CommandoClient}
 		 * @readonly
 		 */
-		Object.defineProperty(this, 'client', { value: client });
+		this.client;
 
 		/**
 		 * Name of this command
@@ -77,11 +77,11 @@ class Command {
 		 * Aliases for this command
 		 * @type {string[]}
 		 */
-		this.aliases = info.aliases || [];
-		if(typeof info.autoAliases === 'undefined' || info.autoAliases) {
-			if(this.name.includes('-')) this.aliases.push(this.name.replace(/-/g, ''));
-			for(const alias of this.aliases) {
-				if(alias.includes('-')) this.aliases.push(alias.replace(/-/g, ''));
+		this.aliases = info.aliases ?? [];
+		if (info.autoAliases) {
+			if (this.name.includes('-')) this.aliases.push(this.name.replace(/-/g, ''));
+			for (const alias of this.aliases) {
+				if (alias.includes('-')) this.aliases.push(alias.replace(/-/g, ''));
 			}
 		}
 
@@ -89,7 +89,7 @@ class Command {
 		 * ID of the group the command belongs to
 		 * @type {string}
 		 */
-		this.groupID = info.group;
+		this.groupId = info.group;
 
 		/**
 		 * The group the command belongs to, assigned upon registration
@@ -100,8 +100,9 @@ class Command {
 		/**
 		 * Name of the command within the group
 		 * @type {string}
+		 * @default this.name
 		 */
-		this.memberName = info.memberName;
+		this.memberName = info.memberName ?? this.name;
 
 		/**
 		 * Short description of the command
@@ -111,75 +112,100 @@ class Command {
 
 		/**
 		 * Usage format string of the command
-		 * @type {string}
+		 * @type {?string}
 		 */
-		this.format = info.format || null;
+		this.format = info.format ?? null;
 
 		/**
 		 * Long description of the command
 		 * @type {?string}
 		 */
-		this.details = info.details || null;
+		this.details = info.details ?? null;
 
 		/**
 		 * Example usage strings
 		 * @type {?string[]}
 		 */
-		this.examples = info.examples || null;
+		this.examples = info.examples ?? null;
+
+		/**
+		 * Whether the command can only be run in direct messages
+		 * @type {boolean}
+		 * @default false
+		 */
+		this.dmOnly = !!info.dmOnly;
 
 		/**
 		 * Whether the command can only be run in a guild channel
 		 * @type {boolean}
+		 * @default false
 		 */
-		this.guildOnly = Boolean(info.guildOnly);
+		this.guildOnly = !!info.guildOnly;
+
+		/**
+		 * Whether the command can only be used by a server owner
+		 * @type {boolean}
+		 * @default false
+		 */
+		this.guildOwnerOnly = !!info.guildOwnerOnly;
 
 		/**
 		 * Whether the command can only be used by an owner
 		 * @type {boolean}
+		 * @default false
 		 */
-		this.ownerOnly = Boolean(info.ownerOnly);
+		this.ownerOnly = !!info.ownerOnly;
 
 		/**
 		 * Permissions required by the client to use the command.
 		 * @type {?PermissionResolvable[]}
 		 */
-		this.clientPermissions = info.clientPermissions || null;
+		this.clientPermissions = info.clientPermissions ?? null;
 
 		/**
 		 * Permissions required by the user to use the command.
 		 * @type {?PermissionResolvable[]}
 		 */
-		this.userPermissions = info.userPermissions || null;
+		this.userPermissions = info.userPermissions ?? null;
+
+		/**
+		 * Whether this command's user permissions are based on "moderator" permissions
+		 * @type {boolean}
+		 * @default false
+		 */
+		this.modPermissions = !!info.modPermissions;
 
 		/**
 		 * Whether the command can only be used in NSFW channels
 		 * @type {boolean}
+		 * @default false
 		 */
-		this.nsfw = Boolean(info.nsfw);
+		this.nsfw = !!info.nsfw;
 
 		/**
 		 * Whether the default command handling is enabled for the command
 		 * @type {boolean}
+		 * @default true
 		 */
-		this.defaultHandling = 'defaultHandling' in info ? info.defaultHandling : true;
+		this.defaultHandling = info.defaultHandling ?? true;
 
 		/**
 		 * Options for throttling command usages
 		 * @type {?ThrottlingOptions}
 		 */
-		this.throttling = info.throttling || null;
+		this.throttling = info.throttling ?? null;
 
 		/**
 		 * The argument collector for the command
 		 * @type {?ArgumentCollector}
 		 */
-		this.argsCollector = info.args && info.args.length ?
+		this.argsCollector = info.args?.length ?
 			new ArgumentCollector(client, info.args, info.argsPromptLimit) :
 			null;
-		if(this.argsCollector && typeof info.format === 'undefined') {
+		if (this.argsCollector && !info.format) {
 			this.format = this.argsCollector.args.reduce((prev, arg) => {
-				const wrapL = arg.default !== null ? '[' : '<';
-				const wrapR = arg.default !== null ? ']' : '>';
+				const wrapL = arg.required ? '[' : '<';
+				const wrapR = arg.required ? ']' : '>';
 				return `${prev}${prev ? ' ' : ''}${wrapL}${arg.label}${arg.infinite ? '...' : ''}${wrapR}`;
 			}, '');
 		}
@@ -187,44 +213,78 @@ class Command {
 		/**
 		 * How the arguments are split when passed to the command's run method
 		 * @type {string}
+		 * @default 'single'
 		 */
-		this.argsType = info.argsType || 'single';
+		this.argsType = info.argsType ?? 'single';
 
 		/**
 		 * Maximum number of arguments that will be split
 		 * @type {number}
+		 * @default 0
 		 */
-		this.argsCount = info.argsCount || 0;
+		this.argsCount = info.argsCount ?? 0;
 
 		/**
 		 * Whether single quotes are allowed to encapsulate an argument
 		 * @type {boolean}
+		 * @default true
 		 */
-		this.argsSingleQuotes = 'argsSingleQuotes' in info ? info.argsSingleQuotes : true;
+		this.argsSingleQuotes = info.argsSingleQuotes ?? true;
 
 		/**
 		 * Regular expression triggers
-		 * @type {RegExp[]}
+		 * @type {?RegExp[]}
 		 */
-		this.patterns = info.patterns || null;
+		this.patterns = info.patterns ?? null;
 
 		/**
 		 * Whether the command is protected from being disabled
 		 * @type {boolean}
+		 * @default false
 		 */
-		this.guarded = Boolean(info.guarded);
+		this.guarded = !!info.guarded;
 
 		/**
 		 * Whether the command should be hidden from the help command
 		 * @type {boolean}
+		 * @default false
 		 */
-		this.hidden = Boolean(info.hidden);
+		this.hidden = !!info.hidden;
 
 		/**
 		 * Whether the command will be run when an unknown command is used
 		 * @type {boolean}
+		 * @default false
 		 */
-		this.unknown = Boolean(info.unknown);
+		this.unknown = !!info.unknown;
+
+		/**
+		 * Whether the command is marked as deprecated
+		 * @type {boolean}
+		 * @default false
+		 */
+		this.deprecated = !!info.deprecated;
+
+		/**
+		 * The name or alias of the command that is replacing the deprecated command.
+		 * Required if `deprecated` is `true`.
+		 * @type {?string}
+		 */
+		this.replacing = info.replacing ?? null;
+
+		/**
+		 * Whether this command will be registered in the test guild only or not
+		 * @type {boolean}
+		 * @default false
+		 */
+		this.test = !!info.test;
+
+		/**
+		 * The data for the slash command
+		 * @type {SlashCommandInfo}
+		 * @default false
+		 */
+		this.slash = info.slash ?? false;
 
 		/**
 		 * Whether the command is enabled globally
@@ -234,8 +294,15 @@ class Command {
 		this._globalEnabled = true;
 
 		/**
+		 * The slash command data to send to the API
+		 * @type {?RESTPostAPIChatInputApplicationCommandsJSONBody}
+		 * @private
+		 */
+		this._slashToAPI = this.slash ? this.constructor.parseSlash(JSON.parse(JSON.stringify(this.slash))) : null;
+
+		/**
 		 * Current throttle objects for the command, mapped by user ID
-		 * @type {Map<string, Object>}
+		 * @type {Map<string, Throttle>}
 		 * @private
 		 */
 		this._throttles = new Map();
@@ -243,28 +310,33 @@ class Command {
 
 	/**
 	 * Checks whether the user has permission to use the command
-	 * @param {CommandoMessage} message - The triggering command message
+	 * @param {CommandInstances} instances The triggering command instances
 	 * @param {boolean} [ownerOverride=true] - Whether the bot owner(s) will always have permission
 	 * @return {boolean|string} Whether the user has permission, or an error message to respond with if they don't
 	 */
-	hasPermission(message, ownerOverride = true) {
-		if(!this.ownerOnly && !this.userPermissions) return true;
-		if(ownerOverride && this.client.isOwner(message.author)) return true;
+	hasPermission({ message, interaction }, ownerOverride = true) {
+		const { guildOwnerOnly, ownerOnly, userPermissions, modPermissions, client } = this;
+		const { channel, guild, member } = message || interaction;
+		const author = message?.author || interaction.user;
 
-		if(this.ownerOnly && (ownerOverride || !this.client.isOwner(message.author))) {
-			return `The \`${this.name}\` command can only be used by the bot owner.`;
+		if (!guildOwnerOnly && !ownerOnly && !userPermissions && !modPermissions) return true;
+		if (ownerOverride && client.isOwner(author)) return true;
+
+		if (ownerOnly && !client.isOwner(author)) {
+			return 'ownerOnly';
 		}
 
-		if(message.channel.type === 'text' && this.userPermissions) {
-			const missing = message.channel.permissionsFor(message.author).missing(this.userPermissions);
-			if(missing.length > 0) {
-				if(missing.length === 1) {
-					return `The \`${this.name}\` command requires you to have the "${permissions[missing[0]]}" permission.`;
-				}
-				return oneLine`
-					The \`${this.name}\` command requires you to have the following permissions:
-					${missing.map(perm => permissions[perm]).join(', ')}
-				`;
+		if (guildOwnerOnly && guild?.ownerId !== author.id) {
+			return 'guildOwnerOnly';
+		}
+
+		if (channel.type !== 'DM') {
+			if (modPermissions && !isMod(member)) {
+				return 'modPermissions';
+			}
+			if (userPermissions) {
+				const missing = channel.permissionsFor(author).missing(userPermissions, false);
+				if (missing.length > 0) return missing;
 			}
 		}
 
@@ -284,98 +356,117 @@ class Command {
 	 * @return {Promise<?Message|?Array<Message>>}
 	 * @abstract
 	 */
-	async run(message, args, fromPattern, result) { // eslint-disable-line no-unused-vars, require-await
+	// eslint-disable-next-line no-unused-vars
+	async run(message, args, fromPattern, result) {
 		throw new Error(`${this.constructor.name} doesn't have a run() method.`);
 	}
 
 	/**
 	 * Called when the command is prevented from running
-	 * @param {CommandMessage} message - Command message that the command is running from
-	 * @param {string} reason - Reason that the command was blocked
-	 * (built-in reasons are `guildOnly`, `nsfw`, `permission`, `throttling`, and `clientPermissions`)
-	 * @param {Object} [data] - Additional data associated with the block. Built-in reason data properties:
+	 * @param {CommandInstances} instances - The instances the command is being run for
+	 * @param {CommandBlockReason} reason - Reason that the command was blocked
+	 * @param {CommandBlockData} [data] - Additional data associated with the block. Built-in reason data properties:
 	 * - guildOnly: none
 	 * - nsfw: none
-	 * - permission: `response` ({@link string}) to send
 	 * - throttling: `throttle` ({@link Object}), `remaining` ({@link number}) time in seconds
-	 * - clientPermissions: `missing` ({@link Array}<{@link string}>) permission names
-	 * @returns {Promise<?Message|?Array<Message>>}
+	 * - userPermissions & clientPermissions: `missing` ({@link Array}<{@link string}>) permission names
 	 */
-	onBlock(message, reason, data) {
-		switch(reason) {
+	onBlock({ message, interaction }, reason, data) {
+		const { name } = this;
+		const { missing, remaining } = data;
+
+		switch (reason) {
+			case 'dmOnly':
+				return replyAll({ message, interaction }, embed(
+					`The \`${name}\` command can only be used in direct messages.`
+				));
 			case 'guildOnly':
-				return message.reply(`The \`${this.name}\` command must be used in a server channel.`);
+				return replyAll({ message, interaction }, embed(
+					`The \`${name}\` command can only be used in a server channel.`
+				));
+			case 'guildOwnerOnly':
+				return replyAll({ message, interaction }, embed(
+					`The \`${name}\` command can only be used by the server's owner.`
+				));
 			case 'nsfw':
-				return message.reply(`The \`${this.name}\` command can only be used in NSFW channels.`);
-			case 'permission': {
-				if(data.response) return message.reply(data.response);
-				return message.reply(`You do not have permission to use the \`${this.name}\` command.`);
-			}
-			case 'clientPermissions': {
-				if(data.missing.length === 1) {
-					return message.reply(
-						`I need the "${permissions[data.missing[0]]}" permission for the \`${this.name}\` command to work.`
-					);
-				}
-				return message.reply(oneLine`
-					I need the following permissions for the \`${this.name}\` command to work:
-					${data.missing.map(perm => permissions[perm]).join(', ')}
-				`);
-			}
-			case 'throttling': {
-				return message.reply(
-					`You may not use the \`${this.name}\` command again for another ${data.remaining.toFixed(1)} seconds.`
-				);
-			}
-			default:
-				return null;
+				return replyAll({ message, interaction }, embed(
+					`The \`${name}\` command can only be used in a NSFW channel.`
+				));
+			case 'ownerOnly':
+				return replyAll({ message, interaction }, embed(
+					`The \`${name}\` command can only be used by the bot's owner.`
+				));
+			case 'userPermissions':
+				return replyAll({ message, interaction }, embed(
+					'You are missing the following permissions:',
+					missing.map(perm => `\`${permissions[perm]}\``).join(', ')
+				));
+			case 'modPermissions':
+				return replyAll({ message, interaction }, embed(
+					`The \`${name}\` command can only be used by "moderators".`,
+					'For more information visit the `page 3` of the `help` command.'
+				));
+			case 'clientPermissions':
+				return replyAll({ message, interaction }, embed(
+					'The bot is missing the following permissions:',
+					missing.map(perm => `\`${permissions[perm]}\``).join(', ')
+				));
+			case 'throttling':
+				return replyAll({ message, interaction }, embed(
+					`Please wait **${remaining.toFixed(1)} seconds** before using the \`${name}\` command again.`
+				));
 		}
 	}
 
 	/**
 	 * Called when the command produces an error while running
 	 * @param {Error} err - Error that was thrown
-	 * @param {CommandMessage} message - Command message that the command is running from (see {@link Command#run})
+	 * @param {CommandInstances} instances - The instances the command is being run for
 	 * @param {Object|string|string[]} args - Arguments for the command (see {@link Command#run})
 	 * @param {boolean} fromPattern - Whether the args are pattern matches (see {@link Command#run})
 	 * @param {?ArgumentCollectorResult} result - Result from obtaining the arguments from the collector
 	 * (if applicable - see {@link Command#run})
-	 * @returns {Promise<?Message|?Array<Message>>}
+	 * @returns {Promise<?Message|?Message[]>}
 	 */
-	onError(err, message, args, fromPattern, result) { // eslint-disable-line no-unused-vars
-		const owners = this.client.owners;
-		const ownerList = owners ? owners.map((usr, i) => {
-			const or = i === owners.length - 1 && owners.length > 1 ? 'or ' : '';
-			return `${or}${escapeMarkdown(usr.username)}#${usr.discriminator}`;
-		}).join(owners.length > 2 ? ', ' : ' ') : '';
+	// eslint-disable-next-line no-unused-vars
+	onError(err, { message, interaction }, args, fromPattern, result) {
+		return;
+		// eslint-disable-next-line no-unreachable
+		const owner = message.client.owners[0];
+		const { serverInvite } = message.client.options;
+		const emoji = '<:cross:802617654442852394>';
 
-		const invite = this.client.options.invite;
-		return message.reply(stripIndents`
-			An error occurred while running the command: \`${err.name}: ${err.message}\`
-			You shouldn't ever receive an error like this.
-			Please contact ${ownerList || 'the bot owner'}${invite ? ` in this server: ${invite}` : '.'}
-		`);
+		const reply = new MessageEmbed()
+			.setColor('RED')
+			.setDescription(stripIndent`
+				${emoji} **An unexpected error happened**
+				Please contact ${owner.toString()} (${owner.tag}), or join the [support server](${serverInvite}).
+			`)
+			.addField(err.name, '```' + err.message + '```');
+
+		message.replyEmbed(reply);
 	}
 
 	/**
 	 * Creates/obtains the throttle object for a user, if necessary (owners are excluded)
-	 * @param {string} userID - ID of the user to throttle for
+	 * @param {string} userId - ID of the user to throttle for
 	 * @return {?Object}
 	 * @protected
 	 */
-	throttle(userID) {
-		if(!this.throttling || this.client.isOwner(userID)) return null;
+	throttle(userId) {
+		const { throttling, _throttles, client } = this;
+		if (!throttling || client.isOwner(userId)) return null;
 
-		let throttle = this._throttles.get(userID);
-		if(!throttle) {
+		let throttle = _throttles.get(userId);
+		if (!throttle) {
 			throttle = {
 				start: Date.now(),
 				usages: 0,
-				timeout: this.client.setTimeout(() => {
-					this._throttles.delete(userID);
-				}, this.throttling.duration * 1000)
+				timeout: setTimeout(() => {
+					_throttles.delete(userId);
+				}, throttling.duration * 1000)
 			};
-			this._throttles.set(userID, throttle);
+			_throttles.set(userId, throttle);
 		}
 
 		return throttle;
@@ -387,15 +478,16 @@ class Command {
 	 * @param {boolean} enabled - Whether the command should be enabled or disabled
 	 */
 	setEnabledIn(guild, enabled) {
-		if(typeof guild === 'undefined') throw new TypeError('Guild must not be undefined.');
-		if(typeof enabled === 'undefined') throw new TypeError('Enabled must not be undefined.');
-		if(this.guarded) throw new Error('The command is guarded.');
-		if(!guild) {
+		const { client, guarded } = this;
+		if (typeof guild === 'undefined') throw new TypeError('Guild must not be undefined.');
+		if (typeof enabled === 'undefined') throw new TypeError('Enabled must not be undefined.');
+		if (guarded) throw new Error('The command is guarded.');
+		if (!guild) {
 			this._globalEnabled = enabled;
-			this.client.emit('commandStatusChange', null, this, enabled);
+			client.emit('commandStatusChange', null, this, enabled);
 			return;
 		}
-		guild = this.client.guilds.resolve(guild);
+		guild = client.guilds.resolve(guild);
 		guild.setCommandEnabled(this, enabled);
 	}
 
@@ -406,22 +498,24 @@ class Command {
 	 * @return {boolean}
 	 */
 	isEnabledIn(guild, bypassGroup) {
-		if(this.guarded) return true;
-		if(!guild) return (bypassGroup || this.group._globalEnabled) && this._globalEnabled;
-		guild = this.client.guilds.resolve(guild);
-		return (bypassGroup || guild.isGroupEnabled(this.group)) && guild.isCommandEnabled(this);
+		const { client, group } = this;
+		if (this.guarded) return true;
+		if (!guild) return group._globalEnabled && this._globalEnabled;
+		guild = client.guilds.resolve(guild);
+		return (bypassGroup || guild.isGroupEnabled(group)) && guild.isCommandEnabled(this);
 	}
 
 	/**
 	 * Checks if the command is usable for a message
-	 * @param {?Message} message - The message
+	 * @param {?CommandInstances} instances - The instances
 	 * @return {boolean}
 	 */
-	isUsable(message = null) {
-		if(!message) return this._globalEnabled;
-		if(this.guildOnly && message && !message.guild) return false;
-		const hasPermission = this.hasPermission(message);
-		return this.isEnabledIn(message.guild) && hasPermission && typeof hasPermission !== 'string';
+	isUsable({ message, interaction } = {}) {
+		if (!message && !interaction) return this._globalEnabled;
+		const { guild } = message || interaction;
+		if (this.guildOnly && !guild) return false;
+		const hasPermission = this.hasPermission({ message, interaction });
+		return this.isEnabledIn(guild) && hasPermission === true;
 	}
 
 	/**
@@ -435,40 +529,46 @@ class Command {
 		return this.constructor.usage(`${this.name}${argString ? ` ${argString}` : ''}`, prefix, user);
 	}
 
-	/**
-	 * Reloads the command
-	 */
+	/** Reloads the command */
 	reload() {
+		const { client, groupId, memberName } = this;
+		const { registry } = client;
+
 		let cmdPath, cached, newCmd;
 		try {
-			cmdPath = this.client.registry.resolveCommandPath(this.groupID, this.memberName);
+			cmdPath = registry.resolveCommandPath(groupId, memberName);
 			cached = require.cache[cmdPath];
 			delete require.cache[cmdPath];
 			newCmd = require(cmdPath);
-		} catch(err) {
-			if(cached) require.cache[cmdPath] = cached;
+		} catch (err) {
+			if (cached) require.cache[cmdPath] = cached;
 			try {
-				cmdPath = path.join(__dirname, this.groupID, `${this.memberName}.js`);
+				cmdPath = path.join(__dirname, groupId, `${memberName}.js`);
 				cached = require.cache[cmdPath];
 				delete require.cache[cmdPath];
 				newCmd = require(cmdPath);
-			} catch(err2) {
-				if(cached) require.cache[cmdPath] = cached;
-				if(err2.message.includes('Cannot find module')) throw err; else throw err2;
+			} catch (err2) {
+				if (cached) require.cache[cmdPath] = cached;
+				if (err2.message.includes('Cannot find module')) {
+					throw err;
+				} else {
+					throw err2;
+				}
 			}
 		}
 
-		this.client.registry.reregisterCommand(newCmd, this);
+		registry.reregisterCommand(newCmd, this);
 	}
 
-	/**
-	 * Unloads the command
-	 */
+	/** Unloads the command */
 	unload() {
-		const cmdPath = this.client.registry.resolveCommandPath(this.groupID, this.memberName);
-		if(!require.cache[cmdPath]) throw new Error('Command cannot be unloaded.');
+		const { client, groupId, memberName } = this;
+		const { registry } = client;
+
+		const cmdPath = registry.resolveCommandPath(groupId, memberName);
+		if (!require.cache[cmdPath]) throw new Error('Command cannot be unloaded.');
 		delete require.cache[cmdPath];
-		this.client.registry.unregisterCommand(this);
+		registry.unregisterCommand(this);
 	}
 
 	/**
@@ -480,17 +580,17 @@ class Command {
 	 */
 	static usage(command, prefix = null, user = null) {
 		const nbcmd = command.replace(/ /g, '\xa0');
-		if(!prefix && !user) return `\`${nbcmd}\``;
+		if (!prefix && !user) return `\`${nbcmd}\``;
 
 		let prefixPart;
-		if(prefix) {
-			if(prefix.length > 1 && !prefix.endsWith(' ')) prefix += ' ';
+		if (prefix) {
+			if (prefix.length > 1 && !prefix.endsWith(' ')) prefix += ' ';
 			prefix = prefix.replace(/ /g, '\xa0');
 			prefixPart = `\`${prefix}${nbcmd}\``;
 		}
 
 		let mentionPart;
-		if(user) mentionPart = `\`@${user.username.replace(/ /g, '\xa0')}#${user.discriminator}\xa0${nbcmd}\``;
+		if (user) mentionPart = `\`@${user.tag.replace(/ /g, '\xa0')}\xa0${nbcmd}\``;
 
 		return `${prefixPart || ''}${prefix && user ? ' or ' : ''}${mentionPart || ''}`;
 	}
@@ -501,71 +601,238 @@ class Command {
 	 * @param {CommandInfo} info - Info to validate
 	 * @private
 	 */
-	static validateInfo(client, info) { // eslint-disable-line complexity
-		if(!client) throw new Error('A client must be specified.');
-		if(typeof info !== 'object') throw new TypeError('Command info must be an Object.');
-		if(typeof info.name !== 'string') throw new TypeError('Command name must be a string.');
-		if(info.name !== info.name.toLowerCase()) throw new Error('Command name must be lowercase.');
-		if(info.aliases && (!Array.isArray(info.aliases) || info.aliases.some(ali => typeof ali !== 'string'))) {
-			throw new TypeError('Command aliases must be an Array of strings.');
+	static validateInfo(client, info) {
+		if (!client) throw new Error('A client must be specified.');
+		if (typeof info !== 'object') throw new TypeError('Command info must be an Object.');
+		if (typeof info.name !== 'string') throw new TypeError('Command name must be a string.');
+		if (info.name !== info.name.toLowerCase()) throw new Error('Command name must be lowercase.');
+		if (info.name.replace(/ +/g, '') !== info.name) throw new Error('Command name must not include spaces.');
+		if ('aliases' in info) {
+			if (!Array.isArray(info.aliases) || info.aliases.some(ali => typeof ali !== 'string')) {
+				throw new TypeError('Command aliases must be an Array of strings.');
+			}
+			if (info.aliases.some(ali => ali !== ali.toLowerCase())) {
+				throw new RangeError('Command aliases must be lowercase.');
+			}
 		}
-		if(info.aliases && info.aliases.some(ali => ali !== ali.toLowerCase())) {
-			throw new RangeError('Command aliases must be lowercase.');
+		if (typeof info.group !== 'string') throw new TypeError('Command group must be a string.');
+		if (info.group !== info.group.toLowerCase()) throw new RangeError('Command group must be lowercase.');
+		if (typeof info.name !== 'string' && typeof info.memberName !== 'string') {
+			throw new TypeError('Command memberName must be a string.');
 		}
-		if(typeof info.group !== 'string') throw new TypeError('Command group must be a string.');
-		if(info.group !== info.group.toLowerCase()) throw new RangeError('Command group must be lowercase.');
-		if(typeof info.memberName !== 'string') throw new TypeError('Command memberName must be a string.');
-		if(info.memberName !== info.memberName.toLowerCase()) throw new Error('Command memberName must be lowercase.');
-		if(typeof info.description !== 'string') throw new TypeError('Command description must be a string.');
-		if('format' in info && typeof info.format !== 'string') throw new TypeError('Command format must be a string.');
-		if('details' in info && typeof info.details !== 'string') throw new TypeError('Command details must be a string.');
-		if(info.examples && (!Array.isArray(info.examples) || info.examples.some(ex => typeof ex !== 'string'))) {
+		if (info.memberName !== info.memberName?.toLowerCase() && info.memberName === 'string') {
+			throw new Error('Command memberName must be lowercase.');
+		}
+		if (typeof info.description !== 'string') throw new TypeError('Command description must be a string.');
+		if ('format' in info && typeof info.format !== 'string') throw new TypeError('Command format must be a string.');
+		if ('details' in info && typeof info.details !== 'string') throw new TypeError('Command details must be a string.');
+		if ('examples' in info && (!Array.isArray(info.examples) || info.examples.some(ex => typeof ex !== 'string'))) {
 			throw new TypeError('Command examples must be an Array of strings.');
 		}
-		if(info.clientPermissions) {
-			if(!Array.isArray(info.clientPermissions)) {
+		if ('clientPermissions' in info) {
+			if (!Array.isArray(info.clientPermissions)) {
 				throw new TypeError('Command clientPermissions must be an Array of permission key strings.');
 			}
-			for(const perm of info.clientPermissions) {
-				if(!permissions[perm]) throw new RangeError(`Invalid command clientPermission: ${perm}`);
+			for (const perm of info.clientPermissions) {
+				if (!permissions[perm]) throw new RangeError(`Invalid command clientPermission: ${perm}`);
 			}
 		}
-		if(info.userPermissions) {
-			if(!Array.isArray(info.userPermissions)) {
+		if ('userPermissions' in info) {
+			if (!Array.isArray(info.userPermissions)) {
 				throw new TypeError('Command userPermissions must be an Array of permission key strings.');
 			}
-			for(const perm of info.userPermissions) {
-				if(!permissions[perm]) throw new RangeError(`Invalid command userPermission: ${perm}`);
+			for (const perm of info.userPermissions) {
+				if (!permissions[perm]) throw new RangeError(`Invalid command userPermission: ${perm}`);
 			}
 		}
-		if(info.throttling) {
-			if(typeof info.throttling !== 'object') throw new TypeError('Command throttling must be an Object.');
-			if(typeof info.throttling.usages !== 'number' || isNaN(info.throttling.usages)) {
+		if ('throttling' in info) {
+			if (typeof info.throttling !== 'object') throw new TypeError('Command throttling must be an Object.');
+			if (typeof info.throttling.usages !== 'number' || isNaN(info.throttling.usages)) {
 				throw new TypeError('Command throttling usages must be a number.');
 			}
-			if(info.throttling.usages < 1) throw new RangeError('Command throttling usages must be at least 1.');
-			if(typeof info.throttling.duration !== 'number' || isNaN(info.throttling.duration)) {
+			if (info.throttling.usages < 1) throw new RangeError('Command throttling usages must be at least 1.');
+			if (typeof info.throttling.duration !== 'number' || isNaN(info.throttling.duration)) {
 				throw new TypeError('Command throttling duration must be a number.');
 			}
-			if(info.throttling.duration < 1) throw new RangeError('Command throttling duration must be at least 1.');
+			if (info.throttling.duration < 1) throw new RangeError('Command throttling duration must be at least 1.');
 		}
-		if(info.args && !Array.isArray(info.args)) throw new TypeError('Command args must be an Array.');
-		if('argsPromptLimit' in info && typeof info.argsPromptLimit !== 'number') {
+		if ('args' in info && !Array.isArray(info.args)) throw new TypeError('Command args must be an Array.');
+		if ('argsPromptLimit' in info && typeof info.argsPromptLimit !== 'number') {
 			throw new TypeError('Command argsPromptLimit must be a number.');
 		}
-		if('argsPromptLimit' in info && info.argsPromptLimit < 0) {
+		if ('argsPromptLimit' in info && info.argsPromptLimit < 0) {
 			throw new RangeError('Command argsPromptLimit must be at least 0.');
 		}
-		if(info.argsType && !['single', 'multiple'].includes(info.argsType)) {
+		if ('argsType' in info && !['single', 'multiple'].includes(info.argsType)) {
 			throw new RangeError('Command argsType must be one of "single" or "multiple".');
 		}
-		if(info.argsType === 'multiple' && info.argsCount && info.argsCount < 2) {
+		if (info.argsType === 'multiple' && info.argsCount && info.argsCount < 2) {
 			throw new RangeError('Command argsCount must be at least 2.');
 		}
-		if(info.patterns && (!Array.isArray(info.patterns) || info.patterns.some(pat => !(pat instanceof RegExp)))) {
+		if ('patterns' in info && (!Array.isArray(info.patterns) || info.patterns.some(pat => !(pat instanceof RegExp)))) {
 			throw new TypeError('Command patterns must be an Array of regular expressions.');
 		}
+		if (!!info.deprecated && typeof info.replacing !== 'string') {
+			throw new TypeError('Command replacing must be a string.');
+		}
+		if (!!info.deprecated && info.replacing !== info.replacing.toLowerCase()) {
+			throw new TypeError('Command replacing must be lowercase.');
+		}
+		if ('slash' in info && (typeof info.slash !== 'object' && typeof info.slash !== 'boolean')) {
+			throw new TypeError('Command slash must be object or boolean.');
+		}
+		if (info.slash === true) {
+			info.slash = {
+				name: info.name,
+				description: info.description
+			};
+		}
+		if (typeof info.slash === 'object') {
+			if (Object.keys(info.slash).length === 0) throw new TypeError('Command slash must not be an empty object.');
+			for (const prop in info) {
+				if (['slash', 'test'].includes(prop)) continue;
+				if (typeof info.slash[prop] !== 'undefined' && info.slash[prop] !== null) continue;
+				info.slash[prop] = info[prop];
+			}
+			if ('name' in info.slash && typeof info.slash.name === 'string') {
+				if (info.slash.name !== info.slash.name.toLowerCase()) {
+					throw new TypeError('Command slash name must be lowercase.');
+				}
+				if (info.slash.name.replace(/ +/g, '') !== info.slash.name) {
+					throw new TypeError('Command slash name must not include spaces.');
+				}
+			}
+			if ('description' in info.slash) {
+				if (typeof info.slash.description !== 'string') {
+					throw new TypeError('Command slash description must be a string.');
+				}
+				if (info.slash.description.length > 100) {
+					throw new TypeError('Command slash description length must be at most 100 characters long.');
+				}
+			}
+			if ('options' in info.slash && (
+				!Array.isArray(info.slash.options) || info.slash.options.some(op => typeof op !== 'object')
+			)) throw new TypeError('Command slash options must be an Array of objects.');
+		}
+	}
+
+	/**
+	 * Parses the slash command information, so it's usable by the API
+	 * @param {SlashCommandInfo|SlashCommandOptionInfo[]} info Info to parse
+	 * @private
+	 */
+	static parseSlash(info) {
+		if (!Array.isArray(info) && info.name) {
+			for (const prop in info) {
+				if (['name', 'description', 'options'].includes(prop)) continue;
+				delete info[prop];
+			}
+			info.type = 1;
+		}
+		(Array.isArray(info) ? info : info.options)?.forEach(option => {
+			if (typeof option.type === 'string') option.type = parseOptionType(option.type);
+			for (const prop in option) {
+				if (prop.toLowerCase() === prop) continue;
+				const toApply = prop.replace(/[A-Z]/g, '_$&').toLowerCase();
+				option[toApply] = option[prop];
+				delete option[prop];
+				if (toApply === 'channel_types') {
+					for (let i = 0; i < option[toApply].length; i++) {
+						option[toApply][i] = parseChannelType(option[toApply][i]);
+					}
+				}
+			}
+			if (option.options) this.parseSlash(option.options);
+		});
+		return info;
 	}
 }
 
 module.exports = Command;
+
+/**
+ * Creates a basic embed.
+ * @param {string} text The text to fill the embed with.
+ * @param {string} [value] The value of the field.
+ * @returns {MessageEmbed}
+ */
+function embed(text, value) {
+	const embed = new MessageEmbed().setColor('RED');
+
+	if (value) embed.addField(text, value);
+	else embed.setDescription(text);
+
+	return embed;
+}
+
+/**
+ * Parses the type of the slash command option type into a valid value for the API.
+ * @param {SlashCommandOptionType} type The type to parse.
+ * @returns {?number}
+ */
+function parseOptionType(type) {
+	switch (type) {
+		case 'subcommand': return 1;
+		case 'subcommand-group': return 2;
+		case 'string': return 3;
+		case 'integer': return 4;
+		case 'boolean': return 5;
+		case 'user': return 6;
+		case 'channel': return 7;
+		case 'role': return 8;
+		case 'mentionable': return 9;
+		case 'number': return 10;
+		default: throw new TypeError('Unable to parse SlashCommandOptionType.');
+	}
+}
+
+/**
+ * Parses the type of the slash command channel type into a valid value for the API.
+ * @param {SlashCommandChannelType} type The type to parse.
+ * @returns {?number}
+ */
+function parseChannelType(type) {
+	switch (type) {
+		case 'guild-text': return 0;
+		case 'guild-voice': return 2;
+		case 'guild-category': return 4;
+		case 'guild-news': return 5;
+		case 'guild-news-thread': return 10;
+		case 'guild-public-thread': return 11;
+		case 'guild-private-thread': return 12;
+		case 'guild-stage-voice': return 13;
+		default: throw new TypeError('Unable to parse SlashCommandChannelType.');
+	}
+}
+
+async function replyAll({ message, interaction }, options) {
+    if (options instanceof MessageEmbed) options = { embeds: [options] };
+    if (typeof options === 'string') options = { content: options };
+    if (interaction) {
+        if (interaction.deferred || interaction.replied) return await interaction.editReply(options).catch(() => null);
+        else return await interaction.reply(options).catch(() => null);
+    }
+    if (message) {
+        return await message.reply({ ...options, ...noReplyInDMs(message) }).catch(() => null);
+    }
+    return null;
+}
+
+function isMod(roleOrMember) {
+    if (!roleOrMember) return false;
+    const { permissions } = roleOrMember;
+    if (permissions.has('ADMINISTRATOR')) return true;
+
+    const conditions = [
+        'BAN_MEMBERS', 'DEAFEN_MEMBERS', 'KICK_MEMBERS', 'MANAGE_CHANNELS', 'MANAGE_EMOJIS_AND_STICKERS', 'MANAGE_GUILD',
+        'MANAGE_MESSAGES', 'MANAGE_NICKNAMES', 'MANAGE_ROLES', 'MANAGE_THREADS', 'MANAGE_WEBHOOKS', 'MOVE_MEMBERS',
+        'MUTE_MEMBERS'
+    ];
+
+    const values = [];
+    for (const condition of conditions) {
+        values.push(permissions.has(condition));
+    }
+
+    return !!values.find(b => b === true);
+}

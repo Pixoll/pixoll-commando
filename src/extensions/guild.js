@@ -1,148 +1,159 @@
-const { Structures } = require('discord.js');
+/* eslint-disable no-unused-vars */
+const { Guild, User, MessageEmbed } = require('discord.js');
 const Command = require('../commands/base');
-const GuildSettingsHelper = require('../providers/helper');
+const GuildDatabaseManager = require('../database/GuildDatabaseManager');
+/* eslint-enable no-unused-vars */
 
-module.exports = Structures.extend('Guild', Guild => {
+/**
+ * A fancier Guild for fancier people.
+ * @extends Guild
+ */
+class CommandoGuild extends Guild {
 	/**
-	 * A fancier Guild for fancier people.
-	 * @extends Guild
+	 * @param {CommandoClient} client
+	 * @param {Guild} data
 	 */
-	class CommandoGuild extends Guild {
-		constructor(...args) {
-			super(...args);
+	constructor(client, data) {
+		super(client, { id: data.id });
+		Object.assign(this, data);
 
-			/**
-			 * Shortcut to use setting provider methods for this guild
-			 * @type {GuildSettingsHelper}
-			 */
-			this.settings = new GuildSettingsHelper(this.client, this);
-
-			/**
-			 * Internal command prefix for the guild, controlled by the {@link CommandoGuild#commandPrefix}
-			 * getter/setter
-			 * @name CommandoGuild#_commandPrefix
-			 * @type {?string}
-			 * @private
-			 */
-			this._commandPrefix = null;
-		}
+		client.emit('debug', `Created new ${this.constructor.name} with ID ${this.id}`);
 
 		/**
-		 * Command prefix in the guild. An empty string indicates that there is no prefix, and only mentions will be used.
-		 * Setting to `null` means that the prefix from {@link CommandoClient#commandPrefix} will be used instead.
-		 * @type {string}
-		 * @emits {@link CommandoClient#commandPrefixChange}
+		 * The database manager for the guild
+		 * @type {GuildDatabaseManager}
 		 */
-		get commandPrefix() {
-			if(this._commandPrefix === null) return this.client.commandPrefix;
-			return this._commandPrefix;
-		}
-
-		set commandPrefix(prefix) {
-			this._commandPrefix = prefix;
-			/**
-			 * Emitted whenever a guild's command prefix is changed
-			 * @event CommandoClient#commandPrefixChange
-			 * @param {?CommandoGuild} guild - Guild that the prefix was changed in (null for global)
-			 * @param {?string} prefix - New command prefix (null for default)
-			 */
-			this.client.emit('commandPrefixChange', this, this._commandPrefix);
-		}
+		this.database = new GuildDatabaseManager(this);
 
 		/**
-		 * Sets whether a command is enabled in the guild
-		 * @param {CommandResolvable} command - Command to set status of
-		 * @param {boolean} enabled - Whether the command should be enabled
+		 * The client the guild is for
+		 * @type {CommandoClient}
 		 */
-		setCommandEnabled(command, enabled) {
-			command = this.client.registry.resolveCommand(command);
-			if(command.guarded) throw new Error('The command is guarded.');
-			if(typeof enabled === 'undefined') throw new TypeError('Enabled must not be undefined.');
-			enabled = Boolean(enabled);
-			if(!this._commandsEnabled) {
-				/**
-				 * Map object of internal command statuses, mapped by command name
-				 * @type {Object}
-				 * @private
-				 */
-				this._commandsEnabled = {};
-			}
-			this._commandsEnabled[command.name] = enabled;
-			/**
-			 * Emitted whenever a command is enabled/disabled in a guild
-			 * @event CommandoClient#commandStatusChange
-			 * @param {?CommandoGuild} guild - Guild that the command was enabled/disabled in (null for global)
-			 * @param {Command} command - Command that was enabled/disabled
-			 * @param {boolean} enabled - Whether the command is enabled
-			 */
-			this.client.emit('commandStatusChange', this, command, enabled);
-		}
+		// eslint-disable-next-line no-unused-expressions
+		this.client;
 
 		/**
-		 * Checks whether a command is enabled in the guild (does not take the command's group status into account)
-		 * @param {CommandResolvable} command - Command to check status of
-		 * @return {boolean}
+		 * The queued logs for this guild
+		 * @type {MessageEmbed[]}
 		 */
-		isCommandEnabled(command) {
-			command = this.client.registry.resolveCommand(command);
-			if(command.guarded) return true;
-			if(!this._commandsEnabled || typeof this._commandsEnabled[command.name] === 'undefined') {
-				return command._globalEnabled;
-			}
-			return this._commandsEnabled[command.name];
-		}
+		this.queuedLogs = [];
 
 		/**
-		 * Sets whether a command group is enabled in the guild
-		 * @param {CommandGroupResolvable} group - Group to set status of
-		 * @param {boolean} enabled - Whether the group should be enabled
+		 * Internal command prefix for the guild, controlled by the {@link CommandoGuild#prefix}
+		 * getter/setter
+		 * @name CommandoGuild#_prefix
+		 * @type {?string}
+		 * @private
 		 */
-		setGroupEnabled(group, enabled) {
-			group = this.client.registry.resolveGroup(group);
-			if(group.guarded) throw new Error('The group is guarded.');
-			if(typeof enabled === 'undefined') throw new TypeError('Enabled must not be undefined.');
-			enabled = Boolean(enabled);
-			if(!this._groupsEnabled) {
-				/**
-				 * Internal map object of group statuses, mapped by group ID
-				 * @type {Object}
-				 * @private
-				 */
-				this._groupsEnabled = {};
-			}
-			this._groupsEnabled[group.id] = enabled;
-			/**
-			 * Emitted whenever a command group is enabled/disabled in a guild
-			 * @event CommandoClient#groupStatusChange
-			 * @param {?CommandoGuild} guild - Guild that the group was enabled/disabled in (null for global)
-			 * @param {CommandGroup} group - Group that was enabled/disabled
-			 * @param {boolean} enabled - Whether the group is enabled
-			 */
-			this.client.emit('groupStatusChange', this, group, enabled);
-		}
-
-		/**
-		 * Checks whether a command group is enabled in the guild
-		 * @param {CommandGroupResolvable} group - Group to check status of
-		 * @return {boolean}
-		 */
-		isGroupEnabled(group) {
-			group = this.client.registry.resolveGroup(group);
-			if(group.guarded) return true;
-			if(!this._groupsEnabled || typeof this._groupsEnabled[group.id] === 'undefined') return group._globalEnabled;
-			return this._groupsEnabled[group.id];
-		}
-
-		/**
-		 * Creates a command usage string using the guild's prefix
-		 * @param {string} [command] - A command + arg string
-		 * @param {User} [user=this.client.user] - User to use for the mention command format
-		 * @return {string}
-		 */
-		commandUsage(command, user = this.client.user) {
-			return Command.usage(command, this.commandPrefix, user);
-		}
+		this._prefix = null;
 	}
 
-	return CommandoGuild;
-});
+	/**
+	 * Command prefix in the guild. An empty string indicates that there is no prefix, and only mentions will be used.
+	 * Setting to `null` means that the prefix from {@link CommandoClient#prefix} will be used instead.
+	 * @type {string}
+	 * @emits {@link CommandoClient#commandPrefixChange}
+	 */
+	get prefix() {
+		if (this._prefix === null) return this.client.prefix;
+		return this._prefix;
+	}
+
+	set prefix(prefix) {
+		this._prefix = prefix;
+		this.client.emit('commandPrefixChange', this, this._prefix);
+	}
+
+	/**
+	 * Sets whether a command is enabled in the guild
+	 * @param {CommandResolvable} command Command to set status of
+	 * @param {boolean} enabled Whether the command should be enabled
+	 */
+	setCommandEnabled(command, enabled) {
+		const { client } = this;
+		command = client.registry.resolveCommand(command);
+		const { name, guarded } = command;
+		if (guarded) throw new Error('The command is guarded.');
+		if (typeof enabled === 'undefined') throw new TypeError('Enabled must not be undefined.');
+		enabled = !!enabled;
+		if (!this._commandsEnabled) {
+			/**
+			 * Map object of internal command statuses, mapped by command name
+			 * @type {Object}
+			 * @private
+			 */
+			this._commandsEnabled = {};
+		}
+		this._commandsEnabled[name] = enabled;
+		client.emit('commandStatusChange', this, command, enabled);
+	}
+
+	/**
+	 * Checks whether a command is enabled in the guild (does not take the command's group status into account)
+	 * @param {CommandResolvable} command Command to check status of
+	 * @return {boolean}
+	 */
+	isCommandEnabled(command) {
+		const { registry } = this.client;
+		command = registry.resolveCommand(command);
+		const { name, guarded, _globalEnabled } = command;
+		if (guarded) return true;
+		if (!this._commandsEnabled || typeof this._commandsEnabled[name] === 'undefined') {
+			return _globalEnabled;
+		}
+		return this._commandsEnabled[name];
+	}
+
+	/**
+	 * Sets whether a command group is enabled in the guild
+	 * @param {CommandGroupResolvable} group Group to set status of
+	 * @param {boolean} enabled Whether the group should be enabled
+	 */
+	setGroupEnabled(group, enabled) {
+		const { client } = this;
+		group = client.registry.resolveGroup(group);
+		const { id, guarded } = group;
+		if (guarded) throw new Error('The group is guarded.');
+		if (typeof enabled === 'undefined') throw new TypeError('Enabled must not be undefined.');
+		enabled = !!enabled;
+		if (!this._groupsEnabled) {
+			/**
+			 * Internal map object of group statuses, mapped by group ID
+			 * @type {Object}
+			 * @private
+			 */
+			this._groupsEnabled = {};
+		}
+		this._groupsEnabled[id] = enabled;
+		client.emit('groupStatusChange', this, group, enabled);
+	}
+
+	/**
+	 * Checks whether a command group is enabled in the guild
+	 * @param {CommandGroupResolvable} group Group to check status of
+	 * @return {boolean}
+	 */
+	isGroupEnabled(group) {
+		const { registry } = this.client;
+		group = registry.resolveGroup(group);
+		const { id, guarded, _globalEnabled } = group;
+		if (guarded) return true;
+		if (!this._groupsEnabled || typeof this._groupsEnabled[id] === 'undefined') {
+			return _globalEnabled;
+		}
+		return this._groupsEnabled[id];
+	}
+
+	/**
+	 * Creates a command usage string using the guild's prefix
+	 * @param {string} [command] A command + arg string
+	 * @param {User} [user=this.client.user] User to use for the mention command format
+	 * @return {string}
+	 */
+	commandUsage(command, user = this.client.user) {
+		return Command.usage(command, this.prefix, user);
+	}
+}
+
+
+module.exports = CommandoGuild;

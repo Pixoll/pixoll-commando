@@ -1,14 +1,19 @@
 const path = require('path');
-const discord = require('discord.js');
+const { Collection } = require('discord.js');
 const Command = require('./commands/base');
 const CommandGroup = require('./commands/group');
 const CommandoMessage = require('./extensions/message');
 const ArgumentType = require('./types/base');
-const { isConstructor } = require('./util');
+const { removeDashes } = require('./util');
+const requireAll = require('require-all');
+/* eslint-disable no-unused-vars */
+const { APIApplicationCommand, APIApplicationCommandOption } = require('discord-api-types/payloads/v9');
+const { RESTPostAPIChatInputApplicationCommandsJSONBody } = require('discord-api-types/rest/v9');
+/* eslint-enable no-unused-vars */
 
 /** Handles registration and searching of commands and groups */
 class CommandoRegistry {
-	/** @param {CommandoClient} [client] - Client to use  */
+	/** @param {CommandoClient} client - Client to use  */
 	constructor(client) {
 		/**
 		 * The client this registry is for
@@ -19,22 +24,30 @@ class CommandoRegistry {
 		Object.defineProperty(this, 'client', { value: client });
 
 		/**
+		 * The client this registry is for
+		 * @type {CommandoClient}
+		 * @readonly
+		 */
+		// eslint-disable-next-line no-unused-expressions
+		this.client;
+
+		/**
 		 * Registered commands, mapped by their name
 		 * @type {Collection<string, Command>}
 		 */
-		this.commands = new discord.Collection();
+		this.commands = new Collection();
 
 		/**
 		 * Registered command groups, mapped by their ID
 		 * @type {Collection<string, CommandGroup>}
 		 */
-		this.groups = new discord.Collection();
+		this.groups = new Collection();
 
 		/**
 		 * Registered argument types, mapped by their ID
 		 * @type {Collection<string, ArgumentType>}
 		 */
-		this.types = new discord.Collection();
+		this.types = new Collection();
 
 		/**
 		 * Fully resolved path to the bot's commands directory
@@ -50,36 +63,89 @@ class CommandoRegistry {
 	}
 
 	/**
+	 * Registers every client and guild slash command available - this may only be called upon startup.
+	 * @private
+	 */
+	async registerSlashCommands() {
+		/* eslint-disable no-await-in-loop */
+		const { commands, client } = this;
+		const { application, options, guilds } = client;
+
+		const testCommands = commands.filter(cmd => cmd.test && cmd.slash).map(cmd => cmd._slashToAPI);
+		if (testCommands.length !== 0) {
+			if (typeof options.testGuild !== 'string') throw new TypeError('Client testGuild must be a string.');
+
+			const guild = guilds.resolve(options.testGuild);
+			if (!guild) throw new TypeError('Client testGuild must be a valid Guild ID.');
+
+			const current = await guild.commands.fetch();
+			const [updated, removed] = getUpdatedSlashCommands(current, testCommands);
+			for (const command of updated) {
+				const match = current.find(cmd => cmd.name === command.name);
+				if (match) {
+					await guild.commands.edit(match, command);
+				} else {
+					await guild.commands.create(command);
+				}
+			}
+			for (const command of removed) {
+				const match = current.find(cmd => cmd.name === command.name);
+				if (match) await guild.commands.delete(match);
+			}
+
+			client.emit('debug', `Loaded ${testCommands.length} guild slash commands`);
+		}
+
+		const slashCommands = commands.filter(cmd => !cmd.test && cmd.slash).map(cmd => cmd._slashToAPI);
+		if (slashCommands.length === 0) return;
+
+		const current = await application.commands.fetch();
+		const [updated, removed] = getUpdatedSlashCommands(current, slashCommands);
+		for (const command of updated) {
+			const match = current.find(cmd => cmd.name === command.name);
+			if (match) {
+				await application.commands.edit(match, command);
+			} else {
+				await application.commands.create(command);
+			}
+		}
+		for (const command of removed) {
+			const match = current.find(cmd => cmd.name === command.name);
+			if (match) await application.commands.delete(match);
+		}
+
+		client.emit('debug', `Loaded ${slashCommands.length} public slash commands`);
+		/* eslint-enable no-await-in-loop */
+	}
+
+	/**
 	 * Registers a single group
-	 * @param {CommandGroup|Function|Object|string} group - A CommandGroup instance, a constructor, or the group ID
-	 * @param {string} [name] - Name for the group (if the first argument is the group ID)
-	 * @param {boolean} [guarded] - Whether the group should be guarded (if the first argument is the group ID)
+	 * @param {CommandGroup|{id:string,name?:string,guarded?:boolean}} group - A CommandGroup instance
+	 * or the constructor parameters (with ID, name, and guarded properties)
 	 * @return {CommandoRegistry}
 	 * @see {@link CommandoRegistry#registerGroups}
 	 */
-	registerGroup(group, name, guarded) {
-		if(typeof group === 'string') {
-			group = new CommandGroup(this.client, group, name, guarded);
-		} else if(isConstructor(group, CommandGroup)) {
-			group = new group(this.client); // eslint-disable-line new-cap
-		} else if(typeof group === 'object' && !(group instanceof CommandGroup)) {
-			group = new CommandGroup(this.client, group.id, group.name, group.guarded);
+	registerGroup(group) {
+		const { client, groups } = this;
+
+		if (!(group instanceof CommandGroup)) {
+			group = new CommandGroup(client, group);
 		}
 
-		const existing = this.groups.get(group.id);
-		if(existing) {
+		const existing = groups.get(group.id);
+		if (existing) {
 			existing.name = group.name;
-			this.client.emit('debug', `Group ${group.id} is already registered; renamed it to "${group.name}".`);
+			client.emit('debug', `Group ${group.id} is already registered. Renamed it to "${group.name}".`);
 		} else {
-			this.groups.set(group.id, group);
+			groups.set(group.id, group);
 			/**
 			 * Emitted when a group is registered
 			 * @event CommandoClient#groupRegister
 			 * @param {CommandGroup} group - Group that was registered
 			 * @param {CommandoRegistry} registry - Registry that the group was registered to
 			 */
-			this.client.emit('groupRegister', group, this);
-			this.client.emit('debug', `Registered group ${group.id}.`);
+			client.emit('groupRegister', group, this);
+			client.emit('debug', `Registered group ${group.id}.`);
 		}
 
 		return this;
@@ -87,25 +153,21 @@ class CommandoRegistry {
 
 	/**
 	 * Registers multiple groups
-	 * @param {CommandGroup[]|Function[]|Object[]|Array<string[]>} groups - An array of CommandGroup instances,
-	 * constructors, plain objects (with ID, name, and guarded properties),
+	 * @param {(CommandGroup|{id:string,name?:string,guarded?:boolean})[]} groups - An array of CommandGroup instances or
+	 * the constructors parameters (with ID, name, and guarded properties), or arrays of
+	 * {@link CommandoRegistry#registerGroup} parameters
 	 * or arrays of {@link CommandoRegistry#registerGroup} parameters
 	 * @return {CommandoRegistry}
 	 * @example
 	 * registry.registerGroups([
-	 * 	['fun', 'Fun'],
-	 * 	['mod', 'Moderation']
-	 * ]);
-	 * @example
-	 * registry.registerGroups([
-	 * 	{ id: 'fun', name: 'Fun' },
-	 * 	{ id: 'mod', name: 'Moderation' }
+	 *     { id: 'fun', name: 'Fun' },
+	 *     { id: 'mod', name: 'Moderation' }
 	 * ]);
 	 */
 	registerGroups(groups) {
-		if(!Array.isArray(groups)) throw new TypeError('Groups must be an Array.');
-		for(const group of groups) {
-			if(Array.isArray(group)) this.registerGroup(...group);
+		if (!Array.isArray(groups)) throw new TypeError('Groups must be an Array.');
+		for (const group of groups) {
+			if (Array.isArray(group)) this.registerGroup(...group);
 			else this.registerGroup(group);
 		}
 		return this;
@@ -113,38 +175,37 @@ class CommandoRegistry {
 
 	/**
 	 * Registers a single command
-	 * @param {Command|Function} command - Either a Command instance, or a constructor for one
+	 * @param {Command} command - Either a Command instance, or a constructor for one
 	 * @return {CommandoRegistry}
 	 * @see {@link CommandoRegistry#registerCommands}
 	 */
 	registerCommand(command) {
-		/* eslint-disable new-cap */
-		if(isConstructor(command, Command)) command = new command(this.client);
-		else if(isConstructor(command.default, Command)) command = new command.default(this.client);
-		/* eslint-enable new-cap */
-		if(!(command instanceof Command)) throw new Error(`Invalid command object to register: ${command}`);
+		if (!(command instanceof Command)) throw new Error(`Invalid command object to register: ${command}`);
+
+		const { client, commands, groups, unknownCommand } = this;
+		const { name, aliases, groupId, memberName, unknown } = command;
 
 		// Make sure there aren't any conflicts
-		if(this.commands.some(cmd => cmd.name === command.name || cmd.aliases.includes(command.name))) {
-			throw new Error(`A command with the name/alias "${command.name}" is already registered.`);
+		if (commands.some(cmd => cmd.name === name || cmd.aliases.includes(name))) {
+			throw new Error(`A command with the name/alias "${name}" is already registered.`);
 		}
-		for(const alias of command.aliases) {
-			if(this.commands.some(cmd => cmd.name === alias || cmd.aliases.includes(alias))) {
+		for (const alias of aliases) {
+			if (commands.some(cmd => cmd.name === alias || cmd.aliases.includes(alias))) {
 				throw new Error(`A command with the name/alias "${alias}" is already registered.`);
 			}
 		}
-		const group = this.groups.find(grp => grp.id === command.groupID);
-		if(!group) throw new Error(`Group "${command.groupID}" is not registered.`);
-		if(group.commands.some(cmd => cmd.memberName === command.memberName)) {
-			throw new Error(`A command with the member name "${command.memberName}" is already registered in ${group.id}`);
+		const group = groups.find(grp => grp.id === groupId);
+		if (!group) throw new Error(`Group "${groupId}" is not registered.`);
+		if (group.commands.some(cmd => cmd.memberName === memberName)) {
+			throw new Error(`A command with the member name "${memberName}" is already registered in ${group.id}`);
 		}
-		if(command.unknown && this.unknownCommand) throw new Error('An unknown command is already registered.');
+		if (unknown && unknownCommand) throw new Error('An unknown command is already registered.');
 
 		// Add the command
 		command.group = group;
-		group.commands.set(command.name, command);
-		this.commands.set(command.name, command);
-		if(command.unknown) this.unknownCommand = command;
+		group.commands.set(name, command);
+		commands.set(name, command);
+		if (unknown) this.unknownCommand = command;
 
 		/**
 		 * Emitted when a command is registered
@@ -152,25 +213,24 @@ class CommandoRegistry {
 		 * @param {Command} command - Command that was registered
 		 * @param {CommandoRegistry} registry - Registry that the command was registered to
 		 */
-		this.client.emit('commandRegister', command, this);
-		this.client.emit('debug', `Registered command ${group.id}:${command.memberName}.`);
+		client.emit('commandRegister', command, this);
+		client.emit('debug', `Registered command ${group.id}:${memberName}.`);
 
 		return this;
 	}
 
 	/**
 	 * Registers multiple commands
-	 * @param {Command[]|Function[]} commands - An array of Command instances or constructors
+	 * @param {Command[]} commands - An array of Command instances or constructors
 	 * @param {boolean} [ignoreInvalid=false] - Whether to skip over invalid objects without throwing an error
 	 * @return {CommandoRegistry}
 	 */
 	registerCommands(commands, ignoreInvalid = false) {
-		if(!Array.isArray(commands)) throw new TypeError('Commands must be an Array.');
-		for(const command of commands) {
-			const valid = isConstructor(command, Command) || isConstructor(command.default, Command) ||
-				command instanceof Command || command.default instanceof Command;
-			if(ignoreInvalid && !valid) {
-				this.client.emit('warn', `Attempting to register an invalid command object: ${command}; skipping.`);
+		if (!Array.isArray(commands)) throw new TypeError('Commands must be an Array.');
+		for (const command of commands) {
+			const valid = command instanceof Command || command.default instanceof Command;
+			if (ignoreInvalid && !valid) {
+				this.client.emit('warn', `Attempting to register an invalid command object: ${command} skipping.`);
 				continue;
 			}
 			this.registerCommand(command);
@@ -187,38 +247,33 @@ class CommandoRegistry {
 	 * registry.registerCommandsIn(path.join(__dirname, 'commands'));
 	 */
 	registerCommandsIn(options) {
-		const obj = require('require-all')(options);
+		const obj = requireAll(options);
 		const commands = [];
-		for(const group of Object.values(obj)) {
-			for(let command of Object.values(group)) {
-				if(typeof command.default === 'function') command = command.default;
+		for (const group of Object.values(obj)) {
+			for (let command of Object.values(group)) {
 				commands.push(command);
 			}
 		}
-		if(typeof options === 'string' && !this.commandsPath) this.commandsPath = options;
-		else if(typeof options === 'object' && !this.commandsPath) this.commandsPath = options.dirname;
+		if (typeof options === 'string' && !this.commandsPath) this.commandsPath = options;
+		else if (typeof options === 'object' && !this.commandsPath) this.commandsPath = options.dirname;
 		return this.registerCommands(commands, true);
 	}
 
 	/**
 	 * Registers a single argument type
-	 * @param {ArgumentType|Function} type - Either an ArgumentType instance, or a constructor for one
+	 * @param {ArgumentType} type - Either an ArgumentType instance, or a constructor for one
 	 * @return {CommandoRegistry}
 	 * @see {@link CommandoRegistry#registerTypes}
 	 */
 	registerType(type) {
-		/* eslint-disable new-cap */
-		if(isConstructor(type, ArgumentType)) type = new type(this.client);
-		else if(isConstructor(type.default, ArgumentType)) type = new type.default(this.client);
-		/* eslint-enable new-cap */
+		if (!(type instanceof ArgumentType)) throw new Error(`Invalid type object to register: ${type}`);
 
-		if(!(type instanceof ArgumentType)) throw new Error(`Invalid type object to register: ${type}`);
-
+		const { client, types } = this;
 		// Make sure there aren't any conflicts
-		if(this.types.has(type.id)) throw new Error(`An argument type with the ID "${type.id}" is already registered.`);
+		if (types.has(type.id)) throw new Error(`An argument type with the ID "${type.id}" is already registered.`);
 
 		// Add the type
-		this.types.set(type.id, type);
+		types.set(type.id, type);
 
 		/**
 		 * Emitted when an argument type is registered
@@ -226,25 +281,24 @@ class CommandoRegistry {
 		 * @param {ArgumentType} type - Argument type that was registered
 		 * @param {CommandoRegistry} registry - Registry that the type was registered to
 		 */
-		this.client.emit('typeRegister', type, this);
-		this.client.emit('debug', `Registered argument type ${type.id}.`);
+		client.emit('typeRegister', type, this);
+		client.emit('debug', `Registered argument type ${type.id}.`);
 
 		return this;
 	}
 
 	/**
 	 * Registers multiple argument types
-	 * @param {ArgumentType[]|Function[]} types - An array of ArgumentType instances or constructors
+	 * @param {ArgumentType[]} types - An array of ArgumentType instances or constructors
 	 * @param {boolean} [ignoreInvalid=false] - Whether to skip over invalid objects without throwing an error
 	 * @return {CommandoRegistry}
 	 */
 	registerTypes(types, ignoreInvalid = false) {
-		if(!Array.isArray(types)) throw new TypeError('Types must be an Array.');
-		for(const type of types) {
-			const valid = isConstructor(type, ArgumentType) || isConstructor(type.default, ArgumentType) ||
-				type instanceof ArgumentType || type.default instanceof ArgumentType;
-			if(ignoreInvalid && !valid) {
-				this.client.emit('warn', `Attempting to register an invalid argument type object: ${type}; skipping.`);
+		if (!Array.isArray(types)) throw new TypeError('Types must be an Array.');
+		for (const type of types) {
+			const valid = type instanceof ArgumentType || type.default instanceof ArgumentType;
+			if (ignoreInvalid && !valid) {
+				this.client.emit('warn', `Attempting to register an invalid argument type object: ${type} skipping.`);
 				continue;
 			}
 			this.registerType(type);
@@ -258,148 +312,60 @@ class CommandoRegistry {
 	 * @return {CommandoRegistry}
 	 */
 	registerTypesIn(options) {
-		const obj = require('require-all')(options);
+		const obj = requireAll(options);
 		const types = [];
-		for(const type of Object.values(obj)) types.push(type);
+		for (const type of Object.values(obj)) types.push(type);
 		return this.registerTypes(types, true);
 	}
 
 	/**
-	 * Registers the default argument types, groups, and commands. This is equivalent to:
-	 * ```js
-	 * registry.registerDefaultTypes()
-	 * 	.registerDefaultGroups()
-	 * 	.registerDefaultCommands();
-	 * ```
-	 * @return {CommandoRegistry}
-	 */
-	registerDefaults() {
-		this.registerDefaultTypes();
-		this.registerDefaultGroups();
-		this.registerDefaultCommands();
-		return this;
-	}
-
-	/**
-	 * Registers the default groups ("util" and "commands")
-	 * @return {CommandoRegistry}
-	 */
-	registerDefaultGroups() {
-		return this.registerGroups([
-			['commands', 'Commands', true],
-			['util', 'Utility']
-		]);
-	}
-
-	/**
-	 * Registers the default commands to the registry
-	 * @param {Object} [commands] - Object specifying which commands to register
-	 * @param {boolean} [commands.help=true] - Whether to register the built-in help command
-	 * (requires "util" group and "string" type)
-	 * @param {boolean} [commands.prefix=true] - Whether to register the built-in prefix command
-	 * (requires "util" group and "string" type)
-	 * @param {boolean} [commands.eval=true] - Whether to register the built-in eval command
-	 * (requires "util" group and "string" type)
-	 * @param {boolean} [commands.ping=true] - Whether to register the built-in ping command (requires "util" group)
-	 * @param {boolean} [commands.unknownCommand=true] - Whether to register the built-in unknown command
-	 * (requires "util" group)
-	 * @param {boolean} [commands.commandState=true] - Whether to register the built-in command state commands
-	 * (enable, disable, load, unload, reload, list groups - requires "commands" group, "command" type, and "group" type)
-	 * @return {CommandoRegistry}
-	 */
-	registerDefaultCommands(commands = {}) {
-		commands = {
-			help: true, prefix: true, ping: true, eval: true,
-			unknownCommand: true, commandState: true, ...commands
-		};
-		if(commands.help) this.registerCommand(require('./commands/util/help'));
-		if(commands.prefix) this.registerCommand(require('./commands/util/prefix'));
-		if(commands.ping) this.registerCommand(require('./commands/util/ping'));
-		if(commands.eval) this.registerCommand(require('./commands/util/eval'));
-		if(commands.unknownCommand) this.registerCommand(require('./commands/util/unknown-command'));
-		if(commands.commandState) {
-			this.registerCommands([
-				require('./commands/commands/groups'),
-				require('./commands/commands/enable'),
-				require('./commands/commands/disable'),
-				require('./commands/commands/reload'),
-				require('./commands/commands/load'),
-				require('./commands/commands/unload')
-			]);
-		}
-		return this;
-	}
-
-	/**
 	 * Registers the default argument types to the registry
-	 * @param {Object} [types] - Object specifying which types to register
-	 * @param {boolean} [types.string=true] - Whether to register the built-in string type
-	 * @param {boolean} [types.integer=true] - Whether to register the built-in integer type
-	 * @param {boolean} [types.float=true] - Whether to register the built-in float type
-	 * @param {boolean} [types.boolean=true] - Whether to register the built-in boolean type
-	 * @param {boolean} [types.user=true] - Whether to register the built-in user type
-	 * @param {boolean} [types.member=true] - Whether to register the built-in member type
-	 * @param {boolean} [types.role=true] - Whether to register the built-in role type
-	 * @param {boolean} [types.channel=true] - Whether to register the built-in channel type
-	 * @param {boolean} [types.textChannel=true] - Whether to register the built-in text-channel type
-	 * @param {boolean} [types.voiceChannel=true] - Whether to register the built-in voice-channel type
-	 * @param {boolean} [types.categoryChannel=true] - Whether to register the built-in category-channel type
-	 * @param {boolean} [types.message=true] - Whether to register the built-in message type
-	 * @param {boolean} [types.customEmoji=true] - Whether to register the built-in custom-emoji type
-	 * @param {boolean} [types.defaultEmoji=true] - Whether to register the built-in default-emoji type
-	 * @param {boolean} [types.command=true] - Whether to register the built-in command type
-	 * @param {boolean} [types.group=true] - Whether to register the built-in group type
+	 * @param {DefaultTypesOptions} [types] - Object specifying which types to register
 	 * @return {CommandoRegistry}
 	 */
 	registerDefaultTypes(types = {}) {
-		types = {
-			string: true, integer: true, float: true, boolean: true,
-			user: true, member: true, role: true, channel: true, textChannel: true,
-			voiceChannel: true, categoryChannel: true, message: true, customEmoji: true,
-			defaultEmoji: true, command: true, group: true, ...types
-		};
-		if(types.string) this.registerType(require('./types/string'));
-		if(types.integer) this.registerType(require('./types/integer'));
-		if(types.float) this.registerType(require('./types/float'));
-		if(types.boolean) this.registerType(require('./types/boolean'));
-		if(types.user) this.registerType(require('./types/user'));
-		if(types.member) this.registerType(require('./types/member'));
-		if(types.role) this.registerType(require('./types/role'));
-		if(types.channel) this.registerType(require('./types/channel'));
-		if(types.textChannel) this.registerType(require('./types/text-channel'));
-		if(types.voiceChannel) this.registerType(require('./types/voice-channel'));
-		if(types.categoryChannel) this.registerType(require('./types/category-channel'));
-		if(types.message) this.registerType(require('./types/message'));
-		if(types.customEmoji) this.registerType(require('./types/custom-emoji'));
-		if(types.defaultEmoji) this.registerType(require('./types/default-emoji'));
-		if(types.command) this.registerType(require('./types/command'));
-		if(types.group) this.registerType(require('./types/group'));
+		const defaultTypes = Object.keys(requireAll(path.join(__dirname, '/types')))
+			.filter(k => k !== 'base' && k !== 'union')
+			.reduce((obj, k) => {
+				obj[removeDashes(k)] = true;
+				return obj;
+			}, {});
+		Object.assign(defaultTypes, types);
+
+		for (let type in defaultTypes) {
+			if (type !== type.toLowerCase()) {
+				type = type.replace(/[A-Z]/g, '-$&').toLowerCase();
+			}
+
+			this.registerType(require(`./types/${type}`));
+		}
+
 		return this;
 	}
 
 	/**
 	 * Reregisters a command (does not support changing name, group, or memberName)
-	 * @param {Command|Function} command - New command
+	 * @param {Command} command - New command
 	 * @param {Command} oldCommand - Old command
 	 */
 	reregisterCommand(command, oldCommand) {
-		/* eslint-disable new-cap */
-		if(isConstructor(command, Command)) command = new command(this.client);
-		else if(isConstructor(command.default, Command)) command = new command.default(this.client);
-		/* eslint-enable new-cap */
+		if (!(command instanceof Command)) throw new Error(`Invalid command object to register: ${command}`);
 
-		if(command.name !== oldCommand.name) throw new Error('Command name cannot change.');
-		if(command.groupID !== oldCommand.groupID) throw new Error('Command group cannot change.');
-		if(command.memberName !== oldCommand.memberName) throw new Error('Command memberName cannot change.');
-		if(command.unknown && this.unknownCommand !== oldCommand) {
+		const { client, commands, unknownCommand } = this;
+		const { name, groupId, memberName, unknown } = command;
+
+		if (name !== oldCommand.name) throw new Error('Command name cannot change.');
+		if (groupId !== oldCommand.groupId) throw new Error('Command group cannot change.');
+		if (memberName !== oldCommand.memberName) throw new Error('Command memberName cannot change.');
+		if (unknown && this.unknownCommand !== oldCommand) {
 			throw new Error('An unknown command is already registered.');
 		}
 
-		command.group = this.resolveGroup(command.groupID);
-		command.group.commands.set(command.name, command);
-		this.commands.set(command.name, command);
-		if(this.unknownCommand === oldCommand) this.unknownCommand = null;
-		if(command.unknown) this.unknownCommand = command;
+		command.group = this.resolveGroup(groupId);
+		command.group.commands.set(name, command);
+		commands.set(name, command);
+		if (unknownCommand === oldCommand) this.unknownCommand = null;
+		if (unknown) this.unknownCommand = command;
 
 		/**
 		 * Emitted when a command is reregistered
@@ -407,8 +373,8 @@ class CommandoRegistry {
 		 * @param {Command} newCommand - New command
 		 * @param {Command} oldCommand - Old command
 		 */
-		this.client.emit('commandReregister', command, oldCommand);
-		this.client.emit('debug', `Reregistered command ${command.groupID}:${command.memberName}.`);
+		client.emit('commandReregister', command, oldCommand);
+		client.emit('debug', `Reregistered command ${groupId}:${memberName}.`);
 	}
 
 	/**
@@ -416,17 +382,20 @@ class CommandoRegistry {
 	 * @param {Command} command - Command to unregister
 	 */
 	unregisterCommand(command) {
-		this.commands.delete(command.name);
-		command.group.commands.delete(command.name);
-		if(this.unknownCommand === command) this.unknownCommand = null;
+		const { commands, unknownCommand, client } = this;
+		const { name, groupId, memberName } = command;
+
+		commands.delete(name);
+		command.group.commands.delete(name);
+		if (unknownCommand === command) this.unknownCommand = null;
 
 		/**
 		 * Emitted when a command is unregistered
 		 * @event CommandoClient#commandUnregister
 		 * @param {Command} command - Command that was unregistered
 		 */
-		this.client.emit('commandUnregister', command);
-		this.client.emit('debug', `Unregistered command ${command.groupID}:${command.memberName}.`);
+		client.emit('commandUnregister', command);
+		client.emit('debug', `Unregistered command ${groupId}:${memberName}.`);
 	}
 
 	/**
@@ -436,18 +405,19 @@ class CommandoRegistry {
 	 * @return {CommandGroup[]} All groups that are found
 	 */
 	findGroups(searchString = null, exact = false) {
-		if(!searchString) return this.groups;
+		const { groups } = this;
+		if (!searchString) return groups;
 
 		// Find all matches
 		const lcSearch = searchString.toLowerCase();
-		const matchedGroups = Array.from(this.groups.filter(
+		const matchedGroups = groups.filter(
 			exact ? groupFilterExact(lcSearch) : groupFilterInexact(lcSearch)
-		).values());
-		if(exact) return matchedGroups;
+		).toJSON();
+		if (exact) return matchedGroups;
 
 		// See if there's an exact match
-		for(const group of matchedGroups) {
-			if(group.name.toLowerCase() === lcSearch || group.id === lcSearch) return [group];
+		for (const group of matchedGroups) {
+			if (group.name.toLowerCase() === lcSearch || group.id === lcSearch) return [group];
 		}
 		return matchedGroups;
 	}
@@ -465,10 +435,10 @@ class CommandoRegistry {
 	 * @return {CommandGroup} The resolved CommandGroup
 	 */
 	resolveGroup(group) {
-		if(group instanceof CommandGroup) return group;
-		if(typeof group === 'string') {
+		if (group instanceof CommandGroup) return group;
+		if (typeof group === 'string') {
 			const groups = this.findGroups(group, true);
-			if(groups.length === 1) return groups[0];
+			if (groups.length === 1) return groups[0];
 		}
 		throw new Error('Unable to resolve group.');
 	}
@@ -477,26 +447,27 @@ class CommandoRegistry {
 	 * Finds all commands that match the search string
 	 * @param {string} [searchString] - The string to search for
 	 * @param {boolean} [exact=false] - Whether the search should be exact
-	 * @param {Message} [message] - The message to check usability against
+	 * @param {CommandInstances} [instances] - The instances to check usability against
 	 * @return {Command[]} All commands that are found
 	 */
-	findCommands(searchString = null, exact = false, message = null) {
-		if(!searchString) {
-			return message ?
-				Array.from(this.commands.filter(cmd => cmd.isUsable(message)).values()) :
-				Array.from(this.commands);
+	findCommands(searchString = null, exact = false, { message, interaction } = {}) {
+		const { commands } = this;
+		if (!searchString) {
+			return message ?? interaction ?
+				commands.filter(cmd => cmd.isUsable({ message, interaction })).toJSON() :
+				commands.toJSON();
 		}
 
 		// Find all matches
 		const lcSearch = searchString.toLowerCase();
-		const matchedCommands = Array.from(this.commands.filter(
+		const matchedCommands = commands.filter(
 			exact ? commandFilterExact(lcSearch) : commandFilterInexact(lcSearch)
-		).values());
-		if(exact) return matchedCommands;
+		).toJSON();
+		if (exact) return matchedCommands;
 
 		// See if there's an exact match
-		for(const command of matchedCommands) {
-			if(command.name === lcSearch || (command.aliases && command.aliases.some(ali => ali === lcSearch))) {
+		for (const command of matchedCommands) {
+			if (command.name === lcSearch || command.aliases?.some(ali => ali === lcSearch)) {
 				return [command];
 			}
 		}
@@ -518,11 +489,11 @@ class CommandoRegistry {
 	 * @return {Command} The resolved Command
 	 */
 	resolveCommand(command) {
-		if(command instanceof Command) return command;
-		if(command instanceof CommandoMessage && command.command) return command.command;
-		if(typeof command === 'string') {
+		if (command instanceof Command) return command;
+		if (command instanceof CommandoMessage && command.command) return command.command;
+		if (typeof command === 'string') {
 			const commands = this.findCommands(command, true);
-			if(commands.length === 1) return commands[0];
+			if (commands.length === 1) return commands[0];
 		}
 		throw new Error('Unable to resolve command.');
 	}
@@ -547,15 +518,120 @@ function groupFilterInexact(search) {
 }
 
 function commandFilterExact(search) {
-	return cmd => cmd.name === search ||
-		(cmd.aliases && cmd.aliases.some(ali => ali === search)) ||
-		`${cmd.groupID}:${cmd.memberName}` === search;
+	return cmd =>
+		cmd.name === search ||
+		cmd.aliases?.some(ali => ali === search) ||
+		`${cmd.groupId}:${cmd.memberName}` === search;
 }
 
 function commandFilterInexact(search) {
-	return cmd => cmd.name.includes(search) ||
-		`${cmd.groupID}:${cmd.memberName}` === search ||
-		(cmd.aliases && cmd.aliases.some(ali => ali.includes(search)));
+	return cmd =>
+		cmd.name.includes(search) ||
+		`${cmd.groupId}:${cmd.memberName}` === search ||
+		cmd.aliases?.some(ali => ali.includes(search));
 }
 
 module.exports = CommandoRegistry;
+
+const apiCmdOptionType = {
+	SUB_COMMAND: 1,
+	SUB_COMMAND_GROUP: 2,
+	STRING: 3,
+	INTEGER: 4,
+	BOOLEAN: 5,
+	USER: 6,
+	CHANNEL: 7,
+	ROLE: 8,
+	MENTIONABLE: 9,
+	NUMBER: 10
+};
+
+const apiCmdOptChanType = {
+	GUILD_TEXT: 0,
+	GUILD_VOICE: 2,
+	GUILD_CATEGORY: 4,
+	GUILD_NEWS: 5,
+	GUILD_NEWS_THREAD: 10,
+	GUILD_PUBLIC_THREAD: 11,
+	GUILD_PRIVATE_THREAD: 12,
+	GUILD_STAGE_VOICE: 13
+};
+
+// eslint-disable-next-line valid-jsdoc
+/**
+ * Compares and returns the difference between a set of arrays
+ * @param {APIApplicationCommand[]} oldCommands - The old array
+ * @param {RESTPostAPIChatInputApplicationCommandsJSONBody[]} newCommands - The new array
+ * @returns {RESTPostAPIChatInputApplicationCommandsJSONBody[][]} `[updated, removed]`
+ */
+function getUpdatedSlashCommands(oldCommands = [], newCommands = []) {
+	oldCommands = JSON.parse(JSON.stringify(oldCommands));
+	newCommands = JSON.parse(JSON.stringify(newCommands));
+
+	oldCommands.forEach(apiCommand => {
+		for (const prop in apiCommand) {
+			if (['name', 'description', 'options'].includes(prop)) continue;
+			delete apiCommand[prop];
+		}
+		apiCommand.type = 1;
+		parseApiCmdOptions(apiCommand.options);
+		if (apiCommand.options?.length === 0) {
+			delete apiCommand.options;
+		}
+	});
+
+	const map1 = new Map();
+	oldCommands.forEach(el => map1.set(JSON.stringify(orderObjProps(el)), true));
+	const updated = newCommands.filter(el => !map1.has(JSON.stringify(orderObjProps(el))));
+
+	const map2 = new Map();
+	newCommands.forEach(el => map2.set(el.name), true);
+	const removed = oldCommands.filter(el => !map2.has(el.name));
+
+	return [updated, removed];
+}
+
+/**
+ * @param {APIApplicationCommandOption[]} options - The options to parse
+ */
+function parseApiCmdOptions(options) {
+	options.forEach(option => {
+		if (option.required === false) {
+			delete option.required;
+		}
+		for (const oprop in option) {
+			if (typeof option[oprop] === 'undefined') {
+				delete option[oprop];
+				continue;
+			}
+			if (oprop.toLowerCase() === oprop) continue;
+			const toApply = oprop.replace(/[A-Z]/g, '_$&').toLowerCase();
+			option[toApply] = option[oprop];
+			delete option[oprop];
+			if (toApply === 'channel_types') {
+				for (let i = 0; i < option[toApply].length; i++) {
+					option[toApply][i] = apiCmdOptChanType[option[toApply][i]];
+				}
+			}
+		}
+		option.type = apiCmdOptionType[option.type];
+		if (option.options) parseApiCmdOptions(option.options);
+	});
+}
+
+function orderObjProps(obj) {
+	const ordered = {};
+	for (const key of Object.keys(obj).sort()) {
+		if (Array.isArray(obj[key])) {
+			ordered[key] = [];
+			obj[key].forEach(nested => {
+				ordered[key].push(orderObjProps(nested));
+			});
+		} else if (typeof obj[key] === 'object') {
+			ordered[key] = orderObjProps(obj[key]);
+		} else {
+			ordered[key] = obj[key];
+		}
+	}
+	return ordered;
+}

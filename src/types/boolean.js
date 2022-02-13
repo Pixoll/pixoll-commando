@@ -14,8 +14,8 @@ class BooleanArgumentType extends ArgumentType {
 
 	parse(val) {
 		const lc = val.toLowerCase();
-		if(this.truthy.has(lc)) return true;
-		if(this.falsy.has(lc)) return false;
+		if (this.truthy.has(lc)) return true;
+		if (this.falsy.has(lc)) return false;
 		throw new RangeError('Unknown boolean value.');
 	}
 }

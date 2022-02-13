@@ -1,6 +1,6 @@
 const ArgumentType = require('./base');
 const { disambiguation } = require('../util');
-const { escapeMarkdown } = require('discord.js');
+const { escapeMarkdown } = require('discord.js').Util;
 
 class CommandArgumentType extends ArgumentType {
 	constructor(client) {
@@ -9,8 +9,8 @@ class CommandArgumentType extends ArgumentType {
 
 	validate(val) {
 		const commands = this.client.registry.findCommands(val);
-		if(commands.length === 1) return true;
-		if(commands.length === 0) return false;
+		if (commands.length === 1) return true;
+		if (commands.length === 0) return false;
 		return commands.length <= 15 ?
 			`${disambiguation(commands.map(cmd => escapeMarkdown(cmd.name)), 'commands', null)}\n` :
 			'Multiple commands found. Please be more specific.';

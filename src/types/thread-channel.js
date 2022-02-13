@@ -2,9 +2,9 @@ const ArgumentType = require('./base');
 const { disambiguation } = require('../util');
 const { escapeMarkdown } = require('discord.js').Util;
 
-class TextChannelArgumentType extends ArgumentType {
+class ThreadChannelArgumentType extends ArgumentType {
 	constructor(client) {
-		super(client, 'text-channel');
+		super(client, 'thread-channel');
 	}
 
 	validate(val, msg, arg) {
@@ -12,7 +12,9 @@ class TextChannelArgumentType extends ArgumentType {
 		if (matches) {
 			try {
 				const channel = msg.client.channels.resolve(matches[1]);
-				if (!channel || channel.type !== 'GUILD_TEXT') return false;
+				if (!channel || (
+					channel.type !== 'GUILD_PUBLIC_THREAD' && channel.type !== 'GUILD_PRIVATE_THREAD'
+				)) return false;
 				if (arg.oneOf && !arg.oneOf.includes(channel.id)) return false;
 				return true;
 			} catch (err) {
@@ -39,9 +41,9 @@ class TextChannelArgumentType extends ArgumentType {
 
 		return channels.size <= 15 ?
 			`${disambiguation(
-				channels.map(chan => escapeMarkdown(chan.name)), 'text channels', null
+				channels.map(chan => escapeMarkdown(chan.name)), 'thread channels', null
 			)}\n` :
-			'Multiple text channels found. Please be more specific.';
+			'Multiple thread channels found. Please be more specific.';
 	}
 
 	parse(val, msg) {
@@ -63,11 +65,11 @@ class TextChannelArgumentType extends ArgumentType {
 }
 
 function channelFilterExact(search) {
-	return chan => chan.type === 'GUILD_TEXT' && chan.name.toLowerCase() === search;
+	return chan => chan.isThread() && chan.name.toLowerCase() === search;
 }
 
 function channelFilterInexact(search) {
-	return chan => chan.type === 'GUILD_TEXT' && chan.name.toLowerCase().includes(search);
+	return chan => chan.isThread() && chan.name.toLowerCase().includes(search);
 }
 
-module.exports = TextChannelArgumentType;
+module.exports = ThreadChannelArgumentType;

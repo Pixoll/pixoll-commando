@@ -5,17 +5,18 @@ class ArgumentType {
 	 * @param {string} id - The argument type ID (this is what you specify in {@link ArgumentInfo#type})
 	 */
 	constructor(client, id) {
-		if(!client) throw new Error('A client must be specified.');
-		if(typeof id !== 'string') throw new Error('Argument type ID must be a string.');
-		if(id !== id.toLowerCase()) throw new Error('Argument type ID must be lowercase.');
+		if (!client) throw new Error('A client must be specified.');
+		if (typeof id !== 'string') throw new Error('Argument type ID must be a string.');
+		if (id !== id.toLowerCase()) throw new Error('Argument type ID must be lowercase.');
+
+		Object.defineProperty(this, 'client', { value: client });
 
 		/**
 		 * Client that this argument type is for
-		 * @name ArgumentType#client
 		 * @type {CommandoClient}
 		 * @readonly
 		 */
-		Object.defineProperty(this, 'client', { value: client });
+		this.client;
 
 		/**
 		 * ID of this argument type (this is what you specify in {@link ArgumentInfo#type})
@@ -24,7 +25,6 @@ class ArgumentType {
 		this.id = id;
 	}
 
-	// eslint-disable-next-line valid-jsdoc
 	/**
 	 * Validates a value string against the type
 	 * @param {string} val - Value to validate
@@ -38,7 +38,6 @@ class ArgumentType {
 		throw new Error(`${this.constructor.name} doesn't have a validate() method.`);
 	}
 
-	// eslint-disable-next-line valid-jsdoc
 	/**
 	 * Parses the raw value string into a usable value
 	 * @param {string} val - Value to parse

@@ -1,535 +1,595 @@
-const { Structures, escapeMarkdown, splitMessage, resolveString } = require('discord.js');
-const { oneLine } = require('common-tags');
+/* eslint-disable no-unused-vars */
+const {
+	Util, Message, MessageEmbed, User, MessageOptions, TextBasedChannel, MessageButton, MessageActionRow
+} = require('discord.js');
+const { oneLine, stripIndent } = require('common-tags');
 const Command = require('../commands/base');
 const FriendlyError = require('../errors/friendly');
 const CommandFormatError = require('../errors/command-format');
+const { probability, noReplyInDMs } = require('../util');
+/* eslint-enable no-unused-vars */
 
-module.exports = Structures.extend('Message', Message => {
+/**
+ * An extension of the base Discord.js Message class to add command-related functionality.
+ * @extends Message
+ */
+class CommandoMessage extends Message {
 	/**
-	 * An extension of the base Discord.js Message class to add command-related functionality.
-	 * @extends Message
+	 * @param {CommandoClient} client
+	 * @param {Message} data
 	 */
-	class CommandoMessage extends Message {
-		constructor(...args) {
-			super(...args);
+	constructor(client, data) {
+		super(client, { id: data.id });
+		Object.assign(this, data);
 
-			/**
-			 * Whether the message contains a command (even an unknown one)
-			 * @type {boolean}
-			 */
-			this.isCommand = false;
-
-			/**
-			 * Command that the message triggers, if any
-			 * @type {?Command}
-			 */
-			this.command = null;
-
-			/**
-			 * Argument string for the command
-			 * @type {?string}
-			 */
-			this.argString = null;
-
-			/**
-			 * Pattern matches (if from a pattern trigger)
-			 * @type {?string[]}
-			 */
-			this.patternMatches = null;
-
-			/**
-			 * Response messages sent, mapped by channel ID (set by the dispatcher after running the command)
-			 * @type {?Object}
-			 */
-			this.responses = null;
-
-			/**
-			 * Index of the current response that will be edited, mapped by channel ID
-			 * @type {?Object}
-			 */
-			this.responsePositions = null;
-		}
+		/* eslint-disable no-unused-expressions */
+		/**
+		 * The client the message is for
+		 * @type {CommandoClient}
+		 */
+		this.client;
 
 		/**
-		 * Initialises the message for a command
-	 	 * @param {Command} [command] - Command the message triggers
-	 	 * @param {string} [argString] - Argument string for the command
-	 	 * @param {?Array<string>} [patternMatches] - Command pattern matches (if from a pattern trigger)
-		 * @return {Message} This message
-		 * @private
+		 * The guild this message is for
+		 * @type {CommandoGuild}
 		 */
-		initCommand(command, argString, patternMatches) {
-			this.isCommand = true;
-			this.command = command;
-			this.argString = argString;
-			this.patternMatches = patternMatches;
-			return this;
-		}
+		this.guild;
+		/* eslint-enable no-unused-expressions */
 
 		/**
-		 * Creates a usage string for the message's command
-		 * @param {string} [argString] - A string of arguments for the command
-		 * @param {string} [prefix=this.guild.commandPrefix || this.client.commandPrefix] - Prefix to use for the
-		 * prefixed command format
-		 * @param {User} [user=this.client.user] - User to use for the mention command format
-		 * @return {string}
+		 * Whether the message contains a command (even an unknown one)
+		 * @type {boolean}
 		 */
-		usage(argString, prefix, user = this.client.user) {
-			if(typeof prefix === 'undefined') {
-				if(this.guild) prefix = this.guild.commandPrefix;
-				else prefix = this.client.commandPrefix;
-			}
-			return this.command.usage(argString, prefix, user);
-		}
+		this.isCommand = false;
 
 		/**
-		 * Creates a usage string for any command
-		 * @param {string} [command] - A command + arg string
-		 * @param {string} [prefix=this.guild.commandPrefix || this.client.commandPrefix] - Prefix to use for the
-		 * prefixed command format
-		 * @param {User} [user=this.client.user] - User to use for the mention command format
-		 * @return {string}
+		 * Command that the message triggers, if any
+		 * @type {?Command}
 		 */
-		anyUsage(command, prefix, user = this.client.user) {
-			if(typeof prefix === 'undefined') {
-				if(this.guild) prefix = this.guild.commandPrefix;
-				else prefix = this.client.commandPrefix;
-			}
-			return Command.usage(command, prefix, user);
-		}
+		this.command = null;
 
 		/**
-		 * Parses the argString into usable arguments, based on the argsType and argsCount of the command
-		 * @return {string|string[]}
-		 * @see {@link Command#run}
+		 * Argument string for the command
+		 * @type {?string}
 		 */
-		parseArgs() {
-			switch(this.command.argsType) {
-				case 'single':
-					return this.argString.trim().replace(
-						this.command.argsSingleQuotes ? /^("|')([^]*)\1$/g : /^(")([^]*)"$/g, '$2'
-					);
-				case 'multiple':
-					return this.constructor.parseArgs(this.argString, this.command.argsCount, this.command.argsSingleQuotes);
-				default:
-					throw new RangeError(`Unknown argsType "${this.argsType}".`);
-			}
-		}
+		this.argString = null;
 
 		/**
-		 * Runs the command
-		 * @return {Promise<?Message|?Array<Message>>}
+		 * Pattern matches (if from a pattern trigger)
+		 * @type {?string[]}
 		 */
-		async run() { // eslint-disable-line complexity
-			// Obtain the member if we don't have it
-			if(this.channel.type === 'text' && !this.guild.members.cache.has(this.author.id) && !this.webhookID) {
-				this.member = await this.guild.members.fetch(this.author);
-			}
-
-			// Obtain the member for the ClientUser if it doesn't already exist
-			if(this.channel.type === 'text' && !this.guild.members.cache.has(this.client.user.id)) {
-				await this.guild.members.fetch(this.client.user.id);
-			}
-
-			// Make sure the command is usable in this context
-			if(this.command.guildOnly && !this.guild) {
-				/**
-				 * Emitted when a command is prevented from running
-				 * @event CommandoClient#commandBlock
-				 * @param {CommandoMessage} message - Command message that the command is running from
-				 * @param {string} reason - Reason that the command was blocked
-				 * (built-in reasons are `guildOnly`, `nsfw`, `permission`, `throttling`, and `clientPermissions`)
-				 * @param {Object} [data] - Additional data associated with the block. Built-in reason data properties:
-				 * - guildOnly: none
-				 * - nsfw: none
-				 * - permission: `response` ({@link string}) to send
-				 * - throttling: `throttle` ({@link Object}), `remaining` ({@link number}) time in seconds
-				 * - clientPermissions: `missing` ({@link Array}<{@link string}>) permission names
-				 */
-				this.client.emit('commandBlock', this, 'guildOnly');
-				return this.command.onBlock(this, 'guildOnly');
-			}
-
-			// Ensure the channel is a NSFW one if required
-			if(this.command.nsfw && !this.channel.nsfw) {
-				this.client.emit('commandBlock', this, 'nsfw');
-				return this.command.onBlock(this, 'nsfw');
-			}
-
-			// Ensure the user has permission to use the command
-			const hasPermission = this.command.hasPermission(this);
-			if(!hasPermission || typeof hasPermission === 'string') {
-				const data = { response: typeof hasPermission === 'string' ? hasPermission : undefined };
-				this.client.emit('commandBlock', this, 'permission', data);
-				return this.command.onBlock(this, 'permission', data);
-			}
-
-			// Ensure the client user has the required permissions
-			if(this.channel.type === 'text' && this.command.clientPermissions) {
-				const missing = this.channel.permissionsFor(this.client.user).missing(this.command.clientPermissions);
-				if(missing.length > 0) {
-					const data = { missing };
-					this.client.emit('commandBlock', this, 'clientPermissions', data);
-					return this.command.onBlock(this, 'clientPermissions', data);
-				}
-			}
-
-			// Throttle the command
-			const throttle = this.command.throttle(this.author.id);
-			if(throttle && throttle.usages + 1 > this.command.throttling.usages) {
-				const remaining = (throttle.start + (this.command.throttling.duration * 1000) - Date.now()) / 1000;
-				const data = { throttle, remaining };
-				this.client.emit('commandBlock', this, 'throttling', data);
-				return this.command.onBlock(this, 'throttling', data);
-			}
-
-			// Figure out the command arguments
-			let args = this.patternMatches;
-			let collResult = null;
-			if(!args && this.command.argsCollector) {
-				const collArgs = this.command.argsCollector.args;
-				const count = collArgs[collArgs.length - 1].infinite ? Infinity : collArgs.length;
-				const provided = this.constructor.parseArgs(this.argString.trim(), count, this.command.argsSingleQuotes);
-
-				collResult = await this.command.argsCollector.obtain(this, provided);
-				if(collResult.cancelled) {
-					if(collResult.prompts.length === 0 || collResult.cancelled === 'promptLimit') {
-						this.client.emit('commandCancel', this.command, collResult.cancelled, this, collResult);
-						const err = new CommandFormatError(this);
-						return this.reply(err.message);
-					}
-					/**
-					 * Emitted when a command is cancelled (either by typing 'cancel' or not responding in time)
-					 * @event CommandoClient#commandCancel
-					 * @param {Command} command - Command that was cancelled
-					 * @param {string} reason - Reason for the command being cancelled
-					 * @param {CommandoMessage} message - Command message that the command ran from (see {@link Command#run})
-					 * @param {?ArgumentCollectorResult} result - Result from obtaining the arguments from the collector
-					 * (if applicable - see {@link Command#run})
-					 */
-					this.client.emit('commandCancel', this.command, collResult.cancelled, this, collResult);
-					return this.reply('Cancelled command.');
-				}
-				args = collResult.values;
-			}
-			if(!args) args = this.parseArgs();
-			const fromPattern = Boolean(this.patternMatches);
-
-			// Run the command
-			if(throttle) throttle.usages++;
-			const typingCount = this.channel.typingCount;
-			try {
-				this.client.emit('debug', `Running command ${this.command.groupID}:${this.command.memberName}.`);
-				const promise = this.command.run(this, args, fromPattern, collResult);
-				/**
-				 * Emitted when running a command
-				 * @event CommandoClient#commandRun
-				 * @param {Command} command - Command that is being run
-				 * @param {Promise} promise - Promise for the command result
-				 * @param {CommandoMessage} message - Command message that the command is running from (see {@link Command#run})
-				 * @param {Object|string|string[]} args - Arguments for the command (see {@link Command#run})
-				 * @param {boolean} fromPattern - Whether the args are pattern matches (see {@link Command#run})
-				 * @param {?ArgumentCollectorResult} result - Result from obtaining the arguments from the collector
-				 * (if applicable - see {@link Command#run})
-				 */
-				this.client.emit('commandRun', this.command, promise, this, args, fromPattern, collResult);
-				const retVal = await promise;
-				if(!(retVal instanceof Message || retVal instanceof Array || retVal === null || retVal === undefined)) {
-					throw new TypeError(oneLine`
-						Command ${this.command.name}'s run() resolved with an unknown type
-						(${retVal !== null ? retVal && retVal.constructor ? retVal.constructor.name : typeof retVal : null}).
-						Command run methods must return a Promise that resolve with a Message, Array of Messages, or null/undefined.
-					`);
-				}
-				return retVal;
-			} catch(err) {
-				/**
-				 * Emitted when a command produces an error while running
-				 * @event CommandoClient#commandError
-				 * @param {Command} command - Command that produced an error
-				 * @param {Error} err - Error that was thrown
-				 * @param {CommandoMessage} message - Command message that the command is running from (see {@link Command#run})
-				 * @param {Object|string|string[]} args - Arguments for the command (see {@link Command#run})
-				 * @param {boolean} fromPattern - Whether the args are pattern matches (see {@link Command#run})
-				 * @param {?ArgumentCollectorResult} result - Result from obtaining the arguments from the collector
-				 * (if applicable - see {@link Command#run})
-				 */
-				this.client.emit('commandError', this.command, err, this, args, fromPattern, collResult);
-				if(this.channel.typingCount > typingCount) this.channel.stopTyping();
-				if(err instanceof FriendlyError) {
-					return this.reply(err.message);
-				} else {
-					return this.command.onError(err, this, args, fromPattern, collResult);
-				}
-			}
-		}
+		this.patternMatches = null;
 
 		/**
-		 * Responds to the command message
-		 * @param {Object} [options] - Options for the response
-		 * @return {Message|Message[]}
-		 * @private
+		 * Response messages sent, mapped by channel ID (set by the dispatcher after running the command)
+		 * @type {Map<string, CommandoMessage[]>}
 		 */
-		respond({ type = 'reply', content, options, lang, fromEdit = false }) {
-			const shouldEdit = this.responses && !fromEdit;
-			if(shouldEdit) {
-				if(options && options.split && typeof options.split !== 'object') options.split = {};
-			}
-
-			if(type === 'reply' && this.channel.type === 'dm') type = 'plain';
-			if(type !== 'direct') {
-				if(this.guild && !this.channel.permissionsFor(this.client.user).has('SEND_MESSAGES')) {
-					type = 'direct';
-				}
-			}
-
-			content = resolveString(content);
-
-			switch(type) {
-				case 'plain':
-					if(!shouldEdit) return this.channel.send(content, options);
-					return this.editCurrentResponse(channelIDOrDM(this.channel), { type, content, options });
-				case 'reply':
-					if(!shouldEdit) return super.reply(content, options);
-					if(options && options.split && !options.split.prepend) options.split.prepend = `${this.author}, `;
-					return this.editCurrentResponse(channelIDOrDM(this.channel), { type, content, options });
-				case 'direct':
-					if(!shouldEdit) return this.author.send(content, options);
-					return this.editCurrentResponse('dm', { type, content, options });
-				case 'code':
-					if(!shouldEdit) return this.channel.send(content, options);
-					if(options && options.split) {
-						if(!options.split.prepend) options.split.prepend = `\`\`\`${lang || ''}\n`;
-						if(!options.split.append) options.split.append = '\n```';
-					}
-					content = `\`\`\`${lang || ''}\n${escapeMarkdown(content, true)}\n\`\`\``;
-					return this.editCurrentResponse(channelIDOrDM(this.channel), { type, content, options });
-				default:
-					throw new RangeError(`Unknown response type "${type}".`);
-			}
-		}
+		this.responses = new Map();
 
 		/**
-		 * Edits a response to the command message
-		 * @param {Message|Message[]} response - The response message(s) to edit
-		 * @param {Object} [options] - Options for the response
-		 * @return {Promise<Message|Message[]>}
-		 * @private
+		 * Index of the current response that will be edited, mapped by channel ID
+		 * @type {Map<string, number>}
 		 */
-		editResponse(response, { type, content, options }) {
-			if(!response) return this.respond({ type, content, options, fromEdit: true });
-			if(options && options.split) content = splitMessage(content, options.split);
+		this.responsePositions = new Map();
+	}
 
-			let prepend = '';
-			if(type === 'reply') prepend = `${this.author}, `;
+	/**
+	 * Initialises the message for a command
+	 * @param {Command} [command] - Command the message triggers
+	 * @param {string} [argString] - Argument string for the command
+	 * @param {?Array<string>} [patternMatches] - Command pattern matches (if from a pattern trigger)
+	 * @return {Message} This message
+	 * @private
+	 */
+	initCommand(command, argString, patternMatches) {
+		this.isCommand = true;
+		this.command = command;
+		this.argString = argString;
+		this.patternMatches = patternMatches;
+		return this;
+	}
 
-			if(content instanceof Array) {
-				const promises = [];
-				if(response instanceof Array) {
-					for(let i = 0; i < content.length; i++) {
-						if(response.length > i) promises.push(response[i].edit(`${prepend}${content[i]}`, options));
-						else promises.push(response[0].channel.send(`${prepend}${content[i]}`));
-					}
-				} else {
-					promises.push(response.edit(`${prepend}${content[0]}`, options));
-					for(let i = 1; i < content.length; i++) {
-						promises.push(response.channel.send(`${prepend}${content[i]}`));
-					}
-				}
-				return Promise.all(promises);
-			} else {
-				if(response instanceof Array) { // eslint-disable-line no-lonely-if
-					for(let i = response.length - 1; i > 0; i--) response[i].delete();
-					return response[0].edit(`${prepend}${content}`, options);
-				} else {
-					return response.edit(`${prepend}${content}`, options);
-				}
-			}
-		}
+	/**
+	 * Creates a usage string for the message's command
+	 * @param {string} [argString] - A string of arguments for the command
+	 * @param {string} [prefix=this.guild.prefix || this.client.prefix] - Prefix to use for the
+	 * prefixed command format
+	 * @param {User} [user=this.client.user] - User to use for the mention command format
+	 * @return {string}
+	 */
+	usage(argString, prefix, user = this.client.user) {
+		const { guild, client, command } = this;
+		prefix ??= guild?.prefix ?? client.prefix;
+		return command.usage(argString, prefix, user);
+	}
 
-		/**
-		 * Edits the current response
-		 * @param {string} id - The ID of the channel the response is in ("DM" for direct messages)
-		 * @param {Object} [options] - Options for the response
-		 * @return {Promise<Message|Message[]>}
-		 * @private
-		 */
-		editCurrentResponse(id, options) {
-			if(typeof this.responses[id] === 'undefined') this.responses[id] = [];
-			if(typeof this.responsePositions[id] === 'undefined') this.responsePositions[id] = -1;
-			this.responsePositions[id]++;
-			return this.editResponse(this.responses[id][this.responsePositions[id]], options);
-		}
+	/**
+	 * Creates a usage string for any command
+	 * @param {string} [command] - A command + arg string
+	 * @param {string} [prefix=this.guild.prefix || this.client.prefix] - Prefix to use for the
+	 * prefixed command format
+	 * @param {User} [user=this.client.user] - User to use for the mention command format
+	 * @return {string}
+	 */
+	anyUsage(command, prefix, user = this.client.user) {
+		const { guild, client } = this;
+		prefix ??= guild?.prefix ?? client.prefix;
+		return Command.usage(command, prefix, user);
+	}
 
-		/**
-		 * Responds with a plain message
-		 * @param {StringResolvable} content - Content for the message
-		 * @param {MessageOptions} [options] - Options for the message
-		 * @return {Promise<Message|Message[]>}
-		 */
-		say(content, options) {
-			if(!options && typeof content === 'object' && !(content instanceof Array)) {
-				options = content;
-				content = '';
-			}
-			return this.respond({ type: 'plain', content, options });
-		}
-
-		/**
-		 * Responds with a reply message
-		 * @param {StringResolvable} content - Content for the message
-		 * @param {MessageOptions} [options] - Options for the message
-		 * @return {Promise<Message|Message[]>}
-		 */
-		reply(content, options) {
-			if(!options && typeof content === 'object' && !(content instanceof Array)) {
-				options = content;
-				content = '';
-			}
-			return this.respond({ type: 'reply', content, options });
-		}
-
-		/**
-		 * Responds with a direct message
-		 * @param {StringResolvable} content - Content for the message
-		 * @param {MessageOptions} [options] - Options for the message
-		 * @return {Promise<Message|Message[]>}
-		 */
-		direct(content, options) {
-			if(!options && typeof content === 'object' && !(content instanceof Array)) {
-				options = content;
-				content = '';
-			}
-			return this.respond({ type: 'direct', content, options });
-		}
-
-		/**
-		 * Responds with a code message
-		 * @param {string} lang - Language for the code block
-		 * @param {StringResolvable} content - Content for the message
-		 * @param {MessageOptions} [options] - Options for the message
-		 * @return {Promise<Message|Message[]>}
-		 */
-		code(lang, content, options) {
-			if(!options && typeof content === 'object' && !(content instanceof Array)) {
-				options = content;
-				content = '';
-			}
-			if(typeof options !== 'object') options = {};
-			options.code = lang;
-			return this.respond({ type: 'code', content, options });
-		}
-
-		/**
-		 * Responds with an embed
-		 * @param {RichEmbed|Object} embed - Embed to send
-		 * @param {StringResolvable} [content] - Content for the message
-		 * @param {MessageOptions} [options] - Options for the message
-		 * @return {Promise<Message|Message[]>}
-		 */
-		embed(embed, content = '', options) {
-			if(typeof options !== 'object') options = {};
-			options.embed = embed;
-			return this.respond({ type: 'plain', content, options });
-		}
-
-		/**
-		 * Responds with a mention + embed
-		 * @param {RichEmbed|Object} embed - Embed to send
-		 * @param {StringResolvable} [content] - Content for the message
-		 * @param {MessageOptions} [options] - Options for the message
-		 * @return {Promise<Message|Message[]>}
-		 */
-		replyEmbed(embed, content = '', options) {
-			if(typeof options !== 'object') options = {};
-			options.embed = embed;
-			return this.respond({ type: 'reply', content, options });
-		}
-
-		/**
-		 * Finalizes the command message by setting the responses and deleting any remaining prior ones
-		 * @param {?Array<Message|Message[]>} responses - Responses to the message
-		 * @private
-		 */
-		finalize(responses) {
-			if(this.responses) this.deleteRemainingResponses();
-			this.responses = {};
-			this.responsePositions = {};
-
-			if(responses instanceof Array) {
-				for(const response of responses) {
-					const channel = (response instanceof Array ? response[0] : response).channel;
-					const id = channelIDOrDM(channel);
-					if(!this.responses[id]) {
-						this.responses[id] = [];
-						this.responsePositions[id] = -1;
-					}
-					this.responses[id].push(response);
-				}
-			} else if(responses) {
-				const id = channelIDOrDM(responses.channel);
-				this.responses[id] = [responses];
-				this.responsePositions[id] = -1;
-			}
-		}
-
-		/**
-		 * Deletes any prior responses that haven't been updated
-		 * @private
-		 */
-		deleteRemainingResponses() {
-			for(const id of Object.keys(this.responses)) {
-				const responses = this.responses[id];
-				for(let i = this.responsePositions[id] + 1; i < responses.length; i++) {
-					const response = responses[i];
-					if(response instanceof Array) {
-						for(const resp of response) resp.delete();
-					} else {
-						response.delete();
-					}
-				}
-			}
-		}
-
-		/**
-		 * Parses an argument string into an array of arguments
-		 * @param {string} argString - The argument string to parse
-		 * @param {number} [argCount] - The number of arguments to extract from the string
-		 * @param {boolean} [allowSingleQuote=true] - Whether or not single quotes should be allowed to wrap arguments,
-		 * in addition to double quotes
-		 * @return {string[]} The array of arguments
-		 */
-		static parseArgs(argString, argCount, allowSingleQuote = true) {
-			const argStringModified = removeSmartQuotes(argString, allowSingleQuote);
-			const re = allowSingleQuote ? /\s*(?:("|')([^]*?)\1|(\S+))\s*/g : /\s*(?:(")([^]*?)"|(\S+))\s*/g;
-			const result = [];
-			let match = [];
-			// Large enough to get all items
-			argCount = argCount || argStringModified.length;
-			// Get match and push the capture group that is not null to the result
-			while(--argCount && (match = re.exec(argStringModified))) result.push(match[2] || match[3]);
-			// If text remains, push it to the array as-is (except for wrapping quotes, which are removed)
-			if(match && re.lastIndex < argStringModified.length) {
-				const re2 = allowSingleQuote ? /^("|')([^]*)\1$/g : /^(")([^]*)"$/g;
-				result.push(argStringModified.substr(re.lastIndex).replace(re2, '$2'));
-			}
-			return result;
+	/**
+	 * Parses the argString into usable arguments, based on the argsType and argsCount of the command
+	 * @return {string|string[]}
+	 * @see {@link Command#run}
+	 */
+	parseArgs() {
+		const { command, argString } = this;
+		const { argsType, argsSingleQuotes, argsCount } = command;
+		switch (argsType) {
+			case 'single':
+				return argString.trim().replace(
+					argsSingleQuotes ? /^("|')([^]*)\1$/g : /^(")([^]*)"$/g, '$2'
+				);
+			case 'multiple':
+				return this.constructor.parseArgs(argString, argsCount, argsSingleQuotes);
+			default:
+				throw new RangeError(`Unknown argsType "${argsType}".`);
 		}
 	}
 
-	return CommandoMessage;
-});
+	/**
+	 * Runs the command
+	 * @return {Promise<?Message|?Array<Message>>}
+	 */
+	async run() {
+		const { guild, guildId, channel, channelId, author, webhookId, client, command, patternMatches, argString } = this;
+		const { groupId, memberName } = command;
 
-function removeSmartQuotes(argString, allowSingleQuote = true) {
-	let replacementArgString = argString;
-	const singleSmartQuote = /[‘’]/g;
-	const doubleSmartQuote = /[“”]/g;
-	if(allowSingleQuote) replacementArgString = argString.replace(singleSmartQuote, '\'');
-	return replacementArgString
-	.replace(doubleSmartQuote, '"');
+		// Checks if the client has permission to send messages
+		const clientPerms = guild?.me.permissionsIn(channel).serialize();
+		if (clientPerms && clientPerms.VIEW_CHANNEL && !clientPerms.SEND_MESSAGES) {
+			return await this.direct(stripIndent`
+				It seems like I cannot **Send Messages** in this channel: ${channel.toString()}
+				Please try in another channel, or contact the admins of **${guild.name}** to solve this issue.
+			`).catch(() => null);
+		}
+
+		// Obtain the member if we don't have it
+		if (channel.type !== 'DM' && !guild.members.cache.has(author.id) && !webhookId) {
+			this.member = await guild.members.fetch(author);
+		}
+
+		// Obtain the member for the ClientUser if it doesn't already exist
+		if (channel.type !== 'DM' && !guild.members.cache.has(client.user.id)) {
+			await guild.members.fetch(client.user.id);
+		}
+
+		// Make sure the command is usable in this context
+		if (command.dmOnly && guild) {
+			client.emit('commandBlock', { message: this }, 'dmOnly');
+			return await command.onBlock({ message: this }, 'dmOnly');
+		}
+
+		// Make sure the command is usable in this context
+		if ((command.guildOnly || command.guildOwnerOnly) && !guild) {
+			client.emit('commandBlock', { message: this }, 'guildOnly');
+			return await command.onBlock({ message: this }, 'guildOnly');
+		}
+
+		// Ensure the channel is a NSFW one if required
+		if (command.nsfw && !channel.nsfw) {
+			client.emit('commandBlock', { message: this }, 'nsfw');
+			return await command.onBlock({ message: this }, 'nsfw');
+		}
+
+		// Ensure the user has permission to use the command
+		const hasPermission = command.hasPermission({ message: this });
+		if (hasPermission !== true) {
+			if (typeof hasPermission === 'string') {
+				client.emit('commandBlock', { message: this }, hasPermission);
+				return await command.onBlock({ message: this }, hasPermission);
+			}
+			const data = { missing: hasPermission };
+			client.emit('commandBlock', { message: this }, 'userPermissions', data);
+			return await command.onBlock({ message: this }, 'userPermissions', data);
+		}
+
+		// Ensure the client user has the required permissions
+		if (channel.type !== 'DM' && command.clientPermissions) {
+			const missing = channel.permissionsFor(client.user).missing(command.clientPermissions);
+			if (missing.length > 0) {
+				const data = { missing };
+				client.emit('commandBlock', { message: this }, 'clientPermissions', data);
+				return await command.onBlock({ message: this }, 'clientPermissions', data);
+			}
+		}
+
+		// Throttle the command
+		const throttle = command.throttle(author.id);
+		if (throttle && throttle.usages + 1 > command.throttling.usages) {
+			const remaining = (throttle.start + (command.throttling.duration * 1000) - Date.now()) / 1000;
+			const data = { throttle, remaining };
+			client.emit('commandBlock', { message: this }, 'throttling', data);
+			return await command.onBlock({ message: this }, 'throttling', data);
+		}
+
+		if (command.deprecated) {
+			const embed = new MessageEmbed()
+				.setColor('GOLD')
+				.addField(
+					`The \`${command.name}\` command has been marked as deprecated!`,
+					`Please start using the \`${command.replacing}\` command from now on.`
+				);
+
+			await this.replyEmbed(embed);
+		}
+
+		// Figure out the command arguments
+		let args = patternMatches;
+		let collResult = null;
+		if (!args && command.argsCollector) {
+			const collArgs = command.argsCollector.args;
+			const count = collArgs[collArgs.length - 1].infinite ? Infinity : collArgs.length;
+			const provided = this.constructor.parseArgs(argString.trim(), count, command.argsSingleQuotes);
+
+			collResult = await command.argsCollector.obtain(this, provided);
+			if (collResult.cancelled) {
+				if (collResult.prompts.length === 0 || collResult.cancelled === 'promptLimit') {
+					const err = new CommandFormatError(this);
+					return this.reply({ content: err.message, ...noReplyInDMs(this) });
+				}
+
+				client.emit('commandCancel', command, collResult.cancelled, this, collResult);
+				return this.reply({ content: 'Cancelled command.', ...noReplyInDMs(this) });
+			}
+			args = collResult.values;
+		}
+		args ??= this.parseArgs();
+		const fromPattern = !!patternMatches;
+
+		// Run the command
+		if (throttle) throttle.usages++;
+		try {
+			const location = guildId ? `${guildId}:${channelId}` : `DM:${author.id}`;
+			client.emit('debug', `Running message command "${groupId}:${memberName}" at "${location}".`);
+			await channel.sendTyping().catch(() => null);
+			const promise = command.run({ message: this }, args, fromPattern, collResult);
+
+			client.emit('commandRun', command, promise, { message: this }, args, fromPattern, collResult);
+			const retVal = await promise;
+			const isValid = retVal instanceof Message || Array.isArray(retVal) || retVal === null ||
+				typeof retVal === 'undefined';
+			if (!isValid) {
+				const retValType = retVal !== null ? (
+					retVal?.constructor ? retVal.constructor.name : typeof retVal
+				) : null;
+				throw new TypeError(oneLine`
+					Command ${command.name}'s run() resolved with an unknown type (${retValType}). Command run methods
+					must return a Promise that resolve with a Message, Array of Messages, or null/undefined.
+				`);
+			}
+
+			if (probability(2)) {
+				const { user, botInvite } = client;
+				const embed = new MessageEmbed()
+					.setColor('#4c9f4c')
+					.addField(`Enjoying ${user.username}?`, oneLine`
+						The please consider voting for it! It helps the bot to become more noticed
+						between other bots. And perhaps consider adding it to any of your own servers
+						as well!
+					`);
+				const vote = new MessageButton()
+					.setEmoji('👍')
+					.setLabel('Vote me')
+					.setStyle('LINK')
+					.setURL('https://top.gg/bot/802267523058761759/vote');
+				const invite = new MessageButton()
+					.setEmoji('🔗')
+					.setLabel('Invite me')
+					.setStyle('LINK')
+					.setURL(botInvite);
+				const row = new MessageActionRow().addComponents(vote, invite);
+				await channel.send({ embeds: [embed], components: [row] }).catch(() => null);
+			}
+
+			return retVal;
+		} catch (err) {
+			const message = await this.fetch().catch(() => null);
+			client.emit('commandError', command, err, { message }, args, fromPattern, collResult);
+			if (err instanceof FriendlyError) {
+				return await this.reply(err.message);
+			} else {
+				return await command.onError(err, { message }, args, fromPattern, collResult);
+			}
+		}
+	}
+
+	/**
+	 * Type of the response
+	 * @typedef {'reply'|'direct'|'plain'|'code'} ResponseType
+	 */
+
+	/**
+	 * Options for the response
+	 * @typedef {Object} ResponseOptions
+	 * @property {ResponseType} [type] Type of the response
+	 * @property {string} [content] Content of the response
+	 * @property {MessageOptions} [options] Options of the response
+	 * @property {string} [lang] Language of the response, if its type is `code`
+	 * @property {boolean} [fromEdit] If the response is from an edited message
+	 */
+
+	/**
+	 * Responds to the command message
+	 * @param {ResponseOptions} [options] - Options for the response
+	 * @return {Message|Message[]}
+	 * @private
+	 */
+	respond({ type = 'reply', content = '', options = {}, lang = '', fromEdit = false }) {
+		const { responses, channel, guild, client, author } = this;
+		const shouldEdit = responses && !fromEdit;
+
+		if (type === 'reply' && channel.type === 'DM') type = 'plain';
+		if (type !== 'direct') {
+			if (guild && !channel.permissionsFor(client.user).has('SEND_MESSAGES')) {
+				type = 'direct';
+			}
+		}
+
+		if (content) options.content = resolveString(content);
+		Object.assign(options, noReplyInDMs(this));
+
+		switch (type) {
+			case 'plain':
+				if (!shouldEdit) return channel.send(options);
+				return this.editCurrentResponse(channelIdOrDM(channel), { type, options });
+			case 'reply':
+				if (!shouldEdit) return this.reply(options);
+				return this.editCurrentResponse(channelIdOrDM(channel), { type, options });
+			case 'direct':
+				if (!shouldEdit) return author.send(options);
+				return this.editCurrentResponse('DM', { type, options });
+			case 'code':
+				options.content = `\`\`\`${lang}\n${Util.escapeMarkdown(content, true)}\n\`\`\``;
+				if (!shouldEdit) return channel.send(options);
+				return this.editCurrentResponse(channelIdOrDM(channel), { type, options });
+			default:
+				throw new RangeError(`Unknown response type "${type}".`);
+		}
+	}
+
+	/**
+	 * Edits a response to the command message
+	 * @param {Message|Message[]} response - The response message(s) to edit
+	 * @param {ResponseOptions} [options] - Options for the response
+	 * @return {Promise<Message|Message[]>}
+	 * @private
+	 */
+	editResponse(response, { type, options }) {
+		if (!response) return this.respond({ type, options, fromEdit: true });
+
+		const { content } = options;
+		if (Array.isArray(content)) {
+			const promises = [];
+			if (Array.isArray(response)) {
+				for (let i = 0; i < content.length; i++) {
+					if (response.length > i) promises.push(response[i].edit(`${content[i]}`/* , options */));
+					else promises.push(response[0].channel.send(`${content[i]}`));
+				}
+			} else {
+				promises.push(response.edit(`${content[0]}`/* , options */));
+				for (let i = 1; i < content.length; i++) {
+					promises.push(response.channel.send(`${content[i]}`));
+				}
+			}
+			return Promise.all(promises);
+		} else {
+			if (Array.isArray(response)) {
+				for (let i = response.length - 1; i > 0; i--) response[i]?.delete();
+				return response[0].edit(options);
+			} else {
+				return response.edit(options);
+			}
+		}
+	}
+
+	/**
+	 * Edits the current response
+	 * @param {string} id - The ID of the channel the response is in ("DM" for direct messages)
+	 * @param {ResponseOptions} [options] - Options for the response
+	 * @return {Promise<Message|Message[]>}
+	 * @private
+	 */
+	editCurrentResponse(id, options) {
+		const { responses, responsePositions } = this;
+		if (typeof responses.get(id) === 'undefined') responses.set(id, []);
+		if (typeof responsePositions.get(id) === 'undefined') responsePositions.set(id, -1);
+		let pos = this.responsePositions.get(id);
+		this.responsePositions.set(id, ++pos);
+		const response = this.responses.get(id);
+		return this.editResponse(response[pos], options);
+	}
+
+	/**
+	 * Responds with a plain message
+	 * @param {StringResolvable} content - Content for the message
+	 * @param {MessageOptions} [options] - Options for the message
+	 * @return {Promise<Message|Message[]>}
+	 */
+	say(content, options) {
+		if (!options && typeof content === 'object' && !Array.isArray(content)) {
+			options = content;
+			content = null;
+		}
+		if (typeof options !== 'object') options = {};
+		return this.respond({ type: 'plain', content, options });
+	}
+
+	/**
+	 * Responds with a direct message
+	 * @param {StringResolvable} content - Content for the message
+	 * @param {MessageOptions} [options] - Options for the message
+	 * @return {Promise<Message|Message[]>}
+	 */
+	direct(content, options) {
+		if (!options && typeof content === 'object' && !Array.isArray(content)) {
+			options = content;
+			content = null;
+		}
+		if (typeof options !== 'object') options = {};
+		return this.respond({ type: 'direct', content, options });
+	}
+
+	/**
+	 * Responds with a code message
+	 * @param {string} lang - Language for the code block
+	 * @param {StringResolvable} content - Content for the message
+	 * @param {MessageOptions} [options] - Options for the message
+	 * @return {Promise<Message|Message[]>}
+	 */
+	code(lang, content, options) {
+		if (!options && typeof content === 'object' && !Array.isArray(content)) {
+			options = content;
+			content = null;
+		}
+		if (typeof options !== 'object') options = {};
+		return this.respond({ type: 'code', content, lang, options });
+	}
+
+	/**
+	 * Responds with an embed
+	 * @param {MessageEmbed|MessageEmbed[]} embed - Embed to send
+	 * @param {StringResolvable} [content] - Content for the message
+	 * @param {MessageOptions} [options] - Options for the message
+	 * @return {Promise<Message|Message[]>}
+	 */
+	embed(embed, content, options) {
+		if (!options && typeof content === 'object' && !Array.isArray(content)) {
+			options = content;
+			content = null;
+		}
+		if (typeof options !== 'object') options = {};
+		options.embeds = Array.isArray(embed) ? embed : [embed];
+		return this.respond({ type: 'plain', content, options });
+	}
+
+	/**
+	 * Responds with a reply + embed
+	 * @param {MessageEmbed|MessageEmbed[]} embed - Embed to send
+	 * @param {StringResolvable} [content] - Content for the message
+	 * @param {MessageOptions} [options] - Options for the message
+	 * @return {Promise<Message|Message[]>}
+	 */
+	replyEmbed(embed, content = '', options) {
+		if (!options && typeof content === 'object' && !Array.isArray(content)) {
+			options = content;
+			content = null;
+		}
+		if (typeof options !== 'object') options = {};
+		options.embeds = Array.isArray(embed) ? embed : [embed];
+		return this.respond({ type: 'reply', content, options });
+	}
+
+	/**
+	 * Finalizes the command message by setting the responses and deleting any remaining prior ones
+	 * @param {?Array<Message|Message[]>} responses - Responses to the message
+	 * @private
+	 */
+	finalize(responses) {
+		const { responsePositions, responses: _responses } = this;
+
+		if (_responses) this.deleteRemainingResponses();
+		_responses.clear();
+		responsePositions.clear();
+
+		if (Array.isArray(responses)) {
+			for (const response of responses) {
+				const channel = (Array.isArray(response) ? response[0] : response).channel;
+				const id = channelIdOrDM(channel);
+				if (!_responses.get(id)) {
+					_responses.set(id, []);
+					responsePositions.set(id, -1);
+				}
+				_responses.get(id).push(response);
+			}
+		} else if (responses) {
+			const id = channelIdOrDM(responses.channel);
+			_responses.set(id, responses);
+			responsePositions.set(id, -1);
+		}
+	}
+
+	/**
+	 * Deletes any prior responses that haven't been updated
+	 * @private
+	 */
+	deleteRemainingResponses() {
+		const { responses: _responses, responsePositions } = this;
+		for (const [id, responses] of _responses) {
+			for (let i = responsePositions.get(id) + 1; i < responses.length; i++) {
+				const response = responses[i];
+				if (Array.isArray(response)) {
+					for (const resp of response) resp?.delete();
+				} else {
+					response?.delete();
+				}
+			}
+		}
+	}
+
+	/**
+	 * Parses an argument string into an array of arguments
+	 * @param {string} argString - The argument string to parse
+	 * @param {number} [argCount] - The number of arguments to extract from the string
+	 * @param {boolean} [allowSingleQuote=true] - Whether or not single quotes should be allowed to wrap arguments,
+	 * in addition to double quotes
+	 * @return {string[]} The array of arguments
+	 */
+	static parseArgs(argString, argCount, allowSingleQuote = true) {
+		const argStringModified = removeSmartQuotes(argString, allowSingleQuote);
+		const re = allowSingleQuote ? /\s*(?:("|')([^]*?)\1|(\S+))\s*/g : /\s*(?:(")([^]*?)"|(\S+))\s*/g;
+		const result = [];
+		let match = [];
+		// Large enough to get all items
+		argCount ||= argStringModified.length;
+		// Get match and push the capture group that is not null to the result
+		while (--argCount && (match = re.exec(argStringModified))) result.push(match[2] || match[3]);
+		// If text remains, push it to the array as-is (except for wrapping quotes, which are removed)
+		if (match && re.lastIndex < argStringModified.length) {
+			const re2 = allowSingleQuote ? /^("|')([^]*)\1$/g : /^(")([^]*)"$/g;
+			result.push(argStringModified.substring(re.lastIndex, argStringModified.length).replace(re2, '$2'));
+		}
+		return result;
+	}
 }
 
-function channelIDOrDM(channel) {
-	if(channel.type !== 'dm') return channel.id;
-	return 'dm';
+/**
+ * @param {string} argString
+ * @param {boolean} [allowSingleQuote=true]
+ */
+function removeSmartQuotes(argString, allowSingleQuote = true) {
+	let replacementArgString = argString;
+	const singleSmartQuote = /[\u2018\u2019]/g;
+	const doubleSmartQuote = /[“”]/g;
+	if (allowSingleQuote) replacementArgString = argString.replace(singleSmartQuote, '\'');
+	return replacementArgString.replace(doubleSmartQuote, '"');
+}
+
+/** @param {TextBasedChannel} channel */
+function channelIdOrDM(channel) {
+	if (channel.type !== 'DM') return channel.id;
+	return 'DM';
+}
+
+module.exports = CommandoMessage;
+
+/**
+ * Resolves a StringResolvable to a string.
+ * @param {StringResolvable} data The string resolvable to resolve
+ * @returns {string}
+ */
+function resolveString(data) {
+	if (typeof data === 'string') return data;
+	if (Array.isArray(data)) return data.join('\n');
+	return String(data);
 }
