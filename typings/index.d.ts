@@ -1480,6 +1480,8 @@ declare module 'pixoll-commando' {
 		mongoDBURI?: string;
 		/** The directory in which your modules are stored in */
 		modulesDir?: string;
+		/** The names of the modules to exclude */
+		excludeModules?: string[];
 	}
 
 	/** Additional data associated with the block */
