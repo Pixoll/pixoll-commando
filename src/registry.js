@@ -182,11 +182,12 @@ class CommandoRegistry {
 	 * @see {@link CommandoRegistry#registerCommands}
 	 */
 	registerCommand(command) {
+		const { client, commands, groups, unknownCommand } = this;
+
 		if (isConstructor(command, Command)) command = new command(client);
 		else if (isConstructor(command.default, Command)) command = new command.default(client);
 		if (!(command instanceof Command)) throw new Error(`Invalid command object to register: ${command}`);
 
-		const { client, commands, groups, unknownCommand } = this;
 		const { name, aliases, groupId, memberName, unknown } = command;
 
 		// Make sure there aren't any conflicts
@@ -271,11 +272,12 @@ class CommandoRegistry {
 	 * @see {@link CommandoRegistry#registerTypes}
 	 */
 	registerType(type) {
+		const { client, types } = this;
+
 		if (isConstructor(type, ArgumentType)) type = new type(client);
 		else if (isConstructor(type.default, ArgumentType)) type = new type.default(client);
 		if (!(type instanceof ArgumentType)) throw new Error(`Invalid type object to register: ${type}`);
 
-		const { client, types } = this;
 		// Make sure there aren't any conflicts
 		if (types.has(type.id)) throw new Error(`An argument type with the ID "${type.id}" is already registered.`);
 
@@ -360,11 +362,12 @@ class CommandoRegistry {
 	 * @param {Command} oldCommand - Old command
 	 */
 	reregisterCommand(command, oldCommand) {
+		const { client, commands, unknownCommand } = this;
+
 		if (isConstructor(command, Command)) command = new command(client);
 		else if (isConstructor(command.default, Command)) command = new command.default(client);
 		if (!(command instanceof Command)) throw new Error(`Invalid command object to register: ${command}`);
 
-		const { client, commands, unknownCommand } = this;
 		const { name, groupId, memberName, unknown } = command;
 
 		if (name !== oldCommand.name) throw new Error('Command name cannot change.');
