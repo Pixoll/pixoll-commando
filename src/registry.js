@@ -128,7 +128,9 @@ class CommandoRegistry {
 	registerGroup(group) {
 		const { client, groups } = this;
 
-		if (!(group instanceof CommandGroup)) {
+		if (isConstructor(group, CommandGroup)) {
+			group = new group(client);
+		} else if (!(group instanceof CommandGroup)) {
 			group = new CommandGroup(client, group);
 		}
 
@@ -180,6 +182,8 @@ class CommandoRegistry {
 	 * @see {@link CommandoRegistry#registerCommands}
 	 */
 	registerCommand(command) {
+		if (isConstructor(command, Command)) command = new command(client);
+		else if (isConstructor(command.default, Command)) command = new command.default(client);
 		if (!(command instanceof Command)) throw new Error(`Invalid command object to register: ${command}`);
 
 		const { client, commands, groups, unknownCommand } = this;
@@ -228,7 +232,8 @@ class CommandoRegistry {
 	registerCommands(commands, ignoreInvalid = false) {
 		if (!Array.isArray(commands)) throw new TypeError('Commands must be an Array.');
 		for (const command of commands) {
-			const valid = command instanceof Command || command.default instanceof Command;
+			const valid = isConstructor(command, Command) || isConstructor(command.default, Command) ||
+				command instanceof Command || command.default instanceof Command;
 			if (ignoreInvalid && !valid) {
 				this.client.emit('warn', `Attempting to register an invalid command object: ${command} skipping.`);
 				continue;
@@ -266,6 +271,8 @@ class CommandoRegistry {
 	 * @see {@link CommandoRegistry#registerTypes}
 	 */
 	registerType(type) {
+		if (isConstructor(type, ArgumentType)) type = new type(client);
+		else if (isConstructor(type.default, ArgumentType)) type = new type.default(client);
 		if (!(type instanceof ArgumentType)) throw new Error(`Invalid type object to register: ${type}`);
 
 		const { client, types } = this;
@@ -296,7 +303,11 @@ class CommandoRegistry {
 	registerTypes(types, ignoreInvalid = false) {
 		if (!Array.isArray(types)) throw new TypeError('Types must be an Array.');
 		for (const type of types) {
-			const valid = type instanceof ArgumentType || type.default instanceof ArgumentType;
+			const valid = isConstructor(type, ArgumentType) ||
+				isConstructor(type.default, ArgumentType) ||
+				type instanceof ArgumentType ||
+				type.default instanceof ArgumentType;
+
 			if (ignoreInvalid && !valid) {
 				this.client.emit('warn', `Attempting to register an invalid argument type object: ${type} skipping.`);
 				continue;
@@ -349,6 +360,8 @@ class CommandoRegistry {
 	 * @param {Command} oldCommand - Old command
 	 */
 	reregisterCommand(command, oldCommand) {
+		if (isConstructor(command, Command)) command = new command(client);
+		else if (isConstructor(command.default, Command)) command = new command.default(client);
 		if (!(command instanceof Command)) throw new Error(`Invalid command object to register: ${command}`);
 
 		const { client, commands, unknownCommand } = this;
@@ -532,6 +545,18 @@ function commandFilterInexact(search) {
 }
 
 module.exports = CommandoRegistry;
+
+function isConstructor(func, _class) {
+	try {
+		new new Proxy(func, {
+			construct: () => Object.prototype
+		})();
+		if (!_class) return true;
+		return func.prototype instanceof _class;
+	} catch (err) {
+		return false;
+	}
+}
 
 const apiCmdOptionType = {
 	SUB_COMMAND: 1,
