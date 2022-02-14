@@ -6,10 +6,10 @@
 	"author": "Schuyler Cebulskie <Gawdl3y@gawdl3y.com> (https://gawdl3y.com/)",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/discordjs/Commando.git"
+		"url": "https://github.com/Pixoll/Commando-v13.git"
 	},
 	"bugs": {
-		"url": "https://github.com/discordjs/Commando/issues"
+		"url": "https://github.com/Pixoll/Commando-v13/issues"
 	},
 	"keywords": [
 		"discord",
@@ -17,7 +17,6 @@
 		"commands"
 	],
 	"scripts": {
-		"test": "yarn run lint && yarn run docs:test",
 		"lint": "eslint src",
 		"lint:fix": "eslint --fix src"
 	},
