@@ -1,4 +1,4 @@
-declare module 'discord.js-commando' {
+declare module 'pixoll-commando' {
 	import {
 		Client, ClientEvents, ClientOptions, Collection, Guild, GuildResolvable, Message, MessageEditOptions, MessageEmbed,
 		MessageOptions, PermissionResolvable, PermissionString, User, UserResolvable, InviteGenerationOptions, GuildMember,
