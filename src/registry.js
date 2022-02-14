@@ -131,7 +131,7 @@ class CommandoRegistry {
 		if (isConstructor(group, CommandGroup)) {
 			group = new group(client);
 		} else if (!(group instanceof CommandGroup)) {
-			group = new CommandGroup(client, group);
+			group = new CommandGroup(client, group.id, group.name, group.guarded);
 		}
 
 		const existing = groups.get(group.id);
