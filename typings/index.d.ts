@@ -830,6 +830,8 @@ declare module 'pixoll-commando' {
 		public database: ClientDatabaseManager;
 		/** The guilds' database manager, mapped by the guilds ids */
 		public databases: Collection<string, GuildDatabaseManager>;
+		/** Object containing all the schemas this client uses. */
+		public databaseSchemas: { [key: string]: Model<unknown> };
 		public guilds: CommandoGuildManager;
 
 		/**

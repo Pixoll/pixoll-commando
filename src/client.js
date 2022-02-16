@@ -5,6 +5,7 @@ const CommandDispatcher = require('./dispatcher');
 const CommandoMessage = require('./extensions/message');
 const CommandoGuild = require('./extensions/guild');
 const ClientDatabaseManager = require('./database/ClientDatabaseManager');
+const databaseSchemas = require('./database/util/schemas');
 
 /**
  * Discord.js Client with a command framework
@@ -90,6 +91,12 @@ class CommandoClient extends Client {
 		 * @type {Collection<string, GuildDatabaseManager>}
 		 */
 		this.databases = new Collection();
+
+		/**
+		 * Object containing all the schemas this client uses.
+		 * @type {{ [key: string]: Model }}
+		 */
+		this.databaseSchemas = databaseSchemas;
 
 		/**
 		 * Internal global command prefix, controlled by the {@link CommandoClient#prefix} getter/setter

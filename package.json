@@ -1,6 +1,6 @@
 {
 	"name": "pixoll-commando",
-	"version": "0.13.7",
+	"version": "0.13.8",
 	"description": "The official command framework for Discord.js",
 	"license": "Apache-2.0",
 	"author": "Schuyler Cebulskie <Gawdl3y@gawdl3y.com> (https://gawdl3y.com/)",
@@ -31,8 +31,8 @@
 		"require-all": "^3.0.0"
 	},
 	"devDependencies": {
-		"@types/node": "^17.0.16",
-		"eslint": "^8.8.0",
+		"@types/node": "^17.0.18",
+		"eslint": "^8.9.0",
 		"typescript": "^4.5.5"
 	},
 	"engines": {
