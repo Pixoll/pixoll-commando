@@ -1444,6 +1444,7 @@ declare module 'pixoll-commando' {
 		];
 		commandStatusChange: [guild: CommandoGuild | null, command: Command, enabled: boolean];
 		commandUnregister: [command: Command];
+		databaseReady: [client: CommandoClient];
 		groupRegister: [group: CommandGroup, registry: CommandoRegistry];
 		groupStatusChange: [guild: CommandoGuild | null, group: CommandGroup, enabled: boolean];
 		guildsReady: [client: CommandoClient];

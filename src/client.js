@@ -144,7 +144,7 @@ class CommandoClient extends Client {
 		}
 
 		// Establishes MongoDB connection and loads all modules
-		this.once('ready', async () =>
+		this.once('guildsReady', async () =>
 			await require('./database/util/modules-loader')(this)
 		);
 	}

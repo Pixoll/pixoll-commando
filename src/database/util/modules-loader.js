@@ -52,4 +52,5 @@ module.exports = async (client) => {
         }
     }
     client.emit('debug', 'Loaded client features');
+    client.emit('databaseReady', client);
 };
