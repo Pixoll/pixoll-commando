@@ -4,18 +4,15 @@ class TimeArgumentType extends ArgumentType {
     constructor(client) {
         super(client, 'time');
 
-        const empty = '(?:\\s+)?';
         this.regex = new RegExp(
-            '([0-2]?\\d(?::[0-5]?\\d)?)?' + // time/hour
-            empty +
-            '([aApP]\\.?[mM]\\.?)?' + // am pm
-            empty +
-            '([+-]\\d\\d?)?$' // time zone offset
+            '(?<time>[0-2]?\\d(?::[0-5]?\\d)?)?\\s*' + // time/hour
+            '(?<ampm>[aApP]\\.?[mM]\\.?)?\\s*' + // am pm
+            '(?<tz>[+-]\\d\\d?)?$' // time zone offset
         );
     }
 
     validate(val) {
-        const date = this._parseDate(val.match(this.regex)?.slice(1, 4), val);
+        const date = this._parseDate(val.match(this.regex), val);
         if (!date) {
             return 'Please enter a valid date format. Use the `help` command for more information.';
         }
@@ -24,39 +21,41 @@ class TimeArgumentType extends ArgumentType {
     }
 
     parse(val) {
-        return this._parseDate(val.match(this.regex)?.slice(1, 4), val);
+        return this._parseDate(val.match(this.regex), val);
     }
 
     /**
      * Parses the string value into a valid Date object, if possible.
-     * @param {string[]} matches Matches given by the regex.
+     * @param {RegExpMatchArray} matches Matches given by the regex.
      * @param {string} val The value to parse.
      * @private
      */
     _parseDate(matches, val) {
         if (val.toLowerCase() === 'now') return new Date();
+        if (!matches || Object.values(matches.groups).filter(v => v).length === 0) return null;
+
+        const { time, ampm: matchAmPm, tz } = matches.groups;
+        const defaultDate = new Date();
     
-        if (!matches) return null;
-        if (matches.length === 0) return null;
-        const defDate = new Date();
-    
-        const dateNums = [defDate.getUTCFullYear(), defDate.getUTCMonth(), defDate.getUTCDate()];
-        const timeNums = matches[0]?.split(':').map((s, i) => {
+        const dateNumbers = [defaultDate.getUTCFullYear(), defaultDate.getUTCMonth(), defaultDate.getUTCDate()];
+
+        const timeNumbers = time?.split(':').map((s, i) => {
             const parsed = parseInt(s);
             if (i !== 0) return parsed;
     
             const tzOffset = new Date().getTimezoneOffset() / 60;
-            const offset = tzOffset + parseInt(matches[2] ?? 0);
+            const offset = tzOffset + parseInt(tz ?? 0);
     
-            const ampm = matches[1]?.toLowerCase().replace(/\./g, '');
+            const ampm = matchAmPm?.toLowerCase().replace(/\./g, '');
             const formatter = ampm ? (ampm === 'am' ? 0 : 12) : 0;
     
             if (formatter === 12 && parsed === 12) {
                 return parsed - offset;
             }
             return parsed + formatter - offset;
-        }) || [defDate.getUTCHours(), defDate.getUTCMinutes()];
-        const arr = [...dateNums, ...timeNums].filter(n => typeof n !== 'undefined');
+        }) || [defaultDate.getUTCHours(), defaultDate.getUTCMinutes()];
+
+        const arr = [...dateNumbers, ...timeNumbers].filter(n => typeof n !== 'undefined');
         const date = new Date(...arr);
         return date;
     }

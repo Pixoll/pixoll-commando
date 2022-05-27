@@ -44,7 +44,7 @@ class GuildDatabaseManager {
 
     /**
      * Initializes the caching of this guild's data
-     * @param {Collection<string, Collection<string, object>>} data The data to assignate to the guild
+     * @param {Collection<string, Collection<string, object>>} data The data to assign to the guild
      * @private
      */
     init(data) {

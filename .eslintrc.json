@@ -14,26 +14,47 @@
     "rules": {
         "comma-dangle": "off",
         "eol-last": "warn",
-        "indent": "off",
+        "indent": [
+            "warn",
+            4,
+            {
+                "SwitchCase": 1
+            }
+        ],
         "max-len": [
-            "error",
+            "warn",
             {
                 "code": 125
             }
         ],
         "multiline-ternary": "off",
-        "no-tabs": [
-            "error",
+        "new-cap": "error",
+        "no-var": "error",
+        "operator-linebreak": "off",
+        "semi": [
+            "warn",
+            "always"
+        ],
+        "space-before-function-paren": "off",
+        "quotes": [
+            "warn",
+            "single"
+        ],
+        "no-unused-vars": "error",
+        "no-multiple-empty-lines": [
+            "warn",
             {
-                "allowIndentationTabs": true
+                "max": 1
             }
         ],
-        "operator-linebreak": "off",
-        "space-before-function-paren": "off",
-        "new-cap": "off",
-        "semi": [
+        "eqeqeq": "error",
+        "prefer-const": "warn",
+        "camelcase": "warn",
+        "no-use-before-define": [
             "error",
-            "always"
+            {
+                "functions": false
+            }
         ]
     }
 }

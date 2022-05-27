@@ -156,7 +156,7 @@ declare module 'pixoll-commando' {
 		/**
 		 * Checks whether a value is considered to be empty.
 		 * This determines whether the default value for an argument should be
-		 * used and changesthe response to the user under certain circumstances.
+		 * used and changes the response to the user under certain circumstances.
 		 * @param val Value to check for emptiness
 		 * @param msg Message that triggered the command
 		 * @param arg Argument the value was obtained from
@@ -418,9 +418,9 @@ declare module 'pixoll-commando' {
 		public reload(): void;
 		/**
 		 * Runs the command
-		 * @param instances The instances the command is being run forr
+		 * @param instances The instances the command is being run for
 		 * @param args The arguments for the command, or the matches from a pattern.
-		 * - If args is specified on the command, thise will be the argument values object.
+		 * - If args is specified on the command, this will be the argument values object.
 		 * - If argsType is single, then only one string will be passed.
 		 * - If multiple, an array of strings will be passed.
 		 * - When fromPattern is true, this is the matches array from the pattern match (see {@link RegExp#exec}).
@@ -715,7 +715,7 @@ declare module 'pixoll-commando' {
 		 */
 		public anyUsage(argString?: string, prefix?: string, user?: User): string;
 		/**
-		 * Initialises the message for a command
+		 * Initializes the message for a command
 		 * @param command Command the message triggers
 		 * @param argString Argument string for the command
 		 * @param patternMatches Command pattern matches (if from a pattern trigger)
@@ -1480,7 +1480,7 @@ declare module 'pixoll-commando' {
 		/** The test guild ID or the slash commands */
 		testGuild?: string;
 		/** The URI which will establish your connection with MongoDB */
-		mongoDBURI?: string;
+		mongoDbURI?: string;
 		/** The directory in which your modules are stored in */
 		modulesDir?: string;
 		/** The names of the modules to exclude */
@@ -1731,9 +1731,9 @@ declare module 'pixoll-commando' {
 
 	/** The slash command information */
 	export interface SlashCommandInfo {
-		/** The name of the command (must be lowercase) - defaults to {@link CommandInfo}'s `name` */
+		/** The name of the command (must be lowercase, 1-32 characters) - defaults to {@link CommandInfo}'s `name` */
 		name?: string;
-		/** A short description of the command - defaults to {@link CommandInfo}'s `description` */
+		/** A short description of the command (1-100 characters) - defaults to {@link CommandInfo}'s `description` */
 		description?: string;
 		/** Options for the command */
 		options?: SlashCommandOptionInfo[];
@@ -1749,7 +1749,7 @@ declare module 'pixoll-commando' {
 		type: SlashCommandOptionType;
 		/** The name of the option */
 		name: string;
-		/** The description of the option - required if `type` is `blah blh blahafuhijkge` */
+		/** The description of the option - required if `type` is `subcommand` or `subcommand-group` */
 		description: string;
 		/**
 		 * Whether the option is required or not
@@ -1758,7 +1758,7 @@ declare module 'pixoll-commando' {
 		required?: boolean;
 		/** The minimum value permitted - only usable if `type` is `integer` or `number` */
 		minValue?: number;
-		/** The maxmum value permitted - only usable if `type` is `integer` or `number` */
+		/** The maximum value permitted - only usable if `type` is `integer` or `number` */
 		maxValue?: number;
 		/** The choices options for the option - only usable if `type` is `string`, `integer` or `number` */
 		choices?: { name: string, value: string | number }[];

@@ -10,11 +10,11 @@ const { removeDashes } = require('../../util');
  */
 module.exports = async (client) => {
     const { database, databases, guilds, options } = client;
-    const { mongoDBURI, modulesDir, excludeModules } = options;
+    const { mongoDbURI, modulesDir, excludeModules } = options;
     const { MONGO_DB_URI } = process.env;
 
-    if (!MONGO_DB_URI && !mongoDBURI) return;
-    await connect(mongoDBURI ?? MONGO_DB_URI, { keepAlive: true });
+    if (!MONGO_DB_URI && !mongoDbURI) return;
+    await connect(mongoDbURI ?? MONGO_DB_URI, { keepAlive: true });
     client.emit('debug', 'Established database connection');
 
     // Caches all the database in memory

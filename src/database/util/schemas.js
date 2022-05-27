@@ -1,6 +1,6 @@
 const { model, Schema } = require('mongoose');
 
-const active = model('active', Schema({
+const active = model('active', new Schema({
     _id: String,
     type: String,
     guild: String,
@@ -10,20 +10,20 @@ const active = model('active', Schema({
     duration: Number
 }, { timestamps: true }), 'active');
 
-const afk = model('afk', Schema({
+const afk = model('afk', new Schema({
     guild: String,
     user: String,
     status: String
 }, { timestamps: true }), 'afk');
 
-const disabled = model('disabled', Schema({
+const disabled = model('disabled', new Schema({
     guild: String,
     global: Boolean,
     commands: Array,
     groups: Array
 }), 'disabled');
 
-const errors = model('errors', Schema({
+const errors = model('errors', new Schema({
     _id: String,
     type: String,
     name: String,
@@ -32,19 +32,19 @@ const errors = model('errors', Schema({
     files: String,
 }, { timestamps: true }));
 
-const faq = model('faq', Schema({
+const faq = model('faq', new Schema({
     question: String,
     answer: String
 }), 'faq');
 
-const mcIp = model('mc-ips', Schema({
+const mcIp = model('mc-ips', new Schema({
     guild: String,
     type: String,
     ip: String,
     port: Number
 }));
 
-const moderations = model('moderations', Schema({
+const moderations = model('moderations', new Schema({
     _id: String,
     type: String,
     guild: String,
@@ -56,7 +56,7 @@ const moderations = model('moderations', Schema({
     duration: String
 }, { timestamps: true }));
 
-const modules = model('modules', Schema({
+const modules = model('modules', new Schema({
     guild: String,
     // chatFilter: Boolean,
     // scamDetector: Boolean,
@@ -82,13 +82,13 @@ const modules = model('modules', Schema({
     }
 }));
 
-const prefixes = model('prefixes', Schema({
+const prefixes = model('prefixes', new Schema({
     global: Boolean,
     guild: String,
     prefix: String
 }));
 
-const polls = model('polls', Schema({
+const polls = model('polls', new Schema({
     guild: String,
     channel: String,
     message: String,
@@ -96,7 +96,7 @@ const polls = model('polls', Schema({
     duration: Number
 }));
 
-const reactionRoles = model('reaction-roles', Schema({
+const reactionRoles = model('reaction-roles', new Schema({
     guild: String,
     channel: String,
     message: String,
@@ -104,7 +104,7 @@ const reactionRoles = model('reaction-roles', Schema({
     emojis: Array
 }));
 
-const reminders = model('reminders', Schema({
+const reminders = model('reminders', new Schema({
     user: String,
     reminder: String,
     remindAt: Number,
@@ -113,12 +113,12 @@ const reminders = model('reminders', Schema({
     channel: String
 }, { timestamps: true }));
 
-const rules = model('rules', Schema({
+const rules = model('rules', new Schema({
     guild: String,
     rules: Array
 }));
 
-const setup = model('setup', Schema({
+const setup = model('setup', new Schema({
     guild: String,
     logsChannel: String,
     memberRole: String,
@@ -127,18 +127,18 @@ const setup = model('setup', Schema({
     lockChannels: Array
 }), 'setup');
 
-const stickyRoles = model('sticky-roles', Schema({
+const stickyRoles = model('sticky-roles', new Schema({
     guild: String,
     user: String,
     roles: Array
 }));
 
-const todo = model('todo', Schema({
+const todo = model('todo', new Schema({
     user: String,
     list: Array
 }), 'todo');
 
-const welcome = model('welcome', Schema({
+const welcome = model('welcome', new Schema({
     guild: String,
     channel: String,
     message: String

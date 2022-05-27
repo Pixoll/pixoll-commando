@@ -43,6 +43,7 @@ class DatabaseManager {
             const updated = await this.update(existing, doc);
             return updated;
         }
+        // eslint-disable-next-line new-cap
         const added = await new schema(doc).save();
         this.cache.set(`${added._id}`, added);
         return added;
