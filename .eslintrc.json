@@ -12,8 +12,12 @@
         "*.d.ts"
     ],
     "rules": {
-        "comma-dangle": "off",
-        "eol-last": "warn",
+        "comma-dangle": [
+            "off"
+        ],
+        "eol-last": [
+            "warn"
+        ],
         "indent": [
             "warn",
             4,
@@ -27,34 +31,80 @@
                 "code": 125
             }
         ],
-        "multiline-ternary": "off",
-        "new-cap": "error",
-        "no-var": "error",
-        "operator-linebreak": "off",
-        "semi": [
-            "warn",
-            "always"
+        "multiline-ternary": [
+            "off"
         ],
-        "space-before-function-paren": "off",
+        "new-cap": [
+            "error"
+        ],
+        "no-var": [
+            "error"
+        ],
+        "operator-linebreak": [
+            "error",
+            "before",
+            {
+                "overrides": {
+                    "?": "after",
+                    ":": "after"
+                }
+            }
+        ],
+        "semi": [
+            "error"
+        ],
+        "space-before-function-paren": [
+            "off"
+        ],
         "quotes": [
             "warn",
             "single"
         ],
-        "no-unused-vars": "error",
+        "no-unused-vars": [
+            "error"
+        ],
         "no-multiple-empty-lines": [
             "warn",
             {
                 "max": 1
             }
         ],
-        "eqeqeq": "error",
-        "prefer-const": "warn",
-        "camelcase": "warn",
+        "eqeqeq": [
+            "error"
+        ],
+        "prefer-const": [
+            "error"
+        ],
+        "camelcase": [
+            "warn"
+        ],
         "no-use-before-define": [
             "error",
             {
                 "functions": false
             }
         ]
-    }
+    },
+    "overrides": [
+        {
+            "files": [
+                "*.ts"
+            ],
+            "extends": [
+                "eslint:recommended",
+                "plugin:@typescript-eslint/recommended"
+            ],
+            "parser": "@typescript-eslint/parser",
+            "parserOptions": {
+                "ecmaVersion": "latest",
+                "sourceType": "module"
+            },
+            "plugins": [
+                "@typescript-eslint"
+            ],
+            "rules": {
+                "@typescript-eslint/no-non-null-assertion": "off"
+            }
+        }
+    ]
 }
