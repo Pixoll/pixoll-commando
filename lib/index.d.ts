@@ -14,4 +14,4 @@ export { default as ClientDatabaseManager } from './database/ClientDatabaseManag
 export { default as DatabaseManager } from './database/DatabaseManager';
 export { default as GuildDatabaseManager } from './database/GuildDatabaseManager';
 export * as Util from './util';
-export declare const version = "0.14.0";
+export { version } from '../package.json';
