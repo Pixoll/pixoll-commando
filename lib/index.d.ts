@@ -13,5 +13,5 @@ export { default as CommandFormatError } from './errors/command-format';
 export { default as ClientDatabaseManager } from './database/ClientDatabaseManager';
 export { default as DatabaseManager } from './database/DatabaseManager';
 export { default as GuildDatabaseManager } from './database/GuildDatabaseManager';
-export * as Util from './util';
+export { default as Util } from './util';
 export { version } from '../package.json';

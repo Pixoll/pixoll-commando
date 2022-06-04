@@ -1,6 +1,6 @@
 import ArgumentType from './base';
-import { disambiguation } from '../util';
-import { GuildBasedChannel, StageChannel, Util } from 'discord.js';
+import Util from '../util';
+import { GuildBasedChannel, StageChannel, Util as DjsUtil } from 'discord.js';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 import Argument from '../commands/argument';
@@ -41,9 +41,7 @@ export default class StageChannelArgumentType extends ArgumentType {
         if (exactChannels.size > 0) channels = exactChannels;
 
         return channels.size <= 15 ?
-            `${disambiguation(
-                channels.map(chan => Util.escapeMarkdown(chan.name)), 'stage channels', null
-            )}\n` :
+            `${Util.disambiguation(channels.map(chan => DjsUtil.escapeMarkdown(chan.name)), 'stage channels')}\n` :
             'Multiple stage channels found. Please be more specific.';
     }
 

@@ -1,6 +1,6 @@
 import ArgumentType from './base';
-import { disambiguation } from '../util';
-import { GuildBasedChannel, Util, VoiceChannel } from 'discord.js';
+import Util from '../util';
+import { GuildBasedChannel, Util as DjsUtil, VoiceChannel } from 'discord.js';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 import Argument from '../commands/argument';
@@ -41,9 +41,7 @@ export default class VoiceChannelArgumentType extends ArgumentType {
         if (exactChannels.size > 0) channels = exactChannels;
 
         return channels.size <= 15 ?
-            `${disambiguation(
-                channels.map(chan => Util.escapeMarkdown(chan.name)), 'voice channels', null
-            )}\n` :
+            `${Util.disambiguation(channels.map(chan => DjsUtil.escapeMarkdown(chan.name)), 'voice channels')}\n` :
             'Multiple voice channels found. Please be more specific.';
     }
 

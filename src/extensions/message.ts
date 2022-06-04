@@ -1,11 +1,12 @@
 import {
-    Util, Message, MessageEmbed, User, MessageOptions, TextBasedChannel, MessageButton, MessageActionRow, MessageEditOptions
+    Util as DjsUtil, Message, MessageEmbed, User, MessageOptions, TextBasedChannel, MessageButton, MessageActionRow,
+    MessageEditOptions
 } from 'discord.js';
 import { oneLine, stripIndent } from 'common-tags';
 import Command from '../commands/base';
 import FriendlyError from '../errors/friendly';
 import CommandFormatError from '../errors/command-format';
-import { probability, noReplyInDMs } from '../util';
+import Util from '../util';
 import CommandoClient from '../client';
 import CommandoGuild from './guild';
 
@@ -232,13 +233,11 @@ export default class CommandoMessage extends Message {
             if (collResult.cancelled) {
                 if (collResult.prompts.length === 0 || collResult.cancelled === 'promptLimit') {
                     const err = new CommandFormatError(this);
-                    // @ts-expect-error: this is not assignable to Message<boolean>
-                    return this.reply({ content: err.message, ...noReplyInDMs(this) });
+                    return this.reply({ content: err.message, ...Util.noReplyPingInDMs(this) });
                 }
 
                 client.emit('commandCancel', command!, collResult.cancelled, this, collResult);
-                // @ts-expect-error: this is not assignable to Message<boolean>
-                return this.reply({ content: 'Cancelled command.', ...noReplyInDMs(this) });
+                return this.reply({ content: 'Cancelled command.', ...Util.noReplyPingInDMs(this) });
             }
             args = collResult.values;
         }
@@ -268,7 +267,7 @@ export default class CommandoMessage extends Message {
                 `);
             }
 
-            if (probability(2)) {
+            if (Util.probability(2)) {
                 const { user, botInvite } = client;
                 const embed = new MessageEmbed()
                     .setColor('#4c9f4c')
@@ -308,9 +307,9 @@ export default class CommandoMessage extends Message {
      * Responds to the command message
      * @param options - Options for the response
      */
-    protected respond(
-        { type = 'reply', content = '', options = {}, lang = '', fromEdit = false }: ResponseOptions = {}
-    ): Promise<CommandoMessageResponse> {
+    protected respond(options: ResponseOptions = {}): Promise<CommandoMessageResponse> {
+        let { type = 'reply' } = options;
+        const { content = '', options: msgOptions = {}, lang = '', fromEdit = false } = options;
         const { responses, channel, guild, client, author } = this;
         const shouldEdit = responses && !fromEdit;
 
@@ -321,26 +320,25 @@ export default class CommandoMessage extends Message {
             }
         }
 
-        if (content) options.content = resolveString(content);
-        // @ts-expect-error: this is not assignable to Message<boolean>
-        Object.assign(options, noReplyInDMs(this));
+        if (content) msgOptions.content = resolveString(content);
+        Object.assign(msgOptions, Util.noReplyPingInDMs(this));
 
         switch (type) {
             case 'plain':
-                if (!shouldEdit) return channel.send(options);
-                return this.editCurrentResponse(channelIdOrDM(channel), { type, options });
+                if (!shouldEdit) return channel.send(msgOptions);
+                return this.editCurrentResponse(channelIdOrDM(channel), { type, options: msgOptions });
             case 'reply':
-                if (!shouldEdit) return this.reply(options);
-                return this.editCurrentResponse(channelIdOrDM(channel), { type, options });
+                if (!shouldEdit) return this.reply(msgOptions);
+                return this.editCurrentResponse(channelIdOrDM(channel), { type, options: msgOptions });
             case 'direct':
-                if (!shouldEdit) return author.send(options);
-                return this.editCurrentResponse('DM', { type, options });
+                if (!shouldEdit) return author.send(msgOptions);
+                return this.editCurrentResponse('DM', { type, options: msgOptions });
             case 'code':
-                options.content = `\`\`\`${lang}\n${Util.escapeMarkdown(
+                msgOptions.content = `\`\`\`${lang}\n${DjsUtil.escapeMarkdown(
                     content as string, { codeBlockContent: true }
                 )}\n\`\`\``;
-                if (!shouldEdit) return channel.send(options);
-                return this.editCurrentResponse(channelIdOrDM(channel), { type, options });
+                if (!shouldEdit) return channel.send(msgOptions);
+                return this.editCurrentResponse(channelIdOrDM(channel), { type, options: msgOptions });
             default:
                 throw new RangeError(`Unknown response type "${type}".`);
         }
@@ -352,11 +350,12 @@ export default class CommandoMessage extends Message {
      * @param options - Options for the response
      */
     protected editResponse(
-        response?: CommandoMessageResponse, { type, options }: ResponseOptions = {}
+        response?: CommandoMessageResponse, options: ResponseOptions = {}
     ): Promise<CommandoMessageResponse> {
-        if (!response) return this.respond({ type, options, fromEdit: true });
+        const { type, options: msgOptions = {} } = options;
+        if (!response) return this.respond({ type, options: msgOptions, fromEdit: true });
 
-        const { content } = options!;
+        const { content } = msgOptions;
         if (Array.isArray(content)) {
             const promises = [];
             if (Array.isArray(response)) {
@@ -375,9 +374,9 @@ export default class CommandoMessage extends Message {
 
         if (Array.isArray(response)) {
             for (let i = response.length - 1; i > 0; i--) response[i]?.delete();
-            return response[0].edit(options as MessageEditOptions);
+            return response[0].edit(msgOptions as MessageEditOptions);
         }
-        return response.edit(options as MessageEditOptions);
+        return response.edit(msgOptions as MessageEditOptions);
 
     }
 

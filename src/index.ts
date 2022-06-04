@@ -13,7 +13,7 @@ export { default as CommandFormatError } from './errors/command-format';
 export { default as ClientDatabaseManager } from './database/ClientDatabaseManager';
 export { default as DatabaseManager } from './database/DatabaseManager';
 export { default as GuildDatabaseManager } from './database/GuildDatabaseManager';
-export * as Util from './util';
+export { default as Util } from './util';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: @ts-expect-error throws "unused directive". File is in program as specified under 'files' in tsconfig.json
 export { version } from '../package.json';

@@ -5,7 +5,7 @@ import {
 } from 'discord.js';
 import path from 'path';
 import ArgumentCollector, { ArgumentCollectorResult } from './collector';
-import { permissions, noReplyInDMs } from '../util';
+import Util from '../util';
 import CommandoClient from '../client';
 import CommandGroup from './group';
 import { CommandoInteraction } from '../dispatcher';
@@ -448,8 +448,8 @@ export default abstract class Command {
      * @param args - The arguments for the command, or the matches from a pattern.
      * If args is specified on the command, this will be the argument values object. If argsType is single, then only
      * one string will be passed. If multiple, an array of strings will be passed. When fromPattern is true, this is the
-     * matches array from the pattern match
-     * (see [RegExp#exec](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec)).
+     * matches array from the pattern match (see
+     * {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec RegExp#exec}).
      * @param fromPattern - Whether or not the command is being run from a pattern match
      * @param result - Result from obtaining the arguments from the collector (if applicable)
      * @return {Promise<?Message|?Array<Message>>}
@@ -504,7 +504,7 @@ export default abstract class Command {
             case 'userPermissions':
                 return replyAll({ message, interaction }, embed(
                     'You are missing the following permissions:',
-                    missing!.map(perm => `\`${permissions[perm]}\``).join(', ')
+                    missing!.map(perm => `\`${Util.permissions[perm]}\``).join(', ')
                 ));
             case 'modPermissions':
                 return replyAll({ message, interaction }, embed(
@@ -514,7 +514,7 @@ export default abstract class Command {
             case 'clientPermissions':
                 return replyAll({ message, interaction }, embed(
                     'The bot is missing the following permissions:',
-                    missing!.map(perm => `\`${permissions[perm]}\``).join(', ')
+                    missing!.map(perm => `\`${Util.permissions[perm]}\``).join(', ')
                 ));
             case 'throttling':
                 return replyAll({ message, interaction }, embed(
@@ -730,7 +730,7 @@ export default abstract class Command {
                 throw new TypeError('Command clientPermissions must be an Array of permission key strings.');
             }
             for (const perm of info.clientPermissions) {
-                if (!permissions[perm]) throw new RangeError(`Invalid command clientPermission: ${perm}`);
+                if (!Util.permissions[perm]) throw new RangeError(`Invalid command clientPermission: ${perm}`);
             }
         }
         if ('userPermissions' in info) {
@@ -738,7 +738,7 @@ export default abstract class Command {
                 throw new TypeError('Command userPermissions must be an Array of permission key strings.');
             }
             for (const perm of info.userPermissions) {
-                if (!permissions[perm]) throw new RangeError(`Invalid command userPermission: ${perm}`);
+                if (!Util.permissions[perm]) throw new RangeError(`Invalid command userPermission: ${perm}`);
             }
         }
         if ('throttling' in info) {
@@ -917,8 +917,7 @@ async function replyAll(
         return await interaction.reply(options).catch(() => null);
     }
     if (message) {
-        // @ts-expect-error: CommandoMessage not assignable to Message<boolean>
-        return await message.reply({ ...options, ...noReplyInDMs(message) }).catch(() => null);
+        return await message.reply({ ...options, ...Util.noReplyPingInDMs(message) }).catch(() => null);
     }
     return null;
 }

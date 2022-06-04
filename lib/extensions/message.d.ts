@@ -79,13 +79,13 @@ export default class CommandoMessage extends Message {
      * Responds to the command message
      * @param options - Options for the response
      */
-    protected respond({ type, content, options, lang, fromEdit }?: ResponseOptions): Promise<CommandoMessageResponse>;
+    protected respond(options?: ResponseOptions): Promise<CommandoMessageResponse>;
     /**
      * Edits a response to the command message
      * @param response - The response message(s) to edit
      * @param options - Options for the response
      */
-    protected editResponse(response?: CommandoMessageResponse, { type, options }?: ResponseOptions): Promise<CommandoMessageResponse>;
+    protected editResponse(response?: CommandoMessageResponse, options?: ResponseOptions): Promise<CommandoMessageResponse>;
     /**
      * Edits the current response
      * @param id - The ID of the channel the response is in ("DM" for direct messages)

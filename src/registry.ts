@@ -8,7 +8,7 @@ import Command, { CommandInstances } from './commands/base';
 import CommandGroup from './commands/group';
 import CommandoMessage from './extensions/message';
 import ArgumentType from './types/base';
-import { removeDashes } from './util';
+import Util from './util';
 
 declare function require(id: string): unknown;
 
@@ -193,18 +193,20 @@ export default class CommandoRegistry {
 
             const current = await guild.commands.fetch();
             const [updated, removed] = getUpdatedSlashCommands(current.toJSON(), testCommands);
+            const promises: Promise<ApplicationCommand | null>[] = [];
             for (const command of updated) {
                 const match = current.find(cmd => cmd.name === command.name);
                 if (match) {
-                    await guild.commands.edit(match, command);
+                    promises.push(guild.commands.edit(match, command));
                 } else {
-                    await guild.commands.create(command);
+                    promises.push(guild.commands.create(command));
                 }
             }
             for (const command of removed) {
                 const match = current.find(cmd => cmd.name === command.name);
-                if (match) await guild.commands.delete(match);
+                if (match) promises.push(guild.commands.delete(match));
             }
+            await Promise.all(promises);
 
             client.emit('debug', `Loaded ${testCommands.length} guild slash commands`);
         }
@@ -215,18 +217,20 @@ export default class CommandoRegistry {
 
         const current = await application!.commands.fetch();
         const [updated, removed] = getUpdatedSlashCommands(current.toJSON(), slashCommands);
+        const promises: Promise<ApplicationCommand | null>[] = [];
         for (const command of updated) {
             const match = current.find(cmd => cmd.name === command.name);
             if (match) {
-                await application!.commands.edit(match, command);
+                promises.push(application!.commands.edit(match, command));
             } else {
-                await application!.commands.create(command);
+                promises.push(application!.commands.create(command));
             }
         }
         for (const command of removed) {
             const match = current.find(cmd => cmd.name === command.name);
-            if (match) await application!.commands.delete(match);
+            if (match) promises.push(application!.commands.delete(match));
         }
+        await Promise.all(promises);
 
         client.emit('debug', `Loaded ${slashCommands.length} public slash commands`);
     }
@@ -450,7 +454,7 @@ export default class CommandoRegistry {
             .filter(k => k !== 'base' && k !== 'union')
             .reduce((obj, k) => {
                 // @ts-expect-error: no string index
-                obj[removeDashes(k)] = true;
+                obj[Util.removeDashes(k)] = true;
                 return obj;
             }, {} as DefaultTypesOptions);
         Object.assign(defaultTypes, types);

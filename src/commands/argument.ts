@@ -1,10 +1,10 @@
 import { oneLine, stripIndent } from 'common-tags';
-import { Util, MessageEmbed, Message } from 'discord.js';
+import { Util as DjsUtil, MessageEmbed, Message } from 'discord.js';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 import ArgumentType from '../types/base';
 import ArgumentUnionType from '../types/union';
-import { isPromise } from '../util';
+import Util from '../util';
 
 type ArgumentCheckerParams = [
     val: string,
@@ -333,7 +333,7 @@ export default class Argument {
 
                 // Prompt the user for a new value
                 if (val) {
-                    const escaped = Util.escapeMarkdown(val).replace(/@/g, '@\u200b');
+                    const escaped = DjsUtil.escapeMarkdown(val).replace(/@/g, '@\u200b');
 
                     const prompt = new MessageEmbed()
                         .setColor('RED')
@@ -446,7 +446,7 @@ export default class Argument {
             this.type!.validate(val, originalMsg, this, currentMsg);
 
         if (!valid || typeof valid === 'string') return this.error || valid;
-        if (isPromise(valid)) {
+        if (Util.isPromise(valid)) {
             return valid.then(vld => {
                 const arr = typeof vld === 'string' ? vld.split('\n') : null;
                 if (arr) {

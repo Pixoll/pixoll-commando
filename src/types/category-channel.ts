@@ -1,6 +1,6 @@
 import ArgumentType from './base';
-import { disambiguation } from '../util';
-import { CategoryChannel, GuildBasedChannel, Util } from 'discord.js';
+import Util from '../util';
+import { CategoryChannel, GuildBasedChannel, Util as DjsUtil } from 'discord.js';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 import Argument from '../commands/argument';
@@ -44,9 +44,7 @@ export default class CategoryChannelArgumentType extends ArgumentType {
         if (exactChannels.size > 0) channels = exactChannels;
 
         return channels.size <= 15 ?
-            `${disambiguation(
-                channels.map(chan => Util.escapeMarkdown(chan.name)), 'categories', null
-            )}\n` :
+            `${Util.disambiguation(channels.map(chan => DjsUtil.escapeMarkdown(chan.name)), 'categories')}\n` :
             'Multiple categories found. Please be more specific.';
     }
 

@@ -1,6 +1,6 @@
 import ArgumentType from './base';
-import { disambiguation } from '../util';
-import { GuildBasedChannel, Util } from 'discord.js';
+import Util from '../util';
+import { GuildBasedChannel, Util as DjsUtil } from 'discord.js';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 import Argument from '../commands/argument';
@@ -30,7 +30,7 @@ export default class ChannelArgumentType extends ArgumentType {
         if (exactChannels.size > 0) channels = exactChannels;
 
         return channels.size <= 15 ?
-            `${disambiguation(channels.map(chan => Util.escapeMarkdown(chan.name)), 'channels', null)}\n` :
+            `${Util.disambiguation(channels.map(chan => DjsUtil.escapeMarkdown(chan.name)), 'channels')}\n` :
             'Multiple channels found. Please be more specific.';
     }
 

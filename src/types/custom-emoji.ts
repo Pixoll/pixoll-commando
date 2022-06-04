@@ -1,6 +1,6 @@
 import ArgumentType from './base';
-import { disambiguation } from '../util';
-import { GuildEmoji, Util } from 'discord.js';
+import Util from '../util';
+import { GuildEmoji, Util as DjsUtil } from 'discord.js';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 
@@ -25,7 +25,7 @@ export default class CustomEmojiArgumentType extends ArgumentType {
         if (exactEmojis.size > 0) emojis = exactEmojis;
 
         return emojis.size <= 15 ?
-            `${disambiguation(emojis.map(emoji => Util.escapeMarkdown(emoji.name!)), 'emojis', null)}\n` :
+            `${Util.disambiguation(emojis.map(emoji => DjsUtil.escapeMarkdown(emoji.name!)), 'emojis')}\n` :
             'Multiple emojis found. Please be more specific.';
     }
 

@@ -1,6 +1,6 @@
 import ArgumentType from './base';
-import { disambiguation } from '../util';
-import { Util } from 'discord.js';
+import Util from '../util';
+import { Util as DjsUtil } from 'discord.js';
 import CommandoClient from '../client';
 import CommandGroup from '../commands/group';
 
@@ -14,7 +14,7 @@ export default class GroupArgumentType extends ArgumentType {
         if (groups.length === 1) return true;
         if (groups.length === 0) return false;
         return groups.length <= 15 ?
-            `${disambiguation(groups.map(grp => Util.escapeMarkdown(grp.name)), 'groups', null)}\n` :
+            `${Util.disambiguation(groups.map(grp => DjsUtil.escapeMarkdown(grp.name)), 'groups')}\n` :
             'Multiple groups found. Please be more specific.';
     }
 

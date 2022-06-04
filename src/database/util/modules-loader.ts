@@ -2,7 +2,7 @@ import { Collection } from 'discord.js';
 import { connect } from 'mongoose';
 import requireAll from 'require-all';
 import * as schemas from './schemas';
-import { removeDashes } from '../../util';
+import Util from '../../util';
 import CommandoClient from '../../client';
 
 type Module = (client: CommandoClient) => Promise<unknown>;
@@ -28,7 +28,7 @@ export default async function modulesLoader(client: CommandoClient): Promise<voi
     const data = new Collection() as Collection<string, Collection<string, DefaultDocument>>;
     for (const schema of Object.values(schemas)) {
         const objs = await schema.find({});
-        const name = removeDashes(schema.collection.name);
+        const name = Util.removeDashes(schema.collection.name);
         const entries = objs.map(obj => ([`${obj._id}`, obj])) as [string, DefaultDocument][];
         const coll = new Collection(entries);
         data.set(name, coll);

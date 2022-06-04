@@ -9,7 +9,7 @@ import FriendlyError from './errors/friendly';
 import CommandoGuild from './extensions/guild';
 import CommandoMessage from './extensions/message';
 import CommandoRegistry from './registry';
-import { escapeRegex, removeDashes, isPromise, probability } from './util';
+import Util from './util';
 
 interface Inhibition {
     /** Identifier for the reason the command is being blocked */
@@ -287,7 +287,7 @@ export default class CommandDispatcher {
             client.emit('commandRun', command, promise, { interaction }, args);
             await promise;
 
-            if (probability(2)) {
+            if (Util.probability(2)) {
                 const { user: clientUser, botInvite } = client;
                 const embed = new MessageEmbed()
                     .setColor('#4c9f4c')
@@ -359,7 +359,7 @@ export default class CommandDispatcher {
                 const valid = typeof inhibit.reason === 'string'
                     && (typeof inhibit.response === 'undefined'
                         || inhibit.response === null
-                        || isPromise(inhibit.response)
+                        || Util.isPromise(inhibit.response)
                     );
                 if (!valid) {
                     throw new TypeError(
@@ -464,7 +464,7 @@ export default class CommandDispatcher {
 
         let pattern: RegExp;
         if (prefix) {
-            const escapedPrefix = escapeRegex(prefix);
+            const escapedPrefix = Util.escapeRegex(prefix);
             pattern = new RegExp(
                 `^(<@!?${id}>\\s+(?:${escapedPrefix}\\s*)?|${escapedPrefix}\\s*)([^\\s]+)`, 'i'
             );
@@ -483,7 +483,7 @@ function parseSlashArgs(
     if (name && (value === null || typeof value === 'undefined')) {
         obj.subCommand = name;
     } else {
-        name = removeDashes(name);
+        name = Util.removeDashes(name);
         switch (type) {
             case 'BOOLEAN':
             case 'INTEGER':
