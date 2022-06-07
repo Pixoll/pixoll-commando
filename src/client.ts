@@ -16,6 +16,7 @@ import Command, { CommandBlockData, CommandBlockReason, CommandInstances } from 
 import CommandGroup from './commands/group';
 import ArgumentType from './types/base';
 import GuildDatabaseManager from './database/GuildDatabaseManager';
+import Util from './util';
 
 interface CommandoClientOptions extends ClientOptions {
     /**
@@ -263,32 +264,11 @@ export default class CommandoClient extends Client {
 
     /**
      * Parses a {@link Guild} instance into a {@link CommandoGuild}.
-     * @param guild - The {@link Guild} to parse
+     * @param guild - The Guild to parse
      */
     protected parseGuild(guild: Guild): void {
         const commandoGuild = new CommandoGuild(this, guild);
-        Object.assign(guild, commandoGuild);
-        // @ts-expect-error: Prop. does not exist in Guild
-        guild.setCommandEnabled = commandoGuild.setCommandEnabled;
-        // @ts-expect-error: Prop. does not exist in Guild
-        guild.isCommandEnabled = commandoGuild.isCommandEnabled;
-        // @ts-expect-error: Prop. does not exist in Guild
-        guild.setGroupEnabled = commandoGuild.setGroupEnabled;
-        // @ts-expect-error: Prop. does not exist in Guild
-        guild.isGroupEnabled = commandoGuild.isGroupEnabled;
-        // @ts-expect-error: Prop. does not exist in Guild
-        guild.commandUsage = commandoGuild.commandUsage;
-        Object.defineProperty(guild, 'prefix', {
-            get() {
-                if (this._prefix === null) return this.client.prefix;
-                return this._prefix;
-            },
-            set(prefix) {
-                this._prefix = prefix;
-                this.client.emit('commandPrefixChange', this, this._prefix);
-            }
-        });
-        // @ts-expect-error: Guild is not assignable to CommandoGuild
-        this.emit('commandoGuildCreate', guild);
+        const mutatedGuild = Util.mutateObjectInstance(guild, commandoGuild);
+        this.emit('commandoGuildCreate', mutatedGuild);
     }
 }

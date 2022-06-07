@@ -177,6 +177,24 @@ export default class Util extends null {
     }
 
     /**
+     * **Extremely hacky method. Use at own risk.**
+     * Will mutate the first object into an instance of the new one, assigning all of its properties, accessors and methods.
+     * @param obj - The object to mutate.
+     * @param newObj - The data to assign.
+     */
+    static mutateObjectInstance<T extends object>(obj: object, newObj: T): T {
+        Object.assign(obj, newObj);
+        const { prototype } = newObj.constructor;
+        for (const prop of Object.getOwnPropertyNames(prototype)) {
+            if (prop === 'constructor') continue;
+            const propData = Object.getOwnPropertyDescriptor(prototype, prop)!;
+            Object.defineProperty(obj, prop, propData);
+        }
+        Object.setPrototypeOf(obj, prototype);
+        return obj as T;
+    }
+
+    /**
      * Verifies the provided data is a string, otherwise throws provided error.
      * @param data The string resolvable to resolve
      * @param error The Error constructor to instantiate. Defaults to Error

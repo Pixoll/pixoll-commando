@@ -132,7 +132,7 @@ export default class CommandoClient extends Client {
     protected parseGuilds(): void;
     /**
      * Parses a {@link Guild} instance into a {@link CommandoGuild}.
-     * @param guild - The {@link Guild} to parse
+     * @param guild - The Guild to parse
      */
     protected parseGuild(guild: Guild): void;
 }
