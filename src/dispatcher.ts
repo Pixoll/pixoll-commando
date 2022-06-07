@@ -201,8 +201,8 @@ export default class CommandDispatcher {
         const { groupId, memberName } = command;
 
         // @ts-expect-error: some TextBasedChannel sub-types are not assignable to GuildChannelResolvable
-        const missingSlash = guild?.me!.permissionsIn(channel).missing('USE_APPLICATION_COMMANDS');
-        if (missingSlash?.length !== 0) {
+        const missingSlash = guild?.me!.permissionsIn(channel).missing('USE_APPLICATION_COMMANDS') || [];
+        if (missingSlash.length !== 0) {
             return await user.send(stripIndent`
                 It seems like I cannot **Use Application Commands** in this channel: ${channel.toString()}
                 Please try in another channel, or contact the admins of **${guild!.name}** to solve this issue.
