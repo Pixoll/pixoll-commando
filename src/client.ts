@@ -35,7 +35,7 @@ interface CommandoClientOptions extends ClientOptions {
      */
     nonCommandEditable?: boolean;
     /** ID of the bot owner's Discord user, or multiple ids */
-    owner?: string | string[] | Set<string>;
+    owner?: Set<string> | string[] | string;
     /** Invite URL to the bot's support server */
     serverInvite?: string;
     /** Invite options for the bot */
@@ -52,7 +52,7 @@ interface CommandoClientOptions extends ClientOptions {
 
 declare class CommandoGuildManager extends CachedManager<Snowflake, CommandoGuild, GuildResolvable> {
     public create(name: string, options?: GuildCreateOptions): Promise<CommandoGuild>;
-    public fetch(options: Snowflake | FetchGuildOptions): Promise<CommandoGuild>;
+    public fetch(options: FetchGuildOptions | Snowflake): Promise<CommandoGuild>;
     public fetch(options?: FetchGuildsOptions): Promise<Collection<Snowflake, CommandoGuild>>;
 }
 
@@ -60,7 +60,7 @@ interface CommandoClientEvents extends ClientEvents {
     commandBlock: [instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData];
     commandCancel: [command: Command, reason: string, message: CommandoMessage, result?: ArgumentCollectorResult];
     commandError: [
-        command: Command, error: Error, instances: CommandInstances, args: object | string | string[],
+        command: Command, error: Error, instances: CommandInstances, args: string[] | object | string,
         fromPattern: boolean, result?: ArgumentCollectorResult
     ];
     commandoGuildCreate: [guild: CommandoGuild];
@@ -71,7 +71,7 @@ interface CommandoClientEvents extends ClientEvents {
     commandReregister: [newCommand: Command, oldCommand: Command];
     commandRun: [
         command: Command, promise: Promise<unknown>, instances: CommandInstances,
-        args: object | string | string[], fromPattern?: boolean, result?: ArgumentCollectorResult | null
+        args: string[] | object | string, fromPattern?: boolean, result?: ArgumentCollectorResult | null
     ];
     commandStatusChange: [guild: CommandoGuild | null, command: Command, enabled: boolean];
     commandUnregister: [command: Command];
@@ -151,7 +151,7 @@ export default class CommandoClient extends Client {
         this.on('guildCreate', this.parseGuild);
 
         // Set up message command handling
-        const catchErr = (err: unknown) => {
+        const catchErr = (err: unknown): void => {
             this.emit('error', err as Error);
         };
         this.on('messageCreate', async message => {
@@ -224,7 +224,7 @@ export default class CommandoClient extends Client {
      * {@link CommandoClient#isOwner}.</info>
      * @readonly
      */
-    public get owners(): null | User[] {
+    public get owners(): User[] | null {
         const { options, users } = this;
         const { cache } = users;
         const { owner } = options;

@@ -14,7 +14,7 @@ declare function require(id: string): unknown;
 
 interface RequireAllOptions {
     dirname: string;
-    filter?: ((name: string, path: string) => string | false) | RegExp;
+    filter?: RegExp | ((name: string, path: string) => string | false);
     excludeDirs?: RegExp;
     map?: ((name: string, path: string) => string);
     resolve?: ((module: unknown) => unknown);
@@ -193,7 +193,7 @@ export default class CommandoRegistry {
 
             const current = await guild.commands.fetch();
             const [updated, removed] = getUpdatedSlashCommands(current.toJSON(), testCommands);
-            const promises: Promise<ApplicationCommand | null>[] = [];
+            const promises: Array<Promise<ApplicationCommand | null>> = [];
             for (const command of updated) {
                 const match = current.find(cmd => cmd.name === command.name);
                 if (match) {
@@ -217,7 +217,7 @@ export default class CommandoRegistry {
 
         const current = await application!.commands.fetch();
         const [updated, removed] = getUpdatedSlashCommands(current.toJSON(), slashCommands);
-        const promises: Promise<ApplicationCommand | null>[] = [];
+        const promises: Array<Promise<ApplicationCommand | null>> = [];
         for (const command of updated) {
             const match = current.find(cmd => cmd.name === command.name);
             if (match) {
@@ -255,8 +255,7 @@ export default class CommandoRegistry {
             existing.name = group.name!;
             client.emit('debug', `Group ${group.id} is already registered. Renamed it to "${group.name}".`);
         } else {
-            // @ts-expect-error: object is not assignable to CommandGroup
-            groups.set(group.id, group);
+            groups.set(group.id, group as CommandGroup);
             /**
              * Emitted when a group is registered
              * @event CommandoClient#groupRegister
@@ -280,7 +279,7 @@ export default class CommandoRegistry {
      *     { id: 'mod', name: 'Moderation' }
      * ]);
      */
-    public registerGroups(groups: (CommandGroup | { id: string, name?: string, guarded?: boolean })[]): this {
+    public registerGroups(groups: Array<CommandGroup | { id: string, name?: string, guarded?: boolean }>): this {
         if (!Array.isArray(groups)) throw new TypeError('Groups must be an Array.');
         for (const group of groups) {
             this.registerGroup(group);
@@ -367,7 +366,7 @@ export default class CommandoRegistry {
      * const path = require('path');
      * registry.registerCommandsIn(path.join(__dirname, 'commands'));
      */
-    public registerCommandsIn(options: string | RequireAllOptions): this {
+    public registerCommandsIn(options: RequireAllOptions | string): this {
         const obj = requireAll(options) as Record<string, Record<string, Command>>;
         const commands: Command[] = [];
         for (const group of Object.values(obj)) {
@@ -438,7 +437,7 @@ export default class CommandoRegistry {
      * Registers all argument types in a directory. The files must export an ArgumentType class constructor or instance.
      * @param options - The path to the directory, or a require-all options object
      */
-    public registerTypesIn(options: string | RequireAllOptions): this {
+    public registerTypesIn(options: RequireAllOptions | string): this {
         const obj = requireAll(options);
         const types = [];
         for (const type of Object.values(obj)) types.push(type);
@@ -452,11 +451,11 @@ export default class CommandoRegistry {
     public registerDefaultTypes(types: DefaultTypesOptions = {}): this {
         const defaultTypes = Object.keys(requireAll(path.join(__dirname, '/types')))
             .filter(k => k !== 'base' && k !== 'union')
-            .reduce((obj, k) => {
+            .reduce<DefaultTypesOptions>((obj, k) => {
                 // @ts-expect-error: no string index
                 obj[Util.removeDashes(k)] = true;
                 return obj;
-            }, {} as DefaultTypesOptions);
+            }, {});
         Object.assign(defaultTypes, types);
 
         for (let type in defaultTypes) {
@@ -628,22 +627,22 @@ export default class CommandoRegistry {
 }
 
 function groupFilterExact(search: string) {
-    return (grp: CommandGroup) => grp.id === search || grp.name.toLowerCase() === search;
+    return (grp: CommandGroup): boolean => grp.id === search || grp.name.toLowerCase() === search;
 }
 
 function groupFilterInexact(search: string) {
-    return (grp: CommandGroup) => grp.id.includes(search) || grp.name.toLowerCase().includes(search);
+    return (grp: CommandGroup): boolean => grp.id.includes(search) || grp.name.toLowerCase().includes(search);
 }
 
 function commandFilterExact(search: string) {
-    return (cmd: Command) =>
+    return (cmd: Command): boolean =>
         cmd.name === search
         || cmd.aliases?.some(ali => ali === search)
         || `${cmd.groupId}:${cmd.memberName}` === search;
 }
 
 function commandFilterInexact(search: string) {
-    return (cmd: Command) =>
+    return (cmd: Command): boolean =>
         cmd.name.includes(search)
         || `${cmd.groupId}:${cmd.memberName}` === search
         || cmd.aliases?.some(ali => ali.includes(search));
@@ -757,15 +756,14 @@ function parseApiCmdOptions(options: ApplicationCommandOption[]): void {
         }
         // @ts-expect-error: no number index
         option.type = apiCmdOptionType[option.type];
-        // @ts-expect-error: options only exists in sub-commands
-        if (option.options) parseApiCmdOptions(option.options);
+        if ('options' in option && option.options) parseApiCmdOptions(option.options);
     });
 }
 
-type Obj = { [key: string]: (string | Obj | Obj[]) };
+type Obj = { [key: string]: (Obj | Obj[] | string) };
 
 function orderObjProps(obj: Obj): Obj {
-    const ordered = {} as Obj;
+    const ordered: Obj = {};
     for (const key of Object.keys(obj).sort()) {
         const value = obj[key];
         if (Array.isArray(value)) {

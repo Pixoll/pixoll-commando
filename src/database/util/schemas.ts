@@ -189,7 +189,7 @@ export interface FaqSchema extends BaseSchema {
 }
 
 export interface ModerationSchema extends BaseSchema {
-    type: 'warn' | 'ban' | 'kick' | 'soft-ban' | TimeBasedModeration
+    type: TimeBasedModeration | 'ban' | 'kick' | 'soft-ban' | 'warn'
     guild: Snowflake
     userId: Snowflake
     userTag: string
@@ -201,7 +201,7 @@ export interface ModerationSchema extends BaseSchema {
 
 export interface McIpSchema extends BaseSchema {
     guild: Snowflake
-    type: 'java' | 'bedrock'
+    type: 'bedrock' | 'java'
     ip: string
     port: number
 }
@@ -242,7 +242,7 @@ export interface PollSchema extends BaseSchema {
     guild: Snowflake
     channel: Snowflake
     message: Snowflake
-    emojis: (string | Snowflake)[]
+    emojis: Array<Snowflake | string>
     duration: number
 }
 
@@ -251,7 +251,7 @@ export interface ReactionRoleSchema extends BaseSchema {
     channel: Snowflake
     message: Snowflake
     roles: Snowflake[]
-    emojis: (string | Snowflake)[]
+    emojis: Array<Snowflake | string>
 }
 
 export interface ReminderSchema extends BaseSchema {

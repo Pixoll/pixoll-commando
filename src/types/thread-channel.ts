@@ -64,9 +64,9 @@ export default class ThreadChannelArgumentType extends ArgumentType {
 }
 
 function channelFilterExact(search: string) {
-    return (chan: GuildBasedChannel) => chan.isThread() && chan.name.toLowerCase() === search;
+    return (chan: GuildBasedChannel): boolean => chan.isThread() && chan.name.toLowerCase() === search;
 }
 
 function channelFilterInexact(search: string) {
-    return (chan: GuildBasedChannel) => chan.isThread() && chan.name.toLowerCase().includes(search);
+    return (chan: GuildBasedChannel): boolean => chan.isThread() && chan.name.toLowerCase().includes(search);
 }

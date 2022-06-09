@@ -70,7 +70,7 @@ export class Argument {
      * @param client - Client to use the registry of
      * @param id - ID of the type to use
      */
-    protected static determineType(client: CommandoClient, id: string | string[]): ArgumentType | null;
+    protected static determineType(client: CommandoClient, id: string[] | string): ArgumentType | null;
 
     /** Key for the argument */
     key: string;
@@ -106,7 +106,7 @@ export class Argument {
      * - If type is `string`, this will be case-insensitive.
      * - If type is `channel`, `member`, `role`, or `user`, this will be the IDs.
      */
-    oneOf: (string | number)[] | null;
+    oneOf: Array<number | string> | null;
     /** Whether the argument accepts an infinite number of values */
     infinite: boolean;
     /** How long to wait for input (in seconds) */
@@ -126,7 +126,7 @@ export class Argument {
      * @param currentMsg - Current response message
      */
     validate(val: string, originalMsg: CommandoMessage, currentMsg?: CommandoMessage):
-        boolean | string | Promise<boolean | string>;
+        Promise<boolean | string> | boolean | string;
     /**
      * Parses a value string into a proper value for the argument
      * @param val - Value to parse
@@ -140,7 +140,7 @@ export class Argument {
      * @param originalMsg - Message that triggered the command
      * @param currentMsg - Current response message
      */
-    isEmpty(val: string, originalMsg: CommandoMessage, currentMsg?: CommandoMessage): boolean;
+    isEmpty(val: string[] | string, originalMsg: CommandoMessage, currentMsg?: CommandoMessage): boolean;
 }
 
 /** Obtains, validates, and prompts for argument values */
@@ -190,7 +190,7 @@ export abstract class ArgumentType {
      * @return Whether the value is valid, or an error message
      */
     validate(val: string, originalMsg: CommandoMessage, arg: Argument, currentMsg?: CommandoMessage):
-        boolean | string | Promise<boolean | string>;
+        Promise<boolean | string> | boolean | string;
     /**
      * Parses the raw value string into a usable value
      * @param val - Value to parse
@@ -199,8 +199,7 @@ export abstract class ArgumentType {
      * @param currentMsg - Current response message
      * @return Usable value
      */
-    parse(val: string, originalMsg: CommandoMessage, arg: Argument, currentMsg?: CommandoMessage):
-        unknown | Promise<unknown>;
+    parse(val: string, originalMsg: CommandoMessage, arg: Argument, currentMsg?: CommandoMessage): unknown;
     /**
      * Checks whether a value is considered to be empty. This determines whether the default value for an argument
      * should be used and changes the response to the user under certain circumstances.
@@ -210,7 +209,7 @@ export abstract class ArgumentType {
      * @param currentMsg - Current response message
      * @return Whether the value is empty
      */
-    isEmpty(val: string, originalMsg: CommandoMessage, arg: Argument, currentMsg?: CommandoMessage): boolean;
+    isEmpty(val: string[] | string, originalMsg: CommandoMessage, arg: Argument, currentMsg?: CommandoMessage): boolean;
 }
 
 /**
@@ -303,7 +302,7 @@ export abstract class Command {
     /** The argument collector for the command */
     argsCollector: ArgumentCollector | null;
     /** How the arguments are split when passed to the command's run method */
-    argsType: 'single' | 'multiple';
+    argsType: 'multiple' | 'single';
     /** Maximum number of arguments that will be split */
     argsCount: number;
     /** Whether single quotes are allowed to encapsulate an argument */
@@ -333,7 +332,7 @@ export abstract class Command {
      * @param ownerOverride - Whether the bot owner(s) will always have permission
      * @return Whether the user has permission, or an error message to respond with if they don't
      */
-    hasPermission(instances: CommandInstances, ownerOverride?: boolean): true | CommandBlockReason | PermissionString[];
+    hasPermission(instances: CommandInstances, ownerOverride?: boolean): CommandBlockReason | PermissionString[] | true;
     /**
      * Runs the command
      * @param instances - The message the command is being run for
@@ -344,14 +343,13 @@ export abstract class Command {
      * (see [RegExp#exec](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec)).
      * @param fromPattern - Whether or not the command is being run from a pattern match
      * @param result - Result from obtaining the arguments from the collector (if applicable)
-     * @return {Promise<?Message|?Array<Message>>}
      */
     run(
         instances: CommandInstances,
-        args: Record<string, unknown> | string | string[],
+        args: Record<string, unknown> | string[] | string,
         fromPattern?: boolean,
         result?: ArgumentCollectorResult | null
-    ): Promise<Message | Array<Message> | null>;
+    ): Promise<Message | Message[] | null>;
     /**
      * Called when the command is prevented from running
      * @param instances - The instances the command is being run for
@@ -363,7 +361,7 @@ export abstract class Command {
      * - userPermissions & clientPermissions: `missing` ({@link Array}<{@link string}>) permission names
      */
     onBlock(instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData):
-        Promise<Message | APIMessage | null>;
+        Promise<APIMessage | Message | null>;
     /**
      * Called when the command produces an error while running
      * @param err - Error that was thrown
@@ -376,7 +374,7 @@ export abstract class Command {
     onError(
         err: Error,
         instances: CommandInstances,
-        args: Record<string, unknown> | string | string[],
+        args: Record<string, unknown> | string[] | string,
         fromPattern?: boolean,
         result?: ArgumentCollectorResult | null
     ): Promise<Message | Message[] | null>;
@@ -403,7 +401,7 @@ export abstract class Command {
      * @param prefix - Prefix to use for the prefixed command format
      * @param user - User to use for the mention command format
      */
-    usage(argString?: string, prefix?: string | undefined | null, user?: User | null): string;
+    usage(argString?: string, prefix?: string | null | undefined, user?: User | null): string;
     /** Reloads the command */
     reload(): void;
     /** Unloads the command */
@@ -462,10 +460,10 @@ export class CommandDispatcher {
      * @param responses - Responses to the message
      */
     protected cacheCommandoMessage(
-        message: Message,
-        oldMessage: Message,
-        cmdMsg: CommandoMessage,
-        responses: Message | Message[]
+        message: CommandoMessage,
+        oldMessage: Message | undefined,
+        cmdMsg: CommandoMessage | null,
+        responses: CommandoMessageResponse
     ): void;
     /**
      * Parses a message to find details about command usage in it
@@ -606,7 +604,7 @@ export class CommandoClient extends Client {
      * <info>If you simply need to check if a user is an owner of the bot, please instead use
      * {@link CommandoClient#isOwner}.</info>
      */
-    readonly owners: null | User[];
+    readonly owners: User[] | null;
     /**
      * Global command prefix. An empty string indicates that there is no default prefix, and only mentions will be used.
      * Setting to `null` means that the default prefix from {@link CommandoClient#options} will be used instead.
@@ -768,7 +766,7 @@ export class CommandoMessage extends Message {
      * Parses the argString into usable arguments, based on the argsType and argsCount of the command
      * @see {@link Command#run}
      */
-    parseArgs(): string | string[];
+    parseArgs(): string[] | string;
     /** Runs the command */
     run(): Promise<CommandoMessageResponse>;
     /**
@@ -861,11 +859,11 @@ export class CommandoRegistry {
      *     { id: 'mod', name: 'Moderation' }
      * ]);
      */
-    registerGroups(groups: (CommandGroup | {
+    registerGroups(groups: Array<CommandGroup | {
         id: string;
         name?: string;
         guarded?: boolean;
-    })[]): this;
+    }>): this;
     /**
      * Registers a single command
      * @param command - Either a Command instance, or a constructor for one
@@ -885,7 +883,7 @@ export class CommandoRegistry {
      * const path = require('path');
      * registry.registerCommandsIn(path.join(__dirname, 'commands'));
      */
-    registerCommandsIn(options: string | RequireAllOptions): this;
+    registerCommandsIn(options: RequireAllOptions | string): this;
     /**
      * Registers a single argument type
      * @param type - Either an ArgumentType instance, or a constructor for one
@@ -902,7 +900,7 @@ export class CommandoRegistry {
      * Registers all argument types in a directory. The files must export an ArgumentType class constructor or instance.
      * @param options - The path to the directory, or a require-all options object
      */
-    registerTypesIn(options: string | RequireAllOptions): this;
+    registerTypesIn(options: RequireAllOptions | string): this;
     /**
      * Registers the default argument types to the registry
      * @param types - Object specifying which types to register
@@ -967,7 +965,7 @@ export class FriendlyError extends Error {
 }
 
 /** Contains various general-purpose utility methods and constants. */
-export default class Util extends null {
+export class Util extends null {
     /** Object that maps every PermissionString to its representation inside the Discord client. */
     static get permissions(): {
         readonly CREATE_INSTANT_INVITE: "Create instant invite";
@@ -1037,7 +1035,7 @@ export default class Util extends null {
      * @param msg - The message instance.
      * @returns A {@link MessageOptions} object.
      */
-    static noReplyPingInDMs(msg: Message | CommandoMessage): MessageOptions;
+    static noReplyPingInDMs(msg: CommandoMessage | Message): MessageOptions;
     /**
      * Disambiguate items from an array into a list.
      * @param items - An array of strings or objects.
@@ -1045,7 +1043,7 @@ export default class Util extends null {
      * @param property - The property to read from the objects (only usable if `items` is an array of objects).
      * @returns A string with the disambiguated items.
      */
-    static disambiguation(items: (string | Record<string, string>)[], label: string, property?: string): string;
+    static disambiguation(items: Array<Record<string, string> | string>, label: string, property?: string): string;
     /**
      * Removes the dashes from a string and capitalizes the characters in front of them.
      * @param str - The string to parse.
@@ -1146,13 +1144,13 @@ export class DatabaseManager<T extends { _id: string; guild?: string; }> {
      * @param options - The options for this update
      * @returns The updated document
      */
-    update(toUpdate: T | string, options: UpdateAggregationStage | UpdateQuery<T> | T): Promise<T>;
+    update(toUpdate: T | string, options: T | UpdateAggregationStage | UpdateQuery<T>): Promise<T>;
     /**
      * Fetch a single document
      * @param filter - The ID or fetching filter for this document
      * @returns The fetched document
      */
-    fetch(filter?: string | FilterQuery<T>): Promise<T | null>;
+    fetch(filter?: FilterQuery<T> | string): Promise<T | null>;
     /**
      * Fetch multiple documents
      * @param filter - The fetching filter for the documents
@@ -1197,7 +1195,7 @@ export class GuildDatabaseManager {
 
 declare class CommandoGuildManager extends CachedManager<Snowflake, CommandoGuild, GuildResolvable> {
     public create(name: string, options?: GuildCreateOptions): Promise<CommandoGuild>;
-    public fetch(options1: Snowflake | FetchGuildOptions): Promise<CommandoGuild>;
+    public fetch(options1: FetchGuildOptions | Snowflake): Promise<CommandoGuild>;
     public fetch(options2?: FetchGuildsOptions): Promise<Collection<Snowflake, CommandoGuild>>;
 }
 
@@ -1213,7 +1211,7 @@ export declare class CommandoMember extends GuildMember {
 }
 
 type ArgumentCheckerParams = [
-    val: string,
+    val: string[] | string,
     originalMsg: CommandoMessage,
     arg: Argument,
     currentMsg?: CommandoMessage
@@ -1225,40 +1223,40 @@ export type ArgumentDefault = (msg: CommandoMessage, arg: Argument) => Promise<u
 export type ArgumentResponse = CommandoMessage | Message | null;
 
 export type ArgumentTypes =
-    | 'string'
-    | 'integer'
-    | 'float'
     | 'boolean'
-    | 'duration'
-    | 'date'
-    | 'time'
-    | 'user'
-    | 'member'
-    | 'role'
+    | 'category-channel'
     | 'channel'
+    | 'command'
+    | 'custom-emoji'
+    | 'date'
+    | 'default-emoji'
+    | 'duration'
+    | 'float'
+    | 'group'
+    | 'integer'
+    | 'invite'
+    | 'member'
+    | 'message'
+    | 'role'
+    | 'stage-channel'
+    | 'string'
     | 'text-channel'
     | 'thread-channel'
-    | 'voice-channel'
-    | 'stage-channel'
-    | 'category-channel'
-    | 'message'
-    | 'invite'
-    | 'custom-emoji'
-    | 'default-emoji'
-    | 'command'
-    | 'group';
+    | 'time'
+    | 'user'
+    | 'voice-channel';
 
 /** The reason of {@link Command#onBlock} */
 export type CommandBlockReason =
-    | 'guildOnly'
-    | 'nsfw'
-    | 'dmOnly'
-    | 'guildOwnerOnly'
-    | 'ownerOnly'
-    | 'userPermissions'
-    | 'modPermissions'
     | 'clientPermissions'
-    | 'throttling';
+    | 'dmOnly'
+    | 'guildOnly'
+    | 'guildOwnerOnly'
+    | 'modPermissions'
+    | 'nsfw'
+    | 'ownerOnly'
+    | 'throttling'
+    | 'userPermissions';
 
 /**
  * A CommandGroupResolvable can be:
@@ -1267,7 +1265,7 @@ export type CommandBlockReason =
  */
 export type CommandGroupResolvable = CommandGroup | string;
 
-export type CommandoMessageResponse = CommandoMessage | Message | (CommandoMessage | Message)[] | null;
+export type CommandoMessageResponse = CommandoMessage | Message | Message[] | null;
 
 /**
  * A CommandResolvable can be:
@@ -1285,34 +1283,34 @@ export type CommandResolvable = Command | CommandoMessage | string;
  * - A single string identifying the reason the command is blocked
  * - An Inhibition object
  */
-export type Inhibitor = (msg: CommandoMessage) => boolean | string | Inhibition;
+declare type Inhibitor = (msg: CommandoMessage) => Inhibition | boolean | string;
 
 /** Type of the response */
-export type ResponseType = 'reply' | 'direct' | 'plain' | 'code';
+export type ResponseType = 'code' | 'direct' | 'plain' | 'reply';
 
 export type SlashCommandChannelType =
-    | 'guild-text'
-    | 'guild-voice'
     | 'guild-category'
-    | 'guild-news'
     | 'guild-news-thread'
-    | 'guild-public-thread'
+    | 'guild-news'
     | 'guild-private-thread'
-    | 'guild-stage-voice';
+    | 'guild-public-thread'
+    | 'guild-stage-voice'
+    | 'guild-text'
+    | 'guild-voice';
 
 export type SlashCommandOptionType =
-    | 'subcommand'
-    | 'subcommand-group'
-    | 'string'
-    | 'integer'
     | 'boolean'
-    | 'user'
     | 'channel'
-    | 'role'
+    | 'integer'
     | 'mentionable'
-    | 'number';
+    | 'number'
+    | 'role'
+    | 'string'
+    | 'subcommand-group'
+    | 'subcommand'
+    | 'user';
 
-export type StringResolvable = string | string[] | object;
+export type StringResolvable = string[] | object | string;
 
 /** Result object from obtaining argument values from an {@link ArgumentCollector} */
 export interface ArgumentCollectorResult<T = Record<string, unknown>> {
@@ -1324,7 +1322,7 @@ export interface ArgumentCollectorResult<T = Record<string, unknown>> {
      * - `time` (wait time exceeded)
      * - `promptLimit` (prompt limit exceeded)
      */
-    cancelled: 'user' | 'time' | 'promptLimit' | null;
+    cancelled: 'promptLimit' | 'time' | 'user' | null;
     /** All messages that were sent to prompt the user */
     prompts: ArgumentResponse[];
     /** All of the user's messages that answered a prompt */
@@ -1362,7 +1360,7 @@ export interface ArgumentInfo {
     /** Default value for the argument (makes the arg optional - cannot be `null`) */
     default?: ArgumentDefault;
     /** An array of values that are allowed to be used */
-    oneOf?: (string | number)[];
+    oneOf?: Array<number | string>;
     /**
      * Whether the argument is required or not
      * @default true
@@ -1379,9 +1377,9 @@ export interface ArgumentInfo {
      */
     infinite?: boolean;
     /** Validator function for the argument (see {@link ArgumentType#validate}) */
-    validate?: (...args: ArgumentCheckerParams) => boolean | string | Promise<boolean | string>;
+    validate?: (...args: ArgumentCheckerParams) => Promise<boolean | string> | boolean | string;
     /** Parser function for the argument (see {@link ArgumentType#parse}) */
-    parse?: (...args: ArgumentCheckerParams) => unknown | Promise<unknown>;
+    parse?: (...args: ArgumentCheckerParams) => unknown;
     /** Empty checker for the argument (see {@link ArgumentType#isEmpty}) */
     isEmpty?: (...args: ArgumentCheckerParams) => boolean;
     /**
@@ -1394,14 +1392,14 @@ export interface ArgumentInfo {
 /** Result object from obtaining a single {@link Argument}'s value(s) */
 export interface ArgumentResult {
     /** Final value(s) for the argument */
-    value: unknown | unknown[] | null;
+    value: unknown;
     /**
      * One of:
      * - `user` (user cancelled)
      * - `time` (wait time exceeded)
      * - `promptLimit` (prompt limit exceeded)
      */
-    cancelled: 'user' | 'time' | 'promptLimit' | null;
+    cancelled: 'promptLimit' | 'time' | 'user' | null;
     /** All messages that were sent to prompt the user */
     prompts: ArgumentResponse[];
     /** All of the user's messages that answered a prompt */
@@ -1518,7 +1516,7 @@ export interface CommandInfo {
      * When 'multiple', it will be passed as multiple arguments.
      * @default 'single'
      */
-    argsType?: 'single' | 'multiple';
+    argsType?: 'multiple' | 'single';
     /**
      * The number of arguments to parse from the command string. Only applicable when argsType is 'multiple'.
      * If nonzero, it should be at least 2. When this is 0, the command argument string will be split into as
@@ -1576,7 +1574,7 @@ interface CommandoClientEvents extends ClientEvents {
         command: Command,
         error: Error,
         instances: CommandInstances,
-        args: object | string | string[],
+        args: string[] | object | string,
         fromPattern: boolean,
         result?: ArgumentCollectorResult
     ];
@@ -1590,7 +1588,7 @@ interface CommandoClientEvents extends ClientEvents {
         command: Command,
         promise: Promise<unknown>,
         instances: CommandInstances,
-        args: object | string | string[],
+        args: string[] | object | string,
         fromPattern?: boolean,
         result?: ArgumentCollectorResult | null
     ];
@@ -1621,7 +1619,7 @@ export interface CommandoClientOptions extends ClientOptions {
      */
     nonCommandEditable?: boolean;
     /** ID of the bot owner's Discord user, or multiple ids */
-    owner?: string | string[] | Set<string>;
+    owner?: Set<string> | string[] | string;
     /** Invite URL to the bot's support server */
     serverInvite?: string;
     /** Invite options for the bot */
@@ -1771,7 +1769,7 @@ export interface DefaultTypesOptions {
 
 export interface RequireAllOptions {
     dirname: string;
-    filter?: ((name: string, path: string) => string | false) | RegExp;
+    filter?: RegExp | ((name: string, path: string) => string | false);
     excludeDirs?: RegExp;
     map?: ((name: string, path: string) => string);
     resolve?: ((module: unknown) => unknown);
@@ -1782,7 +1780,7 @@ export interface ResponseOptions {
     /** Type of the response */
     type?: ResponseType;
     /** Content of the response */
-    content?: StringResolvable | MessageOptions;
+    content?: MessageOptions | StringResolvable;
     /** Options of the response */
     options?: MessageOptions;
     /** Language of the response, if its type is `code` */
@@ -1823,10 +1821,10 @@ export interface SlashCommandOptionInfo {
     /** The maximum value permitted - only usable if `type` is `integer` or `number` */
     maxValue?: number;
     /** The choices options for the option - only usable if `type` is `string`, `integer` or `number` */
-    choices?: {
+    choices?: Array<{
         name: string;
-        value: string | number;
-    }[];
+        value: number | string;
+    }>;
     /** The type options for the option - only usable if `type` is `channel` */
     channelTypes?: SlashCommandChannelType[];
     /** The options for the sub-command - only usable if `type` is `subcommand` */
@@ -1846,7 +1844,7 @@ export interface SplitOptions {
      * Character(s) or Regex(es) to split the message with, an array can be used to split multiple times.
      * @default '\n'
      */
-    char?: string | string[] | RegExp | RegExp[];
+    char?: RegExp | RegExp[] | string[] | string;
     /** Text to prepend to every piece except the first. */
     prepend?: string;
     /** Text to append to every piece except the last. */
@@ -1919,7 +1917,7 @@ export interface FaqSchema extends BaseSchema {
 }
 
 export interface ModerationSchema extends BaseSchema {
-    type: 'warn' | 'ban' | 'kick' | 'soft-ban' | TimeBasedModeration;
+    type: TimeBasedModeration | 'ban' | 'kick' | 'soft-ban' | 'warn';
     guild: Snowflake;
     userId: Snowflake;
     userTag: string;
@@ -1931,7 +1929,7 @@ export interface ModerationSchema extends BaseSchema {
 
 export interface McIpSchema extends BaseSchema {
     guild: Snowflake;
-    type: 'java' | 'bedrock';
+    type: 'bedrock' | 'java';
     ip: string;
     port: number;
 }
@@ -1974,7 +1972,7 @@ export interface PollSchema extends BaseSchema {
     guild: Snowflake;
     channel: Snowflake;
     message: Snowflake;
-    emojis: (string | Snowflake)[];
+    emojis: Array<Snowflake | string>;
     duration: number;
 }
 
@@ -1983,7 +1981,7 @@ export interface ReactionRoleSchema extends BaseSchema {
     channel: Snowflake;
     message: Snowflake;
     roles: Snowflake[];
-    emojis: (string | Snowflake)[];
+    emojis: Array<Snowflake | string>;
 }
 export interface ReminderSchema extends BaseSchema {
     user: Snowflake;

@@ -3,13 +3,13 @@ import Command from '../commands/base';
 import CommandoClient from '../client';
 import CommandoGuild from './guild';
 /** Type of the response */
-declare type ResponseType = 'reply' | 'direct' | 'plain' | 'code';
-declare type StringResolvable = string | string[] | object;
+declare type ResponseType = 'code' | 'direct' | 'plain' | 'reply';
+declare type StringResolvable = string[] | object | string;
 interface ResponseOptions {
     /** Type of the response */
     type?: ResponseType;
     /** Content of the response */
-    content?: StringResolvable | MessageOptions;
+    content?: MessageOptions | StringResolvable;
     /** Options of the response */
     options?: MessageOptions;
     /** Language of the response, if its type is `code` */
@@ -17,7 +17,7 @@ interface ResponseOptions {
     /** If the response is from an edited message */
     fromEdit?: boolean;
 }
-export declare type CommandoMessageResponse = CommandoMessage | Message | (CommandoMessage | Message)[] | null;
+export declare type CommandoMessageResponse = CommandoMessage | Message | Message[] | null;
 /**
  * An extension of the base Discord.js Message class to add command-related functionality.
  * @augments Message
@@ -72,7 +72,7 @@ export default class CommandoMessage extends Message {
      * Parses the argString into usable arguments, based on the argsType and argsCount of the command
      * @see {@link Command#run}
      */
-    parseArgs(): string | string[];
+    parseArgs(): string[] | string;
     /** Runs the command */
     run(): Promise<CommandoMessageResponse>;
     /**

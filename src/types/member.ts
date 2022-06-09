@@ -60,14 +60,14 @@ export default class MemberArgumentType extends ArgumentType {
 }
 
 function memberFilterExact(search: string) {
-    return (mem: GuildMember) =>
+    return (mem: GuildMember): boolean =>
         mem.user.username.toLowerCase() === search
         || mem.nickname?.toLowerCase() === search
         || mem.user.tag.toLowerCase() === search;
 }
 
 function memberFilterInexact(search: string) {
-    return (mem: GuildMember) =>
+    return (mem: GuildMember): boolean =>
         mem.user.username.toLowerCase().includes(search)
         || mem.nickname?.toLowerCase().includes(search)
         || mem.user.tag.toLowerCase().includes(search);

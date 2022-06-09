@@ -6,7 +6,7 @@ import CommandoMessage from './extensions/message';
 import ArgumentType from './types/base';
 interface RequireAllOptions {
     dirname: string;
-    filter?: ((name: string, path: string) => string | false) | RegExp;
+    filter?: RegExp | ((name: string, path: string) => string | false);
     excludeDirs?: RegExp;
     map?: ((name: string, path: string) => string);
     resolve?: ((module: unknown) => unknown);
@@ -179,11 +179,11 @@ export default class CommandoRegistry {
      *     { id: 'mod', name: 'Moderation' }
      * ]);
      */
-    registerGroups(groups: (CommandGroup | {
+    registerGroups(groups: Array<CommandGroup | {
         id: string;
         name?: string;
         guarded?: boolean;
-    })[]): this;
+    }>): this;
     /**
      * Registers a single command
      * @param command - Either a Command instance, or a constructor for one
@@ -203,7 +203,7 @@ export default class CommandoRegistry {
      * const path = require('path');
      * registry.registerCommandsIn(path.join(__dirname, 'commands'));
      */
-    registerCommandsIn(options: string | RequireAllOptions): this;
+    registerCommandsIn(options: RequireAllOptions | string): this;
     /**
      * Registers a single argument type
      * @param type - Either an ArgumentType instance, or a constructor for one
@@ -220,7 +220,7 @@ export default class CommandoRegistry {
      * Registers all argument types in a directory. The files must export an ArgumentType class constructor or instance.
      * @param options - The path to the directory, or a require-all options object
      */
-    registerTypesIn(options: string | RequireAllOptions): this;
+    registerTypesIn(options: RequireAllOptions | string): this;
     /**
      * Registers the default argument types to the registry
      * @param types - Object specifying which types to register

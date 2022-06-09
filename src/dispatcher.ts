@@ -7,7 +7,7 @@ import CommandoClient from './client';
 import { ArgumentResponse } from './commands/argument';
 import FriendlyError from './errors/friendly';
 import CommandoGuild from './extensions/guild';
-import CommandoMessage from './extensions/message';
+import CommandoMessage, { CommandoMessageResponse } from './extensions/message';
 import CommandoRegistry from './registry';
 import Util from './util';
 
@@ -26,7 +26,7 @@ interface Inhibition {
  * - A single string identifying the reason the command is blocked
  * - An Inhibition object
  */
-type Inhibitor = (msg: CommandoMessage) => boolean | string | Inhibition;
+type Inhibitor = (msg: CommandoMessage) => Inhibition | boolean | string;
 
 // @ts-expect-error: GuildMember's constructor is private
 declare class CommandoMember extends GuildMember {
@@ -131,12 +131,12 @@ export default class CommandDispatcher {
         }
 
         // Run the command, or reply with an error
-        let responses: ArgumentResponse | undefined;
+        let responses: ArgumentResponse | null = null;
         if (cmdMsg) {
             commandResponses: {
                 const inhibited = this.inhibit(cmdMsg);
                 if (inhibited) {
-                    responses = await inhibited.response;
+                    responses = await inhibited.response ?? null;
                     break commandResponses;
                 }
 
@@ -157,17 +157,17 @@ export default class CommandDispatcher {
                         .setColor('RED')
                         .setDescription(`The \`${cmdMsg.command.name}\` command is disabled.`);
 
-                    // @ts-expect-error: (CommandoMessage | Message)[] not assignable to ArgumentResponse
+                    // @ts-expect-error: Message[] not assignable to ArgumentResponse
                     responses = await cmdMsg.replyEmbed(responseEmbed);
                     break commandResponses;
                 }
 
                 if (!oldMessage || typeof oldCmdMsg !== 'undefined') {
-                    // @ts-expect-error: (CommandoMessage | Message)[] not assignable to ArgumentResponse
+                    // @ts-expect-error: Message[] not assignable to ArgumentResponse
                     responses = await cmdMsg.run();
                     if (typeof responses === 'undefined') responses = null;
-                    // @ts-expect-error: (CommandoMessage | Message)[] not assignable to ArgumentResponse
-                    if (Array.isArray(responses)) responses = await Promise.all(responses);
+                    // @ts-expect-error: Message[] not assignable to ArgumentResponse
+                    if (Array.isArray(responses)) responses = await Promise.all(responses as ArgumentResponse);
                 }
             }
 
@@ -183,8 +183,7 @@ export default class CommandDispatcher {
             client.emit('commandoMessageUpdate', oldMessage, cmdMsg);
         }
 
-        // @ts-expect-error: responses used "before assignation"
-        this.cacheCommandoMessage(message, oldMessage!, cmdMsg, responses);
+        this.cacheCommandoMessage(message, oldMessage, cmdMsg, responses);
     }
 
     /**
@@ -200,30 +199,39 @@ export default class CommandDispatcher {
         if (!command) return;
         const { groupId, memberName } = command;
 
-        // @ts-expect-error: some TextBasedChannel sub-types are not assignable to GuildChannelResolvable
-        const missingSlash = guild?.me!.permissionsIn(channel).missing('USE_APPLICATION_COMMANDS') || [];
-        if (missingSlash.length !== 0) {
-            return await user.send(stripIndent`
-                It seems like I cannot **Use Application Commands** in this channel: ${channel.toString()}
-                Please try in another channel, or contact the admins of **${guild!.name}** to solve this issue.
-            `).catch(() => null);
-        }
+        if (guild) {
+            // Obtain the member for the ClientUser if it doesn't already exist
+            if (!guild.members.cache.has(client.user!.id)) {
+                await guild.members.fetch(client.user!.id);
+            }
 
-        // Obtain the member if we don't have it
-        if (guild && !guild.members.cache.has(user.id)) {
-            // @ts-expect-error: GuildMember is not assignable to CommandoMember
-            interaction.member = await guild!.members.fetch(user);
-        }
+            // @ts-expect-error: some TextBasedChannel sub-types are not assignable to GuildChannelResolvable
+            const clientPerms = guild.me!.permissionsIn(channel).serialize();
+            if (clientPerms.VIEW_CHANNEL && !clientPerms.SEND_MESSAGES) {
+                return await user.send(stripIndent`
+                    It seems like I cannot **Send Messages** in this channel: ${channel.toString()}
+                    Please try in another channel, or contact the admins of **${guild.name}** to solve this issue.
+                `).catch(() => null);
+            }
 
-        // Obtain the member for the ClientUser if it doesn't already exist
-        if (guild && !guild.members.cache.has(client.user!.id)) {
-            await guild!.members.fetch(client.user!.id);
-        }
+            if (clientPerms.USE_APPLICATION_COMMANDS) {
+                return await user.send(stripIndent`
+                    It seems like I cannot **Use Application Commands** in this channel: ${channel.toString()}
+                    Please try in another channel, or contact the admins of **${guild.name}** to solve this issue.
+                `).catch(() => null);
+            }
 
-        // Make sure the command is usable in this context
-        if (command.dmOnly && guild) {
-            client.emit('commandBlock', { interaction }, 'dmOnly');
-            return await command.onBlock({ interaction }, 'dmOnly');
+            // Obtain the member if we don't have it
+            if (!guild.members.cache.has(user.id)) {
+                // @ts-expect-error: GuildMember is not assignable to CommandoMember
+                interaction.member = await guild.members.fetch(user);
+            }
+
+            // Make sure the command is usable in this context
+            if (command.dmOnly) {
+                client.emit('commandBlock', { interaction }, 'dmOnly');
+                return await command.onBlock({ interaction }, 'dmOnly');
+            }
         }
 
         // Make sure the command is usable in this context
@@ -383,7 +391,10 @@ export default class CommandDispatcher {
      * @param responses - Responses to the message
      */
     protected cacheCommandoMessage(
-        message: Message, oldMessage: Message, cmdMsg: CommandoMessage, responses: Message | Message[]
+        message: CommandoMessage,
+        oldMessage: Message | undefined,
+        cmdMsg: CommandoMessage | null,
+        responses: CommandoMessageResponse
     ): void {
         const { client, _results } = this;
         const { commandEditableDuration, nonCommandEditable } = client.options;
@@ -391,7 +402,7 @@ export default class CommandDispatcher {
 
         if (commandEditableDuration! <= 0) return;
         if (!cmdMsg && !nonCommandEditable) return;
-        if (responses !== null) {
+        if (responses !== null && cmdMsg) {
             _results.set(id, cmdMsg);
             if (!oldMessage) {
                 setTimeout(() => {
@@ -478,7 +489,7 @@ export default class CommandDispatcher {
 }
 
 function parseSlashArgs(
-    obj: Record<string, string>, { name, value, type, channel, member, user, role, options }: CommandInteractionOption
+    obj: Record<string, unknown>, { name, value, type, channel, member, user, role, options }: CommandInteractionOption
 ): void {
     if (name && (value === null || typeof value === 'undefined')) {
         obj.subCommand = name;
@@ -490,23 +501,18 @@ function parseSlashArgs(
             case 'NUMBER':
             case 'STRING':
             case 'SUB_COMMAND':
-                // @ts-expect-error: null not assignable to property's type
                 obj[name] = value ?? null;
                 break;
             case 'CHANNEL':
-                // @ts-expect-error: null not assignable to property's type
                 obj[name] = channel ?? null;
                 break;
             case 'MENTIONABLE':
-                // @ts-expect-error: null not assignable to property's type
                 obj[name] = member ?? user ?? channel ?? role ?? null;
                 break;
             case 'ROLE':
-                // @ts-expect-error: null not assignable to property's type
                 obj[name] = role ?? null;
                 break;
             case 'USER':
-                // @ts-expect-error: null not assignable to property's type
                 obj[name] = member ?? user ?? null;
                 break;
         }

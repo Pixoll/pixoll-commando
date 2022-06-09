@@ -11,7 +11,7 @@ export interface SplitOptions {
      * Character(s) or Regex(es) to split the message with, an array can be used to split multiple times.
      * @default '\n'
      */
-    char?: string | string[] | RegExp | RegExp[];
+    char?: RegExp | RegExp[] | string[] | string;
     /** Text to prepend to every piece except the first. */
     prepend?: string;
     /** Text to append to every piece except the last. */
@@ -87,7 +87,7 @@ export default class Util extends null {
      * @param msg - The message instance.
      * @returns A {@link MessageOptions} object.
      */
-    static noReplyPingInDMs(msg: Message | CommandoMessage): MessageOptions;
+    static noReplyPingInDMs(msg: CommandoMessage | Message): MessageOptions;
     /**
      * Disambiguate items from an array into a list.
      * @param items - An array of strings or objects.
@@ -95,7 +95,7 @@ export default class Util extends null {
      * @param property - The property to read from the objects (only usable if `items` is an array of objects).
      * @returns A string with the disambiguated items.
      */
-    static disambiguation(items: (string | Record<string, string>)[], label: string, property?: string): string;
+    static disambiguation(items: Array<Record<string, string> | string>, label: string, property?: string): string;
     /**
      * Removes the dashes from a string and capitalizes the characters in front of them.
      * @param str - The string to parse.

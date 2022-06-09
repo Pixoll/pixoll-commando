@@ -1,7 +1,7 @@
 import { APIMessage } from 'discord-api-types/payloads/v9/channel';
 import { RESTPostAPIChatInputApplicationCommandsJSONBody as RestAPIApplicationCommand } from 'discord-api-types/rest/v9';
 import {
-    GuildMember, GuildResolvable, Message, MessageEmbed, MessageOptions, PermissionResolvable, PermissionString, Role, User
+    GuildMember, GuildResolvable, Message, MessageEmbed, MessageOptions, PermissionResolvable, PermissionString, User
 } from 'discord.js';
 import path from 'path';
 import ArgumentCollector, { ArgumentCollectorResult } from './collector';
@@ -112,7 +112,7 @@ interface CommandInfo {
      * When 'multiple', it will be passed as multiple arguments.
      * @default 'single'
      */
-    argsType?: 'single' | 'multiple';
+    argsType?: 'multiple' | 'single';
     /**
      * The number of arguments to parse from the command string. Only applicable when argsType is 'multiple'.
      * If nonzero, it should be at least 2. When this is 0, the command argument string will be split into as
@@ -175,15 +175,15 @@ export interface CommandInstances {
 
 /** The reason of {@link Command#onBlock} */
 export type CommandBlockReason =
-    | 'guildOnly'
-    | 'nsfw'
-    | 'dmOnly'
-    | 'guildOwnerOnly'
-    | 'ownerOnly'
-    | 'userPermissions'
-    | 'modPermissions'
     | 'clientPermissions'
-    | 'throttling';
+    | 'dmOnly'
+    | 'guildOnly'
+    | 'guildOwnerOnly'
+    | 'modPermissions'
+    | 'nsfw'
+    | 'ownerOnly'
+    | 'throttling'
+    | 'userPermissions';
 
 /** Additional data associated with the block */
 export interface CommandBlockData {
@@ -236,7 +236,7 @@ interface SlashCommandOptionInfo {
     /** The maximum value permitted - only usable if `type` is `integer` or `number` */
     maxValue?: number;
     /** The choices options for the option - only usable if `type` is `string`, `integer` or `number` */
-    choices?: { name: string, value: string | number }[];
+    choices?: Array<{ name: string, value: number | string }>;
     /** The type options for the option - only usable if `type` is `channel` */
     channelTypes?: SlashCommandChannelType[]; // eslint-disable-line no-use-before-define
     /** The options for the sub-command - only usable if `type` is `subcommand` */
@@ -246,26 +246,26 @@ interface SlashCommandOptionInfo {
 }
 
 type SlashCommandOptionType =
-    | 'subcommand'
-    | 'subcommand-group'
-    | 'string'
-    | 'integer'
     | 'boolean'
-    | 'user'
     | 'channel'
-    | 'role'
+    | 'integer'
     | 'mentionable'
-    | 'number';
+    | 'number'
+    | 'role'
+    | 'string'
+    | 'subcommand-group'
+    | 'subcommand'
+    | 'user';
 
 type SlashCommandChannelType =
-    | 'guild-text'
-    | 'guild-voice'
     | 'guild-category'
-    | 'guild-news'
     | 'guild-news-thread'
-    | 'guild-public-thread'
+    | 'guild-news'
     | 'guild-private-thread'
-    | 'guild-stage-voice';
+    | 'guild-public-thread'
+    | 'guild-stage-voice'
+    | 'guild-text'
+    | 'guild-voice';
 
 /** A command that can be run in a client */
 export default abstract class Command {
@@ -312,7 +312,7 @@ export default abstract class Command {
     /** The argument collector for the command */
     public argsCollector: ArgumentCollector | null;
     /** How the arguments are split when passed to the command's run method */
-    public argsType: 'single' | 'multiple';
+    public argsType: 'multiple' | 'single';
     /** Maximum number of arguments that will be split */
     public argsCount: number;
     /** Whether single quotes are allowed to encapsulate an argument */
@@ -411,7 +411,7 @@ export default abstract class Command {
      * @param ownerOverride - Whether the bot owner(s) will always have permission
      * @return Whether the user has permission, or an error message to respond with if they don't
      */
-    public hasPermission(instances: CommandInstances, ownerOverride = true): true | CommandBlockReason | PermissionString[] {
+    public hasPermission(instances: CommandInstances, ownerOverride = true): CommandBlockReason | PermissionString[] | true {
         const { guildOwnerOnly, ownerOnly, userPermissions, modPermissions, client } = this;
         const { message, interaction } = instances;
         const { channel, guild, member } = (message || interaction)!;
@@ -429,8 +429,7 @@ export default abstract class Command {
         }
 
         if (channel.type !== 'DM') {
-            // @ts-expect-error: CommandoMember is not assignable to GuildMember
-            if (modPermissions && !isMod(member!)) {
+            if (modPermissions && !isMod(member as GuildMember)) {
                 return 'modPermissions';
             }
             if (userPermissions) {
@@ -452,14 +451,13 @@ export default abstract class Command {
      * {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec RegExp#exec}).
      * @param fromPattern - Whether or not the command is being run from a pattern match
      * @param result - Result from obtaining the arguments from the collector (if applicable)
-     * @return {Promise<?Message|?Array<Message>>}
      */
     public run(
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        instances: CommandInstances, args: Record<string, unknown> | string | string[], fromPattern?: boolean,
+        instances: CommandInstances, args: Record<string, unknown> | string[] | string, fromPattern?: boolean,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         result?: ArgumentCollectorResult | null
-    ): Promise<Message | Array<Message> | null> {
+    ): Promise<Message | Message[] | null> {
         throw new Error(`${this.constructor.name} doesn't have a run() method.`);
     }
 
@@ -475,7 +473,7 @@ export default abstract class Command {
      */
     public onBlock(
         instances: CommandInstances, reason: CommandBlockReason, data: CommandBlockData = {}
-    ): Promise<Message | APIMessage | null> {
+    ): Promise<APIMessage | Message | null> {
         const { name } = this;
         const { message, interaction } = instances;
         const { missing, remaining } = data;
@@ -534,7 +532,7 @@ export default abstract class Command {
      */
     public onError(
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        err: Error, instances: CommandInstances, args: Record<string, unknown> | string | string[],
+        err: Error, instances: CommandInstances, args: Record<string, unknown> | string[] | string,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         fromPattern?: boolean, result?: ArgumentCollectorResult | null
     ): Promise<Message | Message[] | null> {
@@ -619,7 +617,7 @@ export default abstract class Command {
      * @param user - User to use for the mention command format
      */
     public usage(
-        argString?: string, prefix: string | undefined | null = this.client.prefix, user: User | null = this.client.user
+        argString?: string, prefix: string | null | undefined = this.client.prefix, user: User | null = this.client.user
     ): string {
         return Command.usage(`${this.name}${argString ? ` ${argString}` : ''}`, prefix, user);
     }
@@ -905,8 +903,8 @@ function parseChannelType(type: SlashCommandChannelType): number {
 }
 
 async function replyAll(
-    { message, interaction }: CommandInstances, options: MessageOptions | string | MessageEmbed
-): Promise<Message | APIMessage | null> {
+    { message, interaction }: CommandInstances, options: MessageEmbed | MessageOptions | string
+): Promise<APIMessage | Message | null> {
     if (options instanceof MessageEmbed) options = { embeds: [options] };
     if (typeof options === 'string') options = { content: options };
     if (interaction) {
@@ -922,7 +920,7 @@ async function replyAll(
     return null;
 }
 
-function isMod(roleOrMember: Role | GuildMember): boolean {
+function isMod(roleOrMember: GuildMember): boolean {
     if (!roleOrMember) return false;
     const { permissions } = roleOrMember;
     if (permissions.has('ADMINISTRATOR')) return true;

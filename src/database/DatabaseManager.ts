@@ -81,7 +81,7 @@ export default class DatabaseManager<T extends { _id: string, guild?: string }> 
      * @param options - The options for this update
      * @returns The updated document
      */
-    public async update(toUpdate: T | string, options: UpdateAggregationStage | UpdateQuery<T> | T): Promise<T> {
+    public async update(toUpdate: T | string, options: T | UpdateAggregationStage | UpdateQuery<T>): Promise<T> {
         if (typeof toUpdate !== 'string' && typeof toUpdate !== 'object') {
             throw new TypeError('toUpdate must me either an object or a document ID.');
         }
@@ -109,7 +109,7 @@ export default class DatabaseManager<T extends { _id: string, guild?: string }> 
      * @param filter - The ID or fetching filter for this document
      * @returns The fetched document
      */
-    public async fetch(filter: string | FilterQuery<T> = {}): Promise<T | null> {
+    public async fetch(filter: FilterQuery<T> | string = {}): Promise<T | null> {
         const { guild, schema } = this;
         if (typeof filter === 'string') {
             const existing = this.cache.get(filter);

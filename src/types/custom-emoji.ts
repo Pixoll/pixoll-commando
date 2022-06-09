@@ -46,9 +46,9 @@ export default class CustomEmojiArgumentType extends ArgumentType {
 }
 
 function nameFilterExact(search: string) {
-    return (emoji: GuildEmoji) => emoji.name!.toLowerCase() === search;
+    return (emoji: GuildEmoji): boolean => emoji.name!.toLowerCase() === search;
 }
 
 function nameFilterInexact(search: string) {
-    return (emoji: GuildEmoji) => emoji.name!.toLowerCase().includes(search);
+    return (emoji: GuildEmoji): boolean => emoji.name!.toLowerCase().includes(search);
 }

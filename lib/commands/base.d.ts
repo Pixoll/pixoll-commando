@@ -107,7 +107,7 @@ interface CommandInfo {
      * When 'multiple', it will be passed as multiple arguments.
      * @default 'single'
      */
-    argsType?: 'single' | 'multiple';
+    argsType?: 'multiple' | 'single';
     /**
      * The number of arguments to parse from the command string. Only applicable when argsType is 'multiple'.
      * If nonzero, it should be at least 2. When this is 0, the command argument string will be split into as
@@ -166,7 +166,7 @@ export interface CommandInstances {
     interaction?: CommandoInteraction | null;
 }
 /** The reason of {@link Command#onBlock} */
-export declare type CommandBlockReason = 'guildOnly' | 'nsfw' | 'dmOnly' | 'guildOwnerOnly' | 'ownerOnly' | 'userPermissions' | 'modPermissions' | 'clientPermissions' | 'throttling';
+export declare type CommandBlockReason = 'clientPermissions' | 'dmOnly' | 'guildOnly' | 'guildOwnerOnly' | 'modPermissions' | 'nsfw' | 'ownerOnly' | 'throttling' | 'userPermissions';
 /** Additional data associated with the block */
 export interface CommandBlockData {
     /**
@@ -216,10 +216,10 @@ interface SlashCommandOptionInfo {
     /** The maximum value permitted - only usable if `type` is `integer` or `number` */
     maxValue?: number;
     /** The choices options for the option - only usable if `type` is `string`, `integer` or `number` */
-    choices?: {
+    choices?: Array<{
         name: string;
-        value: string | number;
-    }[];
+        value: number | string;
+    }>;
     /** The type options for the option - only usable if `type` is `channel` */
     channelTypes?: SlashCommandChannelType[];
     /** The options for the sub-command - only usable if `type` is `subcommand` */
@@ -227,8 +227,8 @@ interface SlashCommandOptionInfo {
     /** Enable autocomplete interactions for this option - may not be set to true if `choices` are present */
     autocomplete?: boolean;
 }
-declare type SlashCommandOptionType = 'subcommand' | 'subcommand-group' | 'string' | 'integer' | 'boolean' | 'user' | 'channel' | 'role' | 'mentionable' | 'number';
-declare type SlashCommandChannelType = 'guild-text' | 'guild-voice' | 'guild-category' | 'guild-news' | 'guild-news-thread' | 'guild-public-thread' | 'guild-private-thread' | 'guild-stage-voice';
+declare type SlashCommandOptionType = 'boolean' | 'channel' | 'integer' | 'mentionable' | 'number' | 'role' | 'string' | 'subcommand-group' | 'subcommand' | 'user';
+declare type SlashCommandChannelType = 'guild-category' | 'guild-news-thread' | 'guild-news' | 'guild-private-thread' | 'guild-public-thread' | 'guild-stage-voice' | 'guild-text' | 'guild-voice';
 /** A command that can be run in a client */
 export default abstract class Command {
     /** Client that this command is for */
@@ -274,7 +274,7 @@ export default abstract class Command {
     /** The argument collector for the command */
     argsCollector: ArgumentCollector | null;
     /** How the arguments are split when passed to the command's run method */
-    argsType: 'single' | 'multiple';
+    argsType: 'multiple' | 'single';
     /** Maximum number of arguments that will be split */
     argsCount: number;
     /** Whether single quotes are allowed to encapsulate an argument */
@@ -314,7 +314,7 @@ export default abstract class Command {
      * @param ownerOverride - Whether the bot owner(s) will always have permission
      * @return Whether the user has permission, or an error message to respond with if they don't
      */
-    hasPermission(instances: CommandInstances, ownerOverride?: boolean): true | CommandBlockReason | PermissionString[];
+    hasPermission(instances: CommandInstances, ownerOverride?: boolean): CommandBlockReason | PermissionString[] | true;
     /**
      * Runs the command
      * @param instances - The message the command is being run for
@@ -325,9 +325,8 @@ export default abstract class Command {
      * {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec RegExp#exec}).
      * @param fromPattern - Whether or not the command is being run from a pattern match
      * @param result - Result from obtaining the arguments from the collector (if applicable)
-     * @return {Promise<?Message|?Array<Message>>}
      */
-    run(instances: CommandInstances, args: Record<string, unknown> | string | string[], fromPattern?: boolean, result?: ArgumentCollectorResult | null): Promise<Message | Array<Message> | null>;
+    run(instances: CommandInstances, args: Record<string, unknown> | string[] | string, fromPattern?: boolean, result?: ArgumentCollectorResult | null): Promise<Message | Message[] | null>;
     /**
      * Called when the command is prevented from running
      * @param instances - The instances the command is being run for
@@ -338,7 +337,7 @@ export default abstract class Command {
      * - throttling: `throttle` ({@link Object}), `remaining` ({@link number}) time in seconds
      * - userPermissions & clientPermissions: `missing` ({@link Array}<{@link string}>) permission names
      */
-    onBlock(instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData): Promise<Message | APIMessage | null>;
+    onBlock(instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData): Promise<APIMessage | Message | null>;
     /**
      * Called when the command produces an error while running
      * @param err - Error that was thrown
@@ -348,7 +347,7 @@ export default abstract class Command {
      * @param result - Result from obtaining the arguments from the collector
      * (if applicable - see {@link Command#run})
      */
-    onError(err: Error, instances: CommandInstances, args: Record<string, unknown> | string | string[], fromPattern?: boolean, result?: ArgumentCollectorResult | null): Promise<Message | Message[] | null>;
+    onError(err: Error, instances: CommandInstances, args: Record<string, unknown> | string[] | string, fromPattern?: boolean, result?: ArgumentCollectorResult | null): Promise<Message | Message[] | null>;
     /**
      * Creates/obtains the throttle object for a user, if necessary (owners are excluded)
      * @param userId - ID of the user to throttle for
@@ -377,7 +376,7 @@ export default abstract class Command {
      * @param prefix - Prefix to use for the prefixed command format
      * @param user - User to use for the mention command format
      */
-    usage(argString?: string, prefix?: string | undefined | null, user?: User | null): string;
+    usage(argString?: string, prefix?: string | null | undefined, user?: User | null): string;
     /** Reloads the command */
     reload(): void;
     /** Unloads the command */

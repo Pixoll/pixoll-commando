@@ -29,7 +29,7 @@ export default async function modulesLoader(client: CommandoClient): Promise<voi
     for (const schema of Object.values(schemas)) {
         const objs = await schema.find({});
         const name = Util.removeDashes(schema.collection.name);
-        const entries = objs.map(obj => ([`${obj._id}`, obj])) as [string, DefaultDocument][];
+        const entries = objs.map(obj => ([`${obj._id}`, obj])) as Array<[string, DefaultDocument]>;
         const coll = new Collection(entries);
         data.set(name, coll);
     }

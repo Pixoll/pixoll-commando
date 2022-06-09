@@ -51,9 +51,9 @@ export default class ChannelArgumentType extends ArgumentType {
 }
 
 function nameFilterExact(search: string) {
-    return (chan: GuildBasedChannel) => chan.name.toLowerCase() === search;
+    return (chan: GuildBasedChannel): boolean => chan.name.toLowerCase() === search;
 }
 
 function nameFilterInexact(search: string) {
-    return (chan: GuildBasedChannel) => chan.name.toLowerCase().includes(search);
+    return (chan: GuildBasedChannel): boolean => chan.name.toLowerCase().includes(search);
 }

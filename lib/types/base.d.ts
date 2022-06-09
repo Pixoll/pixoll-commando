@@ -20,7 +20,7 @@ export default abstract class ArgumentType {
      * @param currentMsg - Current response message
      * @return Whether the value is valid, or an error message
      */
-    validate(val: string, originalMsg: CommandoMessage, arg: Argument, currentMsg?: CommandoMessage): boolean | string | Promise<boolean | string>;
+    validate(val: string, originalMsg: CommandoMessage, arg: Argument, currentMsg?: CommandoMessage): Promise<boolean | string> | boolean | string;
     /**
      * Parses the raw value string into a usable value
      * @param val - Value to parse
@@ -29,7 +29,7 @@ export default abstract class ArgumentType {
      * @param currentMsg - Current response message
      * @return Usable value
      */
-    parse(val: string, originalMsg: CommandoMessage, arg: Argument, currentMsg?: CommandoMessage): unknown | Promise<unknown>;
+    parse(val: string, originalMsg: CommandoMessage, arg: Argument, currentMsg?: CommandoMessage): unknown;
     /**
      * Checks whether a value is considered to be empty. This determines whether the default value for an argument
      * should be used and changes the response to the user under certain circumstances.
@@ -39,5 +39,5 @@ export default abstract class ArgumentType {
      * @param currentMsg - Current response message
      * @return Whether the value is empty
      */
-    isEmpty(val: string, originalMsg: CommandoMessage, arg: Argument, currentMsg?: CommandoMessage): boolean;
+    isEmpty(val: string[] | string, originalMsg: CommandoMessage, arg: Argument, currentMsg?: CommandoMessage): boolean;
 }

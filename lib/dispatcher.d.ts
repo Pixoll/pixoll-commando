@@ -1,7 +1,7 @@
 import { Message, CommandInteraction, GuildMember, TextBasedChannel } from 'discord.js';
 import CommandoClient from './client';
 import CommandoGuild from './extensions/guild';
-import CommandoMessage from './extensions/message';
+import CommandoMessage, { CommandoMessageResponse } from './extensions/message';
 import CommandoRegistry from './registry';
 interface Inhibition {
     /** Identifier for the reason the command is being blocked */
@@ -17,7 +17,7 @@ interface Inhibition {
  * - A single string identifying the reason the command is blocked
  * - An Inhibition object
  */
-declare type Inhibitor = (msg: CommandoMessage) => boolean | string | Inhibition;
+declare type Inhibitor = (msg: CommandoMessage) => Inhibition | boolean | string;
 declare class CommandoMember extends GuildMember {
     guild: CommandoGuild;
 }
@@ -95,7 +95,7 @@ export default class CommandDispatcher {
      * @param cmdMsg - Command message to cache
      * @param responses - Responses to the message
      */
-    protected cacheCommandoMessage(message: Message, oldMessage: Message, cmdMsg: CommandoMessage, responses: Message | Message[]): void;
+    protected cacheCommandoMessage(message: CommandoMessage, oldMessage: Message | undefined, cmdMsg: CommandoMessage | null, responses: CommandoMessageResponse): void;
     /**
      * Parses a message to find details about command usage in it
      * @param message - The message

@@ -27,7 +27,7 @@ interface CommandoClientOptions extends ClientOptions {
      */
     nonCommandEditable?: boolean;
     /** ID of the bot owner's Discord user, or multiple ids */
-    owner?: string | string[] | Set<string>;
+    owner?: Set<string> | string[] | string;
     /** Invite URL to the bot's support server */
     serverInvite?: string;
     /** Invite options for the bot */
@@ -43,7 +43,7 @@ interface CommandoClientOptions extends ClientOptions {
 }
 declare class CommandoGuildManager extends CachedManager<Snowflake, CommandoGuild, GuildResolvable> {
     create(name: string, options?: GuildCreateOptions): Promise<CommandoGuild>;
-    fetch(options: Snowflake | FetchGuildOptions): Promise<CommandoGuild>;
+    fetch(options: FetchGuildOptions | Snowflake): Promise<CommandoGuild>;
     fetch(options?: FetchGuildsOptions): Promise<Collection<Snowflake, CommandoGuild>>;
 }
 interface CommandoClientEvents extends ClientEvents {
@@ -53,7 +53,7 @@ interface CommandoClientEvents extends ClientEvents {
         command: Command,
         error: Error,
         instances: CommandInstances,
-        args: object | string | string[],
+        args: string[] | object | string,
         fromPattern: boolean,
         result?: ArgumentCollectorResult
     ];
@@ -67,7 +67,7 @@ interface CommandoClientEvents extends ClientEvents {
         command: Command,
         promise: Promise<unknown>,
         instances: CommandInstances,
-        args: object | string | string[],
+        args: string[] | object | string,
         fromPattern?: boolean,
         result?: ArgumentCollectorResult | null
     ];
@@ -122,7 +122,7 @@ export default class CommandoClient extends Client {
      * {@link CommandoClient#isOwner}.</info>
      * @readonly
      */
-    get owners(): null | User[];
+    get owners(): User[] | null;
     /**
      * Checks whether a user is an owner of the bot (in {@link CommandoClientOptions#owner})
      * @param user - User to check for ownership

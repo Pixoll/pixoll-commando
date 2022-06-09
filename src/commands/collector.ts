@@ -12,7 +12,7 @@ export interface ArgumentCollectorResult<T = Record<string, unknown>> {
      * - `time` (wait time exceeded)
      * - `promptLimit` (prompt limit exceeded)
      */
-    cancelled: 'user' | 'time' | 'promptLimit' | null;
+    cancelled: 'promptLimit' | 'time' | 'user' | null;
     /** All messages that were sent to prompt the user */
     prompts: ArgumentResponse[];
     /** All of the user's messages that answered a prompt */
@@ -70,7 +70,7 @@ export default class ArgumentCollector {
 
         // @ts-expect-error: _awaiting should not be used outside of class CommandDispatcher
         dispatcher._awaiting.add(id);
-        const values = {} as Record<string, unknown>;
+        const values: Record<string, unknown> = {};
         const results = [];
 
         try {

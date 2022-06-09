@@ -64,9 +64,9 @@ export default class VoiceChannelArgumentType extends ArgumentType {
 }
 
 function channelFilterExact(search: string) {
-    return (chan: GuildBasedChannel) => chan.type === 'GUILD_VOICE' && chan.name.toLowerCase() === search;
+    return (chan: GuildBasedChannel): boolean => chan.type === 'GUILD_VOICE' && chan.name.toLowerCase() === search;
 }
 
 function channelFilterInexact(search: string) {
-    return (chan: GuildBasedChannel) => chan.type === 'GUILD_VOICE' && chan.name.toLowerCase().includes(search);
+    return (chan: GuildBasedChannel): boolean => chan.type === 'GUILD_VOICE' && chan.name.toLowerCase().includes(search);
 }

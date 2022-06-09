@@ -51,9 +51,9 @@ export default class RoleArgumentType extends ArgumentType {
 }
 
 function nameFilterExact(search: string) {
-    return (role: Role) => role.name.toLowerCase() === search;
+    return (role: Role): boolean => role.name.toLowerCase() === search;
 }
 
 function nameFilterInexact(search: string) {
-    return (role: Role) => role.name.toLowerCase().includes(search);
+    return (role: Role): boolean => role.name.toLowerCase().includes(search);
 }

@@ -11,7 +11,7 @@ export interface ArgumentCollectorResult<T = Record<string, unknown>> {
      * - `time` (wait time exceeded)
      * - `promptLimit` (prompt limit exceeded)
      */
-    cancelled: 'user' | 'time' | 'promptLimit' | null;
+    cancelled: 'promptLimit' | 'time' | 'user' | null;
     /** All messages that were sent to prompt the user */
     prompts: ArgumentResponse[];
     /** All of the user's messages that answered a prompt */

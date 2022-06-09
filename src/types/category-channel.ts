@@ -67,9 +67,9 @@ export default class CategoryChannelArgumentType extends ArgumentType {
 }
 
 function channelFilterExact(search: string) {
-    return (chan: GuildBasedChannel) => chan.type === 'GUILD_CATEGORY' && chan.name.toLowerCase() === search;
+    return (chan: GuildBasedChannel): boolean => chan.type === 'GUILD_CATEGORY' && chan.name.toLowerCase() === search;
 }
 
 function channelFilterInexact(search: string) {
-    return (chan: GuildBasedChannel) => chan.type === 'GUILD_CATEGORY' && chan.name.toLowerCase().includes(search);
+    return (chan: GuildBasedChannel): boolean => chan.type === 'GUILD_CATEGORY' && chan.name.toLowerCase().includes(search);
 }

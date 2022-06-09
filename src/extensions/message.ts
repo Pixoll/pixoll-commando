@@ -11,15 +11,15 @@ import CommandoClient from '../client';
 import CommandoGuild from './guild';
 
 /** Type of the response */
-type ResponseType = 'reply' | 'direct' | 'plain' | 'code';
+type ResponseType = 'code' | 'direct' | 'plain' | 'reply';
 
-type StringResolvable = string | string[] | object;
+type StringResolvable = string[] | object | string;
 
 interface ResponseOptions {
     /** Type of the response */
     type?: ResponseType;
     /** Content of the response */
-    content?: StringResolvable | MessageOptions;
+    content?: MessageOptions | StringResolvable;
     /** Options of the response */
     options?: MessageOptions;
     /** Language of the response, if its type is `code` */
@@ -29,7 +29,7 @@ interface ResponseOptions {
 }
 
 // eslint-disable-next-line no-use-before-define
-export type CommandoMessageResponse = CommandoMessage | Message | (CommandoMessage | Message)[] | null;
+export type CommandoMessageResponse = CommandoMessage | Message | Message[] | null;
 
 /**
  * An extension of the base Discord.js Message class to add command-related functionality.
@@ -118,7 +118,7 @@ export default class CommandoMessage extends Message {
      * Parses the argString into usable arguments, based on the argsType and argsCount of the command
      * @see {@link Command#run}
      */
-    public parseArgs(): string | string[] {
+    public parseArgs(): string[] | string {
         const { command, argString } = this;
         const { argsType, argsSingleQuotes, argsCount } = command!;
         switch (argsType) {
@@ -135,8 +135,13 @@ export default class CommandoMessage extends Message {
 
     /** Runs the command */
     public async run(): Promise<CommandoMessageResponse> {
-        const { guild, guildId, channel, channelId, author, webhookId, client, command, patternMatches, argString } = this;
+        const { guild, guildId, channel, channelId, author, client, command, patternMatches, argString } = this;
         const { groupId, memberName } = command!;
+
+        // Obtain the member for the ClientUser if it doesn't already exist
+        if (channel.type !== 'DM' && !guild.members.cache.has(client.user!.id)) {
+            await guild.members.fetch(client.user!.id);
+        }
 
         // Checks if the client has permission to send messages
         // @ts-expect-error: some TextBasedChannel sub-types are not assignable to GuildChannelResolvable
@@ -146,17 +151,6 @@ export default class CommandoMessage extends Message {
                 It seems like I cannot **Send Messages** in this channel: ${channel.toString()}
                 Please try in another channel, or contact the admins of **${guild.name}** to solve this issue.
             `).catch(() => null);
-        }
-
-        // Obtain the member if we don't have it
-        if (channel.type !== 'DM' && !guild.members.cache.has(author.id) && !webhookId) {
-            // @ts-expect-error: member is read-only
-            this.member = await guild.members.fetch(author);
-        }
-
-        // Obtain the member for the ClientUser if it doesn't already exist
-        if (channel.type !== 'DM' && !guild.members.cache.has(client.user!.id)) {
-            await guild.members.fetch(client.user!.id);
         }
 
         // Make sure the command is usable in this context
@@ -222,7 +216,7 @@ export default class CommandoMessage extends Message {
         }
 
         // Figure out the command arguments
-        let args: Record<string, unknown> | string | string[] | null = patternMatches;
+        let args: Record<string, unknown> | string[] | string | null = patternMatches;
         let collResult = null;
         if (!args && command!.argsCollector) {
             const collArgs = command!.argsCollector.args;
@@ -355,7 +349,7 @@ export default class CommandoMessage extends Message {
         const { type, options: msgOptions = {} } = options;
         if (!response) return this.respond({ type, options: msgOptions, fromEdit: true });
 
-        const { content } = msgOptions;
+        const content = msgOptions.content as StringResolvable;
         if (Array.isArray(content)) {
             const promises = [];
             if (Array.isArray(response)) {

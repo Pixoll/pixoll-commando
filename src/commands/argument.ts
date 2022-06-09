@@ -7,35 +7,35 @@ import ArgumentUnionType from '../types/union';
 import Util from '../util';
 
 type ArgumentCheckerParams = [
-    val: string,
+    val: string[] | string,
     originalMsg: CommandoMessage,
     arg: Argument, // eslint-disable-line no-use-before-define
     currentMsg?: CommandoMessage
 ]
 
 type ArgumentTypes =
-    | 'string'
-    | 'integer'
-    | 'float'
     | 'boolean'
-    | 'duration'
-    | 'date'
-    | 'time'
-    | 'user'
-    | 'member'
-    | 'role'
+    | 'category-channel'
     | 'channel'
+    | 'command'
+    | 'custom-emoji'
+    | 'date'
+    | 'default-emoji'
+    | 'duration'
+    | 'float'
+    | 'group'
+    | 'integer'
+    | 'invite'
+    | 'member'
+    | 'message'
+    | 'role'
+    | 'stage-channel'
+    | 'string'
     | 'text-channel'
     | 'thread-channel'
-    | 'voice-channel'
-    | 'stage-channel'
-    | 'category-channel'
-    | 'message'
-    | 'invite'
-    | 'custom-emoji'
-    | 'default-emoji'
-    | 'command'
-    | 'group';
+    | 'time'
+    | 'user'
+    | 'voice-channel';
 
 /** Either a value or a function that returns a value. The function is passed the CommandoMessage and the Argument. */
 type ArgumentDefault = (msg: CommandoMessage, arg: Argument) => Promise<unknown>; // eslint-disable-line no-use-before-define
@@ -71,7 +71,7 @@ export interface ArgumentInfo {
     /** Default value for the argument (makes the arg optional - cannot be `null`) */
     default?: ArgumentDefault;
     /** An array of values that are allowed to be used */
-    oneOf?: (string | number)[];
+    oneOf?: Array<number | string>;
     /**
      * Whether the argument is required or not
      * @default true
@@ -88,9 +88,9 @@ export interface ArgumentInfo {
      */
     infinite?: boolean;
     /** Validator function for the argument (see {@link ArgumentType#validate}) */
-    validate?: (...args: ArgumentCheckerParams) => boolean | string | Promise<boolean | string>;
+    validate?: (...args: ArgumentCheckerParams) => Promise<boolean | string> | boolean | string;
     /** Parser function for the argument (see {@link ArgumentType#parse}) */
-    parse?: (...args: ArgumentCheckerParams) => unknown | Promise<unknown>;
+    parse?: (...args: ArgumentCheckerParams) => unknown;
     /** Empty checker for the argument (see {@link ArgumentType#isEmpty}) */
     isEmpty?: (...args: ArgumentCheckerParams) => boolean;
     /**
@@ -105,14 +105,14 @@ export type ArgumentResponse = CommandoMessage | Message | null;
 /** Result object from obtaining a single {@link Argument}'s value(s) */
 export interface ArgumentResult {
     /** Final value(s) for the argument */
-    value: unknown | unknown[] | null;
+    value: unknown;
     /**
      * One of:
      * - `user` (user cancelled)
      * - `time` (wait time exceeded)
      * - `promptLimit` (prompt limit exceeded)
      */
-    cancelled: 'user' | 'time' | 'promptLimit' | null;
+    cancelled: 'promptLimit' | 'time' | 'user' | null;
     /** All messages that were sent to prompt the user */
     prompts: ArgumentResponse[];
     /** All of the user's messages that answered a prompt */
@@ -155,7 +155,7 @@ export default class Argument {
      * - If type is `string`, this will be case-insensitive.
      * - If type is `channel`, `member`, `role`, or `user`, this will be the IDs.
      */
-    public oneOf: (string | number)[] | null;
+    public oneOf: Array<number | string> | null;
     /** Whether the argument accepts an infinite number of values */
     public infinite: boolean;
     /**
@@ -440,7 +440,7 @@ export default class Argument {
      */
     public validate(
         val: string, originalMsg: CommandoMessage, currentMsg: CommandoMessage = originalMsg
-    ): boolean | string | Promise<boolean | string> {
+    ): Promise<boolean | string> | boolean | string {
         const valid = this.validator ?
             this.validator(val, originalMsg, this, currentMsg) :
             this.type!.validate(val, originalMsg, this, currentMsg);
@@ -476,7 +476,9 @@ export default class Argument {
      * @param originalMsg - Message that triggered the command
      * @param currentMsg - Current response message
      */
-    public isEmpty(val: string, originalMsg: CommandoMessage, currentMsg: CommandoMessage = originalMsg): boolean {
+    public isEmpty(
+        val: string[] | string, originalMsg: CommandoMessage, currentMsg: CommandoMessage = originalMsg
+    ): boolean {
         if (this.emptyChecker) return this.emptyChecker(val, originalMsg, this, currentMsg);
         if (this.type) return this.type.isEmpty(val, originalMsg, this, currentMsg);
         if (Array.isArray(val)) return val.length === 0;
@@ -495,8 +497,7 @@ export default class Argument {
         if (info.label && typeof info.label !== 'string') throw new TypeError('Argument label must be a string.');
         if (typeof info.prompt !== 'string') throw new TypeError('Argument prompt must be a string.');
         if (info.error && typeof info.error !== 'string') throw new TypeError('Argument error must be a string.');
-        // @ts-expect-error: Type 'string' is not assignable to type 'ArgumentTypes'
-        if (Array.isArray(info.type)) info.type = info.type.join('|');
+        if (Array.isArray(info.type)) info.type = info.type.join('|') as ArgumentTypes;
         if (info.type && typeof info.type !== 'string') {
             throw new TypeError('Argument type must be a string or an Array of strings.');
         }
@@ -525,7 +526,7 @@ export default class Argument {
      * @param client - Client to use the registry of
      * @param id - ID of the type to use
      */
-    protected static determineType(client: CommandoClient, id: string | string[]): ArgumentType | null {
+    protected static determineType(client: CommandoClient, id: string[] | string): ArgumentType | null {
         if (!id) return null;
         if (Array.isArray(id)) id = id.join('|');
         if (!id.includes('|')) return client.registry.types.get(id)!;

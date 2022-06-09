@@ -41,13 +41,13 @@ export default class DatabaseManager<T extends {
      * @param options - The options for this update
      * @returns The updated document
      */
-    update(toUpdate: T | string, options: UpdateAggregationStage | UpdateQuery<T> | T): Promise<T>;
+    update(toUpdate: T | string, options: T | UpdateAggregationStage | UpdateQuery<T>): Promise<T>;
     /**
      * Fetch a single document
      * @param filter - The ID or fetching filter for this document
      * @returns The fetched document
      */
-    fetch(filter?: string | FilterQuery<T>): Promise<T | null>;
+    fetch(filter?: FilterQuery<T> | string): Promise<T | null>;
     /**
      * Fetch multiple documents
      * @param filter - The fetching filter for the documents

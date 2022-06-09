@@ -3,12 +3,12 @@ import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 import ArgumentType from '../types/base';
 declare type ArgumentCheckerParams = [
-    val: string,
+    val: string[] | string,
     originalMsg: CommandoMessage,
     arg: Argument,
     currentMsg?: CommandoMessage
 ];
-declare type ArgumentTypes = 'string' | 'integer' | 'float' | 'boolean' | 'duration' | 'date' | 'time' | 'user' | 'member' | 'role' | 'channel' | 'text-channel' | 'thread-channel' | 'voice-channel' | 'stage-channel' | 'category-channel' | 'message' | 'invite' | 'custom-emoji' | 'default-emoji' | 'command' | 'group';
+declare type ArgumentTypes = 'boolean' | 'category-channel' | 'channel' | 'command' | 'custom-emoji' | 'date' | 'default-emoji' | 'duration' | 'float' | 'group' | 'integer' | 'invite' | 'member' | 'message' | 'role' | 'stage-channel' | 'string' | 'text-channel' | 'thread-channel' | 'time' | 'user' | 'voice-channel';
 /** Either a value or a function that returns a value. The function is passed the CommandoMessage and the Argument. */
 declare type ArgumentDefault = (msg: CommandoMessage, arg: Argument) => Promise<unknown>;
 /** Information for the command argument */
@@ -42,7 +42,7 @@ export interface ArgumentInfo {
     /** Default value for the argument (makes the arg optional - cannot be `null`) */
     default?: ArgumentDefault;
     /** An array of values that are allowed to be used */
-    oneOf?: (string | number)[];
+    oneOf?: Array<number | string>;
     /**
      * Whether the argument is required or not
      * @default true
@@ -59,9 +59,9 @@ export interface ArgumentInfo {
      */
     infinite?: boolean;
     /** Validator function for the argument (see {@link ArgumentType#validate}) */
-    validate?: (...args: ArgumentCheckerParams) => boolean | string | Promise<boolean | string>;
+    validate?: (...args: ArgumentCheckerParams) => Promise<boolean | string> | boolean | string;
     /** Parser function for the argument (see {@link ArgumentType#parse}) */
-    parse?: (...args: ArgumentCheckerParams) => unknown | Promise<unknown>;
+    parse?: (...args: ArgumentCheckerParams) => unknown;
     /** Empty checker for the argument (see {@link ArgumentType#isEmpty}) */
     isEmpty?: (...args: ArgumentCheckerParams) => boolean;
     /**
@@ -74,14 +74,14 @@ export declare type ArgumentResponse = CommandoMessage | Message | null;
 /** Result object from obtaining a single {@link Argument}'s value(s) */
 export interface ArgumentResult {
     /** Final value(s) for the argument */
-    value: unknown | unknown[] | null;
+    value: unknown;
     /**
      * One of:
      * - `user` (user cancelled)
      * - `time` (wait time exceeded)
      * - `promptLimit` (prompt limit exceeded)
      */
-    cancelled: 'user' | 'time' | 'promptLimit' | null;
+    cancelled: 'promptLimit' | 'time' | 'user' | null;
     /** All messages that were sent to prompt the user */
     prompts: ArgumentResponse[];
     /** All of the user's messages that answered a prompt */
@@ -123,7 +123,7 @@ export default class Argument {
      * - If type is `string`, this will be case-insensitive.
      * - If type is `channel`, `member`, `role`, or `user`, this will be the IDs.
      */
-    oneOf: (string | number)[] | null;
+    oneOf: Array<number | string> | null;
     /** Whether the argument accepts an infinite number of values */
     infinite: boolean;
     /**
@@ -168,7 +168,7 @@ export default class Argument {
      * @param originalMsg - Message that triggered the command
      * @param currentMsg - Current response message
      */
-    validate(val: string, originalMsg: CommandoMessage, currentMsg?: CommandoMessage): boolean | string | Promise<boolean | string>;
+    validate(val: string, originalMsg: CommandoMessage, currentMsg?: CommandoMessage): Promise<boolean | string> | boolean | string;
     /**
      * Parses a value string into a proper value for the argument
      * @param val - Value to parse
@@ -182,7 +182,7 @@ export default class Argument {
      * @param originalMsg - Message that triggered the command
      * @param currentMsg - Current response message
      */
-    isEmpty(val: string, originalMsg: CommandoMessage, currentMsg?: CommandoMessage): boolean;
+    isEmpty(val: string[] | string, originalMsg: CommandoMessage, currentMsg?: CommandoMessage): boolean;
     /**
      * Validates the constructor parameters
      * @param client - Client to validate
@@ -194,6 +194,6 @@ export default class Argument {
      * @param client - Client to use the registry of
      * @param id - ID of the type to use
      */
-    protected static determineType(client: CommandoClient, id: string | string[]): ArgumentType | null;
+    protected static determineType(client: CommandoClient, id: string[] | string): ArgumentType | null;
 }
 export {};

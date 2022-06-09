@@ -34,7 +34,7 @@ export default abstract class ArgumentType {
     public validate(
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         val: string, originalMsg: CommandoMessage, arg: Argument, currentMsg?: CommandoMessage
-    ): boolean | string | Promise<boolean | string> {
+    ): Promise<boolean | string> | boolean | string {
         throw new Error(`${this.constructor.name} doesn't have a validate() method.`);
     }
 
@@ -49,7 +49,7 @@ export default abstract class ArgumentType {
     public parse(
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         val: string, originalMsg: CommandoMessage, arg: Argument, currentMsg?: CommandoMessage
-    ): unknown | Promise<unknown> {
+    ): unknown {
         throw new Error(`${this.constructor.name} doesn't have a parse() method.`);
     }
 
@@ -64,7 +64,7 @@ export default abstract class ArgumentType {
      */
     public isEmpty(
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        val: string, originalMsg: CommandoMessage, arg: Argument, currentMsg: CommandoMessage = originalMsg
+        val: string[] | string, originalMsg: CommandoMessage, arg: Argument, currentMsg: CommandoMessage = originalMsg
     ): boolean {
         if(Array.isArray(val)) return val.length === 0;
         return !val;

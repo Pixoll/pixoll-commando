@@ -13,7 +13,7 @@ export interface SplitOptions {
      * Character(s) or Regex(es) to split the message with, an array can be used to split multiple times.
      * @default '\n'
      */
-    char?: string | string[] | RegExp | RegExp[];
+    char?: RegExp | RegExp[] | string[] | string;
     /** Text to prepend to every piece except the first. */
     prepend?: string;
     /** Text to append to every piece except the last. */
@@ -23,6 +23,7 @@ export interface SplitOptions {
 /** Contains various general-purpose utility methods and constants. */
 export default class Util extends null {
     /** Object that maps every PermissionString to its representation inside the Discord client. */
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     static get permissions() {
         return {
             CREATE_INSTANT_INVITE: 'Create instant invite',
@@ -104,7 +105,7 @@ export default class Util extends null {
      * @param msg - The message instance.
      * @returns A {@link MessageOptions} object.
      */
-    static noReplyPingInDMs(msg: Message | CommandoMessage): MessageOptions {
+    static noReplyPingInDMs(msg: CommandoMessage | Message): MessageOptions {
         const options: MessageOptions = msg.channel.type === 'DM' ? {
             allowedMentions: { repliedUser: false }
         } : {};
@@ -119,7 +120,7 @@ export default class Util extends null {
      * @param property - The property to read from the objects (only usable if `items` is an array of objects).
      * @returns A string with the disambiguated items.
      */
-    static disambiguation(items: (string | Record<string, string>)[], label: string, property = 'name'): string {
+    static disambiguation(items: Array<Record<string, string> | string>, label: string, property = 'name'): string {
         const itemList = items.map(item =>
             `"${(property && typeof item !== 'string' ? item[property] : item as string).replace(/ /g, '\xa0')}"`
         ).join(',   ');
