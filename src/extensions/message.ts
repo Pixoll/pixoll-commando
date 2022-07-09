@@ -530,13 +530,13 @@ export default class CommandoMessage extends Message {
         const argStringModified = removeSmartQuotes(argString, allowSingleQuote);
         const regex = allowSingleQuote ? /\s*(?:("|')([^]*?)\1|(\S+))\s*/g : /\s*(?:(")([^]*?)"|(\S+))\s*/g;
         const result = [];
-        let match: RegExpExecArray | null = null;
+        let match: string[] | null = [];
 
         // Large enough to get all items
         argCount ||= argStringModified.length;
 
         // Get match and push the capture group that is not null to the result
-        while (argCount-- && (match = regex.exec(argStringModified))) result.push(match[2] || match[3]);
+        while (--argCount && (match = regex.exec(argStringModified))) result.push(match[2] || match[3]);
 
         // If text remains, push it to the array as-is (except for wrapping quotes, which are removed)
         if (match && regex.lastIndex < argStringModified.length) {
