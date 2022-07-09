@@ -214,7 +214,7 @@ export default class CommandDispatcher {
                 `).catch(() => null);
             }
 
-            if (clientPerms.USE_APPLICATION_COMMANDS) {
+            if (!clientPerms.USE_APPLICATION_COMMANDS) {
                 return await user.send(stripIndent`
                     It seems like I cannot **Use Application Commands** in this channel: ${channel.toString()}
                     Please try in another channel, or contact the admins of **${guild.name}** to solve this issue.
