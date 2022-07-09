@@ -1598,6 +1598,7 @@ interface CommandoClientEvents extends ClientEvents {
     groupRegister: [group: CommandGroup, registry: CommandoRegistry];
     groupStatusChange: [guild: CommandoGuild | null, group: CommandGroup, enabled: boolean];
     guildsReady: [client: CommandoClient];
+    modulesReady: [client: CommandoClient];
     typeRegister: [type: ArgumentType, registry: CommandoRegistry];
     unknownCommand: [message: CommandoMessage];
 }
