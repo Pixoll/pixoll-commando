@@ -1,15 +1,8 @@
 import { Collection } from 'discord.js';
 import { isEqual } from 'lodash';
-import { FilterQuery, Model, UpdateAggregationStage, UpdateQuery } from 'mongoose';
+import { FilterQuery, UpdateAggregationStage, UpdateQuery } from 'mongoose';
 import CommandoGuild from '../extensions/guild';
-
-// @ts-expect-error: incompatible methods between interfaces
-export interface DataModel<T> extends Model<T> {
-    find(filter: FilterQuery<T>): Promise<T[]>
-    findOne(filter: FilterQuery<T>): Promise<T>
-    findById(id: string): Promise<T>
-    updateOne(filter: FilterQuery<T>): Promise<T>
-}
+import { DataModel } from './util/schemas';
 
 /** A database schema manager (MongoDB) */
 export default class DatabaseManager<T extends { _id: string, guild?: string }> {
@@ -24,10 +17,9 @@ export default class DatabaseManager<T extends { _id: string, guild?: string }> 
      * @param schema - The schema of this manager
      * @param guild - The guild this manager is for
      */
-    public constructor(schema: Model<T>, guild?: CommandoGuild) {
+    public constructor(schema: DataModel<T>, guild?: CommandoGuild) {
         Object.defineProperty(this, 'guild', { value: guild ?? null });
 
-        // @ts-expect-error: incompatible methods between interfaces
         this.schema = schema;
         this.cache = new Collection();
     }

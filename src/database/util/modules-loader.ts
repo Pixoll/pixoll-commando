@@ -1,7 +1,7 @@
 import { Collection } from 'discord.js';
 import { connect } from 'mongoose';
 import requireAll from 'require-all';
-import * as schemas from './schemas';
+import schemas from './schemas';
 import Util from '../../util';
 import CommandoClient from '../../client';
 

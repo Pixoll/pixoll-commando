@@ -1,43 +1,11 @@
-/// <reference types="mongoose/types/aggregate" />
-/// <reference types="mongoose/types/callback" />
-/// <reference types="mongoose/types/collection" />
-/// <reference types="mongoose/types/connection" />
-/// <reference types="mongoose/types/cursor" />
-/// <reference types="mongoose/types/document" />
-/// <reference types="mongoose/types/error" />
-/// <reference types="mongoose/types/helpers" />
-/// <reference types="mongoose/types/middlewares" />
-/// <reference types="mongoose/types/indizes" />
-/// <reference types="mongoose/types/models" />
-/// <reference types="mongoose/types/mongooseoptions" />
-/// <reference types="mongoose/types/pipelinestage" />
-/// <reference types="mongoose/types/populate" />
-/// <reference types="mongoose/types/query" />
-/// <reference types="mongoose/types/schemaoptions" />
-/// <reference types="mongoose/types/schematypes" />
-/// <reference types="mongoose/types/session" />
-/// <reference types="mongoose/types/types" />
-/// <reference types="mongoose/types/utility" />
-/// <reference types="mongoose/types/validation" />
-/// <reference types="mongoose" />
 import { Snowflake } from 'discord.js';
-export declare const active: import("mongoose").Model<any, {}, {}, {}>;
-export declare const afk: import("mongoose").Model<any, {}, {}, {}>;
-export declare const disabled: import("mongoose").Model<any, {}, {}, {}>;
-export declare const errors: import("mongoose").Model<any, {}, {}, {}>;
-export declare const faq: import("mongoose").Model<any, {}, {}, {}>;
-export declare const mcIp: import("mongoose").Model<any, {}, {}, {}>;
-export declare const moderations: import("mongoose").Model<any, {}, {}, {}>;
-export declare const modules: import("mongoose").Model<any, {}, {}, {}>;
-export declare const prefixes: import("mongoose").Model<any, {}, {}, {}>;
-export declare const polls: import("mongoose").Model<any, {}, {}, {}>;
-export declare const reactionRoles: import("mongoose").Model<any, {}, {}, {}>;
-export declare const reminders: import("mongoose").Model<any, {}, {}, {}>;
-export declare const rules: import("mongoose").Model<any, {}, {}, {}>;
-export declare const setup: import("mongoose").Model<any, {}, {}, {}>;
-export declare const stickyRoles: import("mongoose").Model<any, {}, {}, {}>;
-export declare const todo: import("mongoose").Model<any, {}, {}, {}>;
-export declare const welcome: import("mongoose").Model<any, {}, {}, {}>;
+import { Model, FilterQuery } from 'mongoose';
+export interface DataModel<T> extends Model<T> {
+    find(filter: FilterQuery<T>): Promise<T[]>;
+    findOne(filter: FilterQuery<T>): Promise<T>;
+    findById(id: string): Promise<T>;
+    updateOne(filter: FilterQuery<T>): Promise<T>;
+}
 interface BaseSchema {
     readonly _id: string;
     readonly createdAt?: Date;
@@ -166,4 +134,59 @@ export interface WelcomeSchema extends BaseSchema {
     channel: Snowflake;
     message: string;
 }
-export {};
+export declare const active: DataModel<ActiveSchema>;
+export declare const afk: DataModel<AfkSchema>;
+export declare const disabled: DataModel<DisabledSchema>;
+export declare const errors: DataModel<ErrorSchema>;
+export declare const faq: DataModel<FaqSchema>;
+export declare const mcIp: DataModel<McIpSchema>;
+export declare const moderations: DataModel<ModerationSchema>;
+export declare const modules: DataModel<ModuleSchema>;
+export declare const prefixes: DataModel<PrefixSchema>;
+export declare const polls: DataModel<PollSchema>;
+export declare const reactionRoles: DataModel<ReactionRoleSchema>;
+export declare const reminders: DataModel<ReminderSchema>;
+export declare const rules: DataModel<RuleSchema>;
+export declare const setup: DataModel<SetupSchema>;
+export declare const stickyRoles: DataModel<StickyRoleSchema>;
+export declare const todo: DataModel<TodoSchema>;
+export declare const welcome: DataModel<WelcomeSchema>;
+export interface Schemas {
+    active: DataModel<ActiveSchema>;
+    afk: DataModel<AfkSchema>;
+    disabled: DataModel<DisabledSchema>;
+    errors: DataModel<ErrorSchema>;
+    faq: DataModel<FaqSchema>;
+    mcIp: DataModel<McIpSchema>;
+    moderations: DataModel<ModerationSchema>;
+    modules: DataModel<ModuleSchema>;
+    polls: DataModel<PollSchema>;
+    prefixes: DataModel<PrefixSchema>;
+    reactionRoles: DataModel<ReactionRoleSchema>;
+    reminders: DataModel<ReminderSchema>;
+    rules: DataModel<RuleSchema>;
+    setup: DataModel<SetupSchema>;
+    stickyRoles: DataModel<StickyRoleSchema>;
+    todo: DataModel<TodoSchema>;
+    welcome: DataModel<WelcomeSchema>;
+}
+declare const _default: {
+    active: DataModel<ActiveSchema>;
+    afk: DataModel<AfkSchema>;
+    disabled: DataModel<DisabledSchema>;
+    errors: DataModel<ErrorSchema>;
+    faq: DataModel<FaqSchema>;
+    mcIp: DataModel<McIpSchema>;
+    moderations: DataModel<ModerationSchema>;
+    modules: DataModel<ModuleSchema>;
+    polls: DataModel<PollSchema>;
+    prefixes: DataModel<PrefixSchema>;
+    reactionRoles: DataModel<ReactionRoleSchema>;
+    reminders: DataModel<ReminderSchema>;
+    rules: DataModel<RuleSchema>;
+    setup: DataModel<SetupSchema>;
+    stickyRoles: DataModel<StickyRoleSchema>;
+    todo: DataModel<TodoSchema>;
+    welcome: DataModel<WelcomeSchema>;
+};
+export default _default;

@@ -1,7 +1,7 @@
 import { Collection } from 'discord.js';
 import CommandoGuild from '../extensions/guild';
 import DatabaseManager from './DatabaseManager';
-import * as schemas from './util/schemas';
+import schemas from './util/schemas';
 import {
     ActiveSchema, AfkSchema, DisabledSchema, McIpSchema, ModerationSchema, ModuleSchema, PollSchema, PrefixSchema,
     ReactionRoleSchema, RuleSchema, SetupSchema, StickyRoleSchema, WelcomeSchema

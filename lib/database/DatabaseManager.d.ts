@@ -1,12 +1,7 @@
 import { Collection } from 'discord.js';
-import { FilterQuery, Model, UpdateAggregationStage, UpdateQuery } from 'mongoose';
+import { FilterQuery, UpdateAggregationStage, UpdateQuery } from 'mongoose';
 import CommandoGuild from '../extensions/guild';
-export interface DataModel<T> extends Model<T> {
-    find(filter: FilterQuery<T>): Promise<T[]>;
-    findOne(filter: FilterQuery<T>): Promise<T>;
-    findById(id: string): Promise<T>;
-    updateOne(filter: FilterQuery<T>): Promise<T>;
-}
+import { DataModel } from './util/schemas';
 /** A database schema manager (MongoDB) */
 export default class DatabaseManager<T extends {
     _id: string;
@@ -22,7 +17,7 @@ export default class DatabaseManager<T extends {
      * @param schema - The schema of this manager
      * @param guild - The guild this manager is for
      */
-    constructor(schema: Model<T>, guild?: CommandoGuild);
+    constructor(schema: DataModel<T>, guild?: CommandoGuild);
     /**
      * Add a single document to the database, or updates it if there's an existing one
      * @param doc - The document to add

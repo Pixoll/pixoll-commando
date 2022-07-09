@@ -593,7 +593,7 @@ export class CommandoClient extends Client {
     /** The guilds' database manager, mapped by the guilds ids */
     databases: Collection<string, GuildDatabaseManager>;
     /** Object containing all the schemas this client uses. */
-    databaseSchemas: Record<string, Model<unknown>>;
+    databaseSchemas: Schemas;
     /** The client's command dispatcher */
     dispatcher: CommandDispatcher;
     guilds: CommandoGuildManager;
@@ -1873,6 +1873,26 @@ export interface ThrottlingOptions {
 //#endregion
 
 //#region Schemas
+
+export interface Schemas {
+    active: DataModel<ActiveSchema>;
+    afk: DataModel<AfkSchema>;
+    disabled: DataModel<DisabledSchema>;
+    errors: DataModel<ErrorSchema>;
+    faq: DataModel<FaqSchema>;
+    mcIp: DataModel<McIpSchema>;
+    moderations: DataModel<ModerationSchema>;
+    modules: DataModel<ModuleSchema>;
+    polls: DataModel<PollSchema>;
+    prefixes: DataModel<PrefixSchema>;
+    reactionRoles: DataModel<ReactionRoleSchema>;
+    reminders: DataModel<ReminderSchema>;
+    rules: DataModel<RuleSchema>;
+    setup: DataModel<SetupSchema>;
+    stickyRoles: DataModel<StickyRoleSchema>;
+    todo: DataModel<TodoSchema>;
+    welcome: DataModel<WelcomeSchema>;
+}
 
 declare type TimeBasedModeration = 'mute' | 'temp-ban' | 'time-out';
 

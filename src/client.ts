@@ -2,14 +2,12 @@ import {
     Client, Permissions, Collection, ClientOptions, InviteGenerationOptions, CachedManager, Snowflake, GuildResolvable,
     GuildCreateOptions, FetchGuildOptions, FetchGuildsOptions, UserResolvable, Guild, User, ClientEvents, Message
 } from 'discord.js';
-import { Model } from 'mongoose';
-
 import CommandoRegistry from './registry';
 import CommandDispatcher from './dispatcher';
 import CommandoMessage from './extensions/message';
 import CommandoGuild from './extensions/guild';
 import ClientDatabaseManager from './database/ClientDatabaseManager';
-import * as databaseSchemas from './database/util/schemas';
+import databaseSchemas from './database/util/schemas';
 import modulesLoader from './database/util/modules-loader';
 import { ArgumentCollectorResult } from './commands/collector';
 import Command, { CommandBlockData, CommandBlockReason, CommandInstances } from './commands/base';
@@ -99,7 +97,7 @@ export default class CommandoClient extends Client {
     /** The guilds' database manager, mapped by the guilds ids */
     public databases: Collection<string, GuildDatabaseManager>;
     /** Object containing all the schemas this client uses. */
-    public databaseSchemas: Record<string, Model<unknown>>;
+    public databaseSchemas: typeof databaseSchemas;
     /** The client's command dispatcher */
     public dispatcher: CommandDispatcher;
     // @ts-expect-error: CommandoGuild is not assignable to Guild

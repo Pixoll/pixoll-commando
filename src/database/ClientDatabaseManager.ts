@@ -1,7 +1,7 @@
 import { Collection } from 'discord.js';
 import CommandoClient from '../client';
 import DatabaseManager from './DatabaseManager';
-import * as schemas from './util/schemas';
+import schemas from './util/schemas';
 import { DisabledSchema, ErrorSchema, FaqSchema, PrefixSchema, ReminderSchema, TodoSchema } from './util/schemas';
 
 interface DefaultDocument {
