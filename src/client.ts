@@ -79,6 +79,7 @@ interface CommandoClientEvents extends ClientEvents {
     groupRegister: [group: CommandGroup, registry: CommandoRegistry];
     groupStatusChange: [guild: CommandoGuild | null, group: CommandGroup, enabled: boolean];
     guildsReady: [client: CommandoClient]; // eslint-disable-line no-use-before-define
+    modulesReady: [client: CommandoClient]; // eslint-disable-line no-use-before-define
     typeRegister: [type: ArgumentType, registry: CommandoRegistry];
     unknownCommand: [message: CommandoMessage];
 }

@@ -345,7 +345,7 @@ export default class CommandoRegistry {
     public registerCommands(commands: Command[], ignoreInvalid = false): this {
         if (!Array.isArray(commands)) throw new TypeError('Commands must be an Array.');
         for (const command of commands) {
-            // @ts-expect-error: ArgumentType not assignable to 'new () => unknown'
+            // @ts-expect-error: Command not assignable to 'new () => unknown'
             const valid = isConstructor(command, Command) || isConstructor(command.default, Command)
                 // @ts-expect-error: default doesn't exist in never
                 || (command instanceof Command) || (command.default instanceof Command);

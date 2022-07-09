@@ -45,6 +45,7 @@ export default async function modulesLoader(client: CommandoClient): Promise<voi
         databases.set(guild.id, guild.database);
     }
     client.emit('debug', 'Database caching process finished');
+    client.emit('databaseReady', client);
 
     // Loads all the bot's features
     if (!modulesDir) return;
@@ -60,5 +61,5 @@ export default async function modulesLoader(client: CommandoClient): Promise<voi
         }
     }
     client.emit('debug', 'Loaded client features');
-    client.emit('databaseReady', client);
+    client.emit('modulesReady', client);
 }
