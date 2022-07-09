@@ -536,7 +536,7 @@ export default class CommandoMessage extends Message {
         argCount ||= argStringModified.length;
 
         // Get match and push the capture group that is not null to the result
-        while (--argCount! && (match = regex.exec(argStringModified))) result.push(match[2] || match[3]);
+        while (argCount-- && (match = regex.exec(argStringModified))) result.push(match[2] || match[3]);
 
         // If text remains, push it to the array as-is (except for wrapping quotes, which are removed)
         if (match && regex.lastIndex < argStringModified.length) {
