@@ -1,6 +1,6 @@
 import ArgumentType from './base';
 import Util from '../util';
-import { GuildBasedChannel, Util as DjsUtil, VoiceChannel } from 'discord.js';
+import { ChannelType, escapeMarkdown, GuildBasedChannel, VoiceChannel } from 'discord.js';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 import Argument from '../commands/argument';
@@ -15,7 +15,7 @@ export default class VoiceChannelArgumentType extends ArgumentType {
         if (matches) {
             try {
                 const channel = msg.client.channels.resolve(matches[1]);
-                if (!channel || channel.type !== 'GUILD_VOICE') return false;
+                if (!channel || channel.type !== ChannelType.GuildVoice) return false;
                 if (arg.oneOf && !arg.oneOf.includes(channel.id)) return false;
                 return true;
             } catch (err) {
@@ -41,7 +41,7 @@ export default class VoiceChannelArgumentType extends ArgumentType {
         if (exactChannels.size > 0) channels = exactChannels;
 
         return channels.size <= 15 ?
-            `${Util.disambiguation(channels.map(chan => DjsUtil.escapeMarkdown(chan.name)), 'voice channels')}\n` :
+            `${Util.disambiguation(channels.map(chan => escapeMarkdown(chan.name)), 'voice channels')}\n` :
             'Multiple voice channels found. Please be more specific.';
     }
 
@@ -64,9 +64,11 @@ export default class VoiceChannelArgumentType extends ArgumentType {
 }
 
 function channelFilterExact(search: string) {
-    return (chan: GuildBasedChannel): boolean => chan.type === 'GUILD_VOICE' && chan.name.toLowerCase() === search;
+    return (chan: GuildBasedChannel): boolean =>
+        chan.type === ChannelType.GuildVoice && chan.name.toLowerCase() === search;
 }
 
 function channelFilterInexact(search: string) {
-    return (chan: GuildBasedChannel): boolean => chan.type === 'GUILD_VOICE' && chan.name.toLowerCase().includes(search);
+    return (chan: GuildBasedChannel): boolean =>
+        chan.type === ChannelType.GuildVoice && chan.name.toLowerCase().includes(search);
 }

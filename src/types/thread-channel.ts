@@ -1,6 +1,6 @@
 import ArgumentType from './base';
 import Util from '../util';
-import { GuildBasedChannel, ThreadChannel, Util as DjsUtil } from 'discord.js';
+import { escapeMarkdown, GuildBasedChannel, ThreadChannel } from 'discord.js';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 import Argument from '../commands/argument';
@@ -41,7 +41,7 @@ export default class ThreadChannelArgumentType extends ArgumentType {
         if (exactChannels.size > 0) channels = exactChannels;
 
         return channels.size <= 15 ?
-            `${Util.disambiguation(channels.map(chan => DjsUtil.escapeMarkdown(chan.name)), 'thread channels')}\n` :
+            `${Util.disambiguation(channels.map(chan => escapeMarkdown(chan.name)), 'thread channels')}\n` :
             'Multiple thread channels found. Please be more specific.';
     }
 

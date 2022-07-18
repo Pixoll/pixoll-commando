@@ -1,6 +1,9 @@
 import {
-    Util as DjsUtil, Message, MessageEmbed, User, MessageOptions, TextBasedChannel, MessageButton, MessageActionRow,
-    MessageEditOptions
+    Message, EmbedBuilder, User, MessageOptions, TextBasedChannel, ButtonBuilder, ActionRowBuilder, MessageEditOptions,
+    escapeMarkdown,
+    ChannelType,
+    Colors,
+    ButtonStyle
 } from 'discord.js';
 import { oneLine, stripIndent } from 'common-tags';
 import Command from '../commands/base';
@@ -13,7 +16,7 @@ import CommandoGuild from './guild';
 /** Type of the response */
 type ResponseType = 'code' | 'direct' | 'plain' | 'reply';
 
-type StringResolvable = string[] | object | string;
+type StringResolvable = MessageOptions | string[] | string;
 
 interface ResponseOptions {
     /** Type of the response */
@@ -139,7 +142,7 @@ export default class CommandoMessage extends Message {
         const { groupId, memberName } = command!;
 
         // Obtain the member for the ClientUser if it doesn't already exist
-        if (channel.type !== 'DM' && !guild.members.cache.has(client.user!.id)) {
+        if (channel.type !== ChannelType.DM && !guild.members.cache.has(client.user!.id)) {
             await guild.members.fetch(client.user!.id);
         }
 
@@ -174,7 +177,7 @@ export default class CommandoMessage extends Message {
 
         // Ensure the user has permission to use the command
         const hasPermission = command!.hasPermission({ message: this });
-        if (channel.type !== 'DM' && hasPermission !== true) {
+        if (channel.type !== ChannelType.DM && hasPermission !== true) {
             if (typeof hasPermission === 'string') {
                 client.emit('commandBlock', { message: this }, hasPermission);
                 return await command!.onBlock({ message: this }, hasPermission) as Message;
@@ -185,7 +188,7 @@ export default class CommandoMessage extends Message {
         }
 
         // Ensure the client user has the required permissions
-        if (channel.type !== 'DM' && command!.clientPermissions) {
+        if (channel.type !== ChannelType.DM && command!.clientPermissions) {
             const missing = channel.permissionsFor(client.user!)?.missing(command!.clientPermissions) || [];
             if (missing.length > 0) {
                 const data = { missing };
@@ -205,12 +208,12 @@ export default class CommandoMessage extends Message {
         }
 
         if (command!.deprecated) {
-            const embed = new MessageEmbed()
-                .setColor('GOLD')
-                .addField(
-                    `The \`${command!.name}\` command has been marked as deprecated!`,
-                    `Please start using the \`${command!.replacing}\` command from now on.`
-                );
+            const embed = new EmbedBuilder()
+                .setColor(Colors.Gold)
+                .addFields([{
+                    name: `The \`${command!.name}\` command has been marked as deprecated!`,
+                    value: `Please start using the \`${command!.replacing}\` command from now on.`
+                }]);
 
             await this.replyEmbed(embed);
         }
@@ -263,24 +266,28 @@ export default class CommandoMessage extends Message {
 
             if (Util.probability(2)) {
                 const { user, botInvite } = client;
-                const embed = new MessageEmbed()
+                const embed = new EmbedBuilder()
                     .setColor('#4c9f4c')
-                    .addField(`Enjoying ${user!.username}?`, oneLine`
+                    .addFields([{
+                        name: `Enjoying ${user!.username}?`,
+                        value: oneLine`
                         The please consider voting for it! It helps the bot to become more noticed
                         between other bots. And perhaps consider adding it to any of your own servers
-                        as well!
-                    `);
-                const vote = new MessageButton()
+                        as well!`
+                    }]);
+                const vote = new ButtonBuilder()
                     .setEmoji('👍')
                     .setLabel('Vote me')
-                    .setStyle('LINK')
+                    .setStyle(ButtonStyle.Link)
                     .setURL('https://top.gg/bot/802267523058761759/vote');
-                const invite = new MessageButton()
+                const invite = new ButtonBuilder()
                     .setEmoji('🔗')
                     .setLabel('Invite me')
-                    .setStyle('LINK')
+                    .setStyle(ButtonStyle.Link)
                     .setURL(botInvite!);
-                const row = new MessageActionRow().addComponents(vote, invite);
+
+                const row = new ActionRowBuilder<ButtonBuilder>().addComponents(vote, invite);
+
                 await channel.send({ embeds: [embed], components: [row] }).catch(() => null);
             }
 
@@ -293,7 +300,7 @@ export default class CommandoMessage extends Message {
                 return await this.reply(err.message);
             }
             // @ts-expect-error: Message<boolean> not assignable to CommandoMessage
-            return await command!.onError(err as Error, { message }, args, fromPattern, collResult);
+            return await command!.onError(err, { message }, args, fromPattern, collResult);
         }
     }
 
@@ -307,9 +314,9 @@ export default class CommandoMessage extends Message {
         const { responses, channel, guild, client, author } = this;
         const shouldEdit = responses && !fromEdit;
 
-        if (type === 'reply' && channel.type === 'DM') type = 'plain';
+        if (type === 'reply' && channel.type === ChannelType.DM) type = 'plain';
         if (type !== 'direct') {
-            if (guild && channel.type !== 'DM' && !channel.permissionsFor(client.user!)?.has('SEND_MESSAGES')) {
+            if (guild && channel.type !== ChannelType.DM && !channel.permissionsFor(client.user!)?.has('SendMessages')) {
                 type = 'direct';
             }
         }
@@ -328,7 +335,7 @@ export default class CommandoMessage extends Message {
                 if (!shouldEdit) return author.send(msgOptions);
                 return this.editCurrentResponse('DM', { type, options: msgOptions });
             case 'code':
-                msgOptions.content = `\`\`\`${lang}\n${DjsUtil.escapeMarkdown(
+                msgOptions.content = `\`\`\`${lang}\n${escapeMarkdown(
                     content as string, { codeBlockContent: true }
                 )}\n\`\`\``;
                 if (!shouldEdit) return channel.send(msgOptions);
@@ -442,7 +449,7 @@ export default class CommandoMessage extends Message {
      * @param options - Options for the message
      */
     public embed(
-        embed: MessageEmbed | MessageEmbed[], content: StringResolvable = '', options?: MessageOptions
+        embed: EmbedBuilder | EmbedBuilder[], content: StringResolvable = '', options?: MessageOptions
     ): Promise<CommandoMessageResponse> {
         if (!options && typeof content === 'object' && !Array.isArray(content)) {
             options = content;
@@ -461,7 +468,7 @@ export default class CommandoMessage extends Message {
      * @param options - Options for the message
      */
     public replyEmbed(
-        embed: MessageEmbed | MessageEmbed[], content: StringResolvable = '', options?: MessageOptions
+        embed: EmbedBuilder | EmbedBuilder[], content: StringResolvable = '', options?: MessageOptions
     ): Promise<CommandoMessageResponse> {
         if (!options && typeof content === 'object' && !Array.isArray(content)) {
             options = content;
@@ -557,7 +564,7 @@ function removeSmartQuotes(argString: string, allowSingleQuote = true): string {
 }
 
 function channelIdOrDM(channel: TextBasedChannel): string {
-    if (channel.type !== 'DM') return channel.id;
+    if (channel.type !== ChannelType.DM) return channel.id;
     return 'DM';
 }
 

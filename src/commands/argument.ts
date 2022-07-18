@@ -1,5 +1,5 @@
 import { oneLine, stripIndent } from 'common-tags';
-import { Util as DjsUtil, MessageEmbed, Message } from 'discord.js';
+import { escapeMarkdown, EmbedBuilder, Message, Colors } from 'discord.js';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 import ArgumentType from '../types/base';
@@ -236,15 +236,17 @@ export default class Argument {
                 };
             }
 
-            const prompt = new MessageEmbed()
-                .setColor(empty && this.prompt ? 'BLUE' : 'RED')
+            const prompt = new EmbedBuilder()
+                .setColor(empty && this.prompt ? Colors.Blue : Colors.Red)
                 .setFooter({
                     text: wait ? `The command will automatically be cancelled in ${this.wait} seconds.` : ''
                 })
-                .addField(this.prompt, stripIndent`
+                .addFields([{
+                    name: this.prompt,
+                    value: stripIndent`
                     **Don't type the whole command again!** Only what I ask for.
-                    Respond with \`cancel\` to cancel the command.
-                `);
+                    Respond with \`cancel\` to cancel the command.`
+                }]);
 
             if (!empty) {
                 prompt.setDescription(
@@ -333,34 +335,35 @@ export default class Argument {
 
                 // Prompt the user for a new value
                 if (val) {
-                    const escaped = DjsUtil.escapeMarkdown(val).replace(/@/g, '@\u200b');
+                    const escaped = escapeMarkdown(val).replace(/@/g, '@\u200b');
 
-                    const prompt = new MessageEmbed()
-                        .setColor('RED')
+                    const prompt = new EmbedBuilder()
+                        .setColor(Colors.Red)
                         .setDescription(valid || oneLine`
                             You provided an invalid ${this.label},
                             "${escaped.length < 1850 ? escaped : '[too long to show]'}".
                             Please try again.
                         `)
-                        .addField(this.prompt, stripIndent`
+                        .addFields([{
+                            name: this.prompt,
+                            value: stripIndent`
                             **Don't type the whole command again!** Only what I ask for.
-                            Respond with \`cancel\` to cancel the command, or \`finish\` to finish entry up to this point.
-                        `)
+                            Respond with \`cancel\` to cancel the command, or \`finish\` to finish entry up to this point.`
+                        }])
                         .setFooter({
                             text: wait ? `The command will automatically be cancelled in ${this.wait} seconds.` : ''
                         });
 
                     prompts.push(await msg.replyEmbed(prompt) as ArgumentResponse);
                 } else if (results.length === 0) {
-                    const prompt = new MessageEmbed()
-                        .setColor('BLUE')
-                        .addField(
-                            this.prompt,
-                            stripIndent`
-                                **Don't type the whole command again!** Only what I ask for.
-                                Respond with \`cancel\` to cancel the command, or \`finish\` to finish entry.
-                            `
-                        )
+                    const prompt = new EmbedBuilder()
+                        .setColor(Colors.Blue)
+                        .addFields([{
+                            name: this.prompt,
+                            value: stripIndent`
+                            **Don't type the whole command again!** Only what I ask for.
+                            Respond with \`cancel\` to cancel the command, or \`finish\` to finish entry.`
+                        }])
                         .setFooter({
                             text: wait ?
                                 `The command will automatically be cancelled in ${this.wait} seconds, unless you respond.` :

@@ -1,6 +1,7 @@
 import {
-    Client, Permissions, Collection, ClientOptions, InviteGenerationOptions, CachedManager, Snowflake, GuildResolvable,
-    GuildCreateOptions, FetchGuildOptions, FetchGuildsOptions, UserResolvable, Guild, User, ClientEvents, Message
+    Client, PermissionsBitField, Collection, ClientOptions, InviteGenerationOptions, CachedManager, Snowflake,
+    GuildResolvable, GuildCreateOptions, FetchGuildOptions, FetchGuildsOptions, UserResolvable, Guild, User, ClientEvents,
+    Message
 } from 'discord.js';
 import CommandoRegistry from './registry';
 import CommandDispatcher from './dispatcher';
@@ -58,8 +59,8 @@ interface CommandoClientEvents extends ClientEvents {
     commandBlock: [instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData];
     commandCancel: [command: Command, reason: string, message: CommandoMessage, result?: ArgumentCollectorResult];
     commandError: [
-        command: Command, error: Error, instances: CommandInstances, args: string[] | object | string,
-        fromPattern: boolean, result?: ArgumentCollectorResult
+        command: Command, error: Error, instances: CommandInstances, args: Record<string, unknown> | string[] | string,
+        fromPattern?: boolean, result?: ArgumentCollectorResult
     ];
     commandoGuildCreate: [guild: CommandoGuild];
     commandoMessageCreate: [message: CommandoMessage];
@@ -69,7 +70,7 @@ interface CommandoClientEvents extends ClientEvents {
     commandReregister: [newCommand: Command, oldCommand: Command];
     commandRun: [
         command: Command, promise: Promise<unknown>, instances: CommandInstances,
-        args: string[] | object | string, fromPattern?: boolean, result?: ArgumentCollectorResult | null
+        args: Record<string, unknown> | string[] | string, fromPattern?: boolean, result?: ArgumentCollectorResult | null
     ];
     commandStatusChange: [guild: CommandoGuild | null, command: Command, enabled: boolean];
     commandUnregister: [command: Command];
@@ -128,7 +129,7 @@ export default class CommandoClient extends Client {
 
         if (typeof inviteOptions === 'object') {
             const invitePerms = inviteOptions.permissions;
-            inviteOptions.permissions = Permissions.resolve(invitePerms);
+            inviteOptions.permissions = PermissionsBitField.resolve(invitePerms);
         }
 
         this.botInvite = typeof inviteOptions === 'string' ? inviteOptions : null;

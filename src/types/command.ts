@@ -1,6 +1,6 @@
 import ArgumentType from './base';
 import Util from '../util';
-import { Util as DjsUtil } from 'discord.js';
+import { escapeMarkdown } from 'discord.js';
 import CommandoClient from '../client';
 import Command from '../commands/base';
 
@@ -14,7 +14,7 @@ export default class CommandArgumentType extends ArgumentType {
         if (commands.length === 1) return true;
         if (commands.length === 0) return false;
         return commands.length <= 15 ?
-            `${Util.disambiguation(commands.map(cmd => DjsUtil.escapeMarkdown(cmd.name)), 'commands')}\n` :
+            `${Util.disambiguation(commands.map(cmd => escapeMarkdown(cmd.name)), 'commands')}\n` :
             'Multiple commands found. Please be more specific.';
     }
 

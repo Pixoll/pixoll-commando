@@ -1,4 +1,4 @@
-import { Message, MessageOptions } from 'discord.js';
+import { ChannelType, Message, MessageOptions, PermissionsString } from 'discord.js';
 import { capitalize } from 'lodash';
 import CommandoMessage from './extensions/message';
 
@@ -23,55 +23,50 @@ export interface SplitOptions {
 /** Contains various general-purpose utility methods and constants. */
 export default class Util extends null {
     /** Object that maps every PermissionString to its representation inside the Discord client. */
-    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-    static get permissions() {
+    static get permissions(): Readonly<Record<PermissionsString, string>> {
         return {
-            CREATE_INSTANT_INVITE: 'Create instant invite',
-            KICK_MEMBERS: 'Kick members',
-            BAN_MEMBERS: 'Ban members',
-            ADMINISTRATOR: 'Administrator',
-            MANAGE_CHANNELS: 'Manage channels',
-            MANAGE_GUILD: 'Manage server',
-            ADD_REACTIONS: 'Add reactions',
-            VIEW_AUDIT_LOG: 'View audit log',
-            PRIORITY_SPEAKER: 'Priority speaker',
-            STREAM: 'Video',
-            VIEW_CHANNEL: 'View channels',
-            SEND_MESSAGES: 'Send messages',
-            SEND_TTS_MESSAGES: 'Send TTS messages',
-            MANAGE_MESSAGES: 'Manage messages',
-            EMBED_LINKS: 'Embed links',
-            ATTACH_FILES: 'Attach files',
-            READ_MESSAGE_HISTORY: 'Read message history',
-            MENTION_EVERYONE: 'Mention everyone',
-            USE_EXTERNAL_EMOJIS: 'Use external emojis',
-            VIEW_GUILD_INSIGHTS: 'View server insights',
-            CONNECT: 'Connect',
-            SPEAK: 'Speak',
-            MUTE_MEMBERS: 'Mute members',
-            DEAFEN_MEMBERS: 'Deafen members',
-            MOVE_MEMBERS: 'Move members',
-            USE_VAD: 'Use voice activity',
-            CHANGE_NICKNAME: 'Change nickname',
-            MANAGE_NICKNAMES: 'Manage nicknames',
-            MANAGE_ROLES: 'Manage roles',
-            MANAGE_WEBHOOKS: 'Manage webhooks',
-            MANAGE_EMOJIS_AND_STICKERS: 'Manage emojis and stickers',
-            USE_APPLICATION_COMMANDS: 'Use application commands',
-            REQUEST_TO_SPEAK: 'Request to speak',
-            MANAGE_EVENTS: 'Manage events',
-            MANAGE_THREADS: 'Manage threads',
-            /** @deprecated This will be removed in discord.js v14 */
-            USE_PUBLIC_THREADS: 'Use public threads',
-            CREATE_PUBLIC_THREADS: 'Create public threads',
-            /** @deprecated This will be removed in discord.js v14 */
-            USE_PRIVATE_THREADS: 'Use private threads',
-            CREATE_PRIVATE_THREADS: 'Create private threads',
-            USE_EXTERNAL_STICKERS: 'Use external stickers',
-            SEND_MESSAGES_IN_THREADS: 'Send messages in threads',
-            START_EMBEDDED_ACTIVITIES: 'Start activities',
-            MODERATE_MEMBERS: 'Time out members',
-        } as const;
+            CreateInstantInvite: 'Create instant invite',
+            KickMembers: 'Kick members',
+            BanMembers: 'Ban members',
+            Administrator: 'Administrator',
+            ManageChannels: 'Manage channels',
+            ManageGuild: 'Manage server',
+            AddReactions: 'Add reactions',
+            ViewAuditLog: 'View audit log',
+            PrioritySpeaker: 'Priority speaker',
+            Stream: 'Video',
+            ViewChannel: 'View channels',
+            SendMessages: 'Send messages',
+            SendTTSMessages: 'Send TTS messages',
+            ManageMessages: 'Manage messages',
+            EmbedLinks: 'Embed links',
+            AttachFiles: 'Attach files',
+            ReadMessageHistory: 'Read message history',
+            MentionEveryone: 'Mention everyone',
+            UseExternalEmojis: 'Use external emojis',
+            ViewGuildInsights: 'View server insights',
+            Connect: 'Connect',
+            Speak: 'Speak',
+            MuteMembers: 'Mute members',
+            DeafenMembers: 'Deafen members',
+            MoveMembers: 'Move members',
+            UseVAD: 'Use voice activity',
+            ChangeNickname: 'Change nickname',
+            ManageNicknames: 'Manage nicknames',
+            ManageRoles: 'Manage roles',
+            ManageWebhooks: 'Manage webhooks',
+            ManageEmojisAndStickers: 'Manage emojis and stickers',
+            UseApplicationCommands: 'Use application commands',
+            RequestToSpeak: 'Request to speak',
+            ManageEvents: 'Manage events',
+            ManageThreads: 'Manage threads',
+            CreatePublicThreads: 'Create public threads',
+            CreatePrivateThreads: 'Create private threads',
+            UseExternalStickers: 'Use external stickers',
+            SendMessagesInThreads: 'Send messages in threads',
+            UseEmbeddedActivities: 'Use activities',
+            ModerateMembers: 'Time out members',
+        };
     }
 
     /**
@@ -106,7 +101,7 @@ export default class Util extends null {
      * @returns A {@link MessageOptions} object.
      */
     static noReplyPingInDMs(msg: CommandoMessage | Message): MessageOptions {
-        const options: MessageOptions = msg.channel.type === 'DM' ? {
+        const options: MessageOptions = msg.channel.type === ChannelType.DM ? {
             allowedMentions: { repliedUser: false }
         } : {};
 

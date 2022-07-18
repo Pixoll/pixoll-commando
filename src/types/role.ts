@@ -1,6 +1,6 @@
 import ArgumentType from './base';
 import Util from '../util';
-import { Role, Util as DjsUtil } from 'discord.js';
+import { escapeMarkdown, Role } from 'discord.js';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 import Argument from '../commands/argument';
@@ -30,7 +30,7 @@ export default class RoleArgumentType extends ArgumentType {
         if (exactRoles.size > 0) roles = exactRoles;
 
         return roles.size <= 15 ?
-            `${Util.disambiguation(roles.map(role => `${DjsUtil.escapeMarkdown(role.name)}`), 'roles')}\n` :
+            `${Util.disambiguation(roles.map(role => `${escapeMarkdown(role.name)}`), 'roles')}\n` :
             'Multiple roles found. Please be more specific.';
     }
 

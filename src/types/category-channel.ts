@@ -1,6 +1,6 @@
 import ArgumentType from './base';
 import Util from '../util';
-import { CategoryChannel, GuildBasedChannel, Util as DjsUtil } from 'discord.js';
+import { CategoryChannel, ChannelType, escapeMarkdown, GuildBasedChannel } from 'discord.js';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 import Argument from '../commands/argument';
@@ -18,7 +18,7 @@ export default class CategoryChannelArgumentType extends ArgumentType {
         if (matches) {
             try {
                 const channel = client.channels.resolve(matches[1]);
-                if (!channel || channel.type !== 'GUILD_CATEGORY') return false;
+                if (!channel || channel.type !== ChannelType.GuildCategory) return false;
                 if (!oneOf?.includes(channel.id)) return false;
                 return true;
             } catch (err) {
@@ -44,7 +44,7 @@ export default class CategoryChannelArgumentType extends ArgumentType {
         if (exactChannels.size > 0) channels = exactChannels;
 
         return channels.size <= 15 ?
-            `${Util.disambiguation(channels.map(chan => DjsUtil.escapeMarkdown(chan.name)), 'categories')}\n` :
+            `${Util.disambiguation(channels.map(chan => escapeMarkdown(chan.name)), 'categories')}\n` :
             'Multiple categories found. Please be more specific.';
     }
 
@@ -67,9 +67,11 @@ export default class CategoryChannelArgumentType extends ArgumentType {
 }
 
 function channelFilterExact(search: string) {
-    return (chan: GuildBasedChannel): boolean => chan.type === 'GUILD_CATEGORY' && chan.name.toLowerCase() === search;
+    return (chan: GuildBasedChannel): boolean =>
+        chan.type === ChannelType.GuildCategory && chan.name.toLowerCase() === search;
 }
 
 function channelFilterInexact(search: string) {
-    return (chan: GuildBasedChannel): boolean => chan.type === 'GUILD_CATEGORY' && chan.name.toLowerCase().includes(search);
+    return (chan: GuildBasedChannel): boolean =>
+        chan.type === ChannelType.GuildCategory && chan.name.toLowerCase().includes(search);
 }

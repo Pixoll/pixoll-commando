@@ -1,4 +1,4 @@
-import { Guild, User, MessageEmbed } from 'discord.js';
+import { Guild, User, EmbedBuilder } from 'discord.js';
 import CommandoClient from '../client';
 import Command from '../commands/base';
 import GuildDatabaseManager from '../database/GuildDatabaseManager';
@@ -16,7 +16,7 @@ export default class CommandoGuild extends Guild {
     /** The database manager for the guild */
     public database: GuildDatabaseManager;
     /** The queued logs for this guild */
-    public queuedLogs: MessageEmbed[];
+    public queuedLogs: EmbedBuilder[];
     /** Internal command prefix for the guild, controlled by the {@link CommandoGuild#prefix} getter/setter */
     protected _prefix?: string | null;
     /** Internal map object of internal command statuses, mapped by command name */

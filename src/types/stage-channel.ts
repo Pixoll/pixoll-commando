@@ -1,6 +1,6 @@
 import ArgumentType from './base';
 import Util from '../util';
-import { GuildBasedChannel, StageChannel, Util as DjsUtil } from 'discord.js';
+import { ChannelType, escapeMarkdown, GuildBasedChannel, StageChannel } from 'discord.js';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 import Argument from '../commands/argument';
@@ -15,7 +15,7 @@ export default class StageChannelArgumentType extends ArgumentType {
         if (matches) {
             try {
                 const channel = msg.client.channels.resolve(matches[1]);
-                if (!channel || channel.type !== 'GUILD_STAGE_VOICE') return false;
+                if (!channel || channel.type !== ChannelType.GuildStageVoice) return false;
                 if (arg.oneOf && !arg.oneOf.includes(channel.id)) return false;
                 return true;
             } catch (err) {
@@ -41,7 +41,7 @@ export default class StageChannelArgumentType extends ArgumentType {
         if (exactChannels.size > 0) channels = exactChannels;
 
         return channels.size <= 15 ?
-            `${Util.disambiguation(channels.map(chan => DjsUtil.escapeMarkdown(chan.name)), 'stage channels')}\n` :
+            `${Util.disambiguation(channels.map(chan => escapeMarkdown(chan.name)), 'stage channels')}\n` :
             'Multiple stage channels found. Please be more specific.';
     }
 
@@ -64,10 +64,11 @@ export default class StageChannelArgumentType extends ArgumentType {
 }
 
 function channelFilterExact(search: string) {
-    return (chan: GuildBasedChannel): boolean => chan.type === 'GUILD_STAGE_VOICE' && chan.name.toLowerCase() === search;
+    return (chan: GuildBasedChannel): boolean =>
+        chan.type === ChannelType.GuildStageVoice && chan.name.toLowerCase() === search;
 }
 
 function channelFilterInexact(search: string) {
     return (chan: GuildBasedChannel): boolean =>
-        chan.type === 'GUILD_STAGE_VOICE' && chan.name.toLowerCase().includes(search);
+        chan.type === ChannelType.GuildStageVoice && chan.name.toLowerCase().includes(search);
 }

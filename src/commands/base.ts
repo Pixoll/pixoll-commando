@@ -1,7 +1,6 @@
-import { APIMessage } from 'discord-api-types/payloads/v9/channel';
-import { RESTPostAPIChatInputApplicationCommandsJSONBody as RestAPIApplicationCommand } from 'discord-api-types/rest/v9';
 import {
-    GuildMember, GuildResolvable, Message, MessageEmbed, MessageOptions, PermissionResolvable, PermissionString, User
+    GuildMember, GuildResolvable, Message, EmbedBuilder, MessageOptions, PermissionsString, User, ChannelType, Colors,
+    APIMessage, RESTPostAPIChatInputApplicationCommandsJSONBody as RestAPIApplicationCommand
 } from 'discord.js';
 import path from 'path';
 import ArgumentCollector, { ArgumentCollectorResult } from './collector';
@@ -73,9 +72,9 @@ interface CommandInfo {
      */
     ownerOnly?: boolean;
     /** Permissions required by the client to use the command. */
-    clientPermissions?: PermissionString[];
+    clientPermissions?: PermissionsString[];
     /** Permissions required by the user to use the command. */
-    userPermissions?: PermissionString[];
+    userPermissions?: PermissionsString[];
     /**
      * Whether this command's user permissions are based on "moderator" permissions.
      * @default false
@@ -201,7 +200,7 @@ export interface CommandBlockData {
      * Built-in reasons: `userPermissions` & `clientPermissions`
      * - Missing permissions names
      */
-    missing?: PermissionString[];
+    missing?: PermissionsString[];
 }
 
 /** The slash command information */
@@ -298,9 +297,9 @@ export default abstract class Command {
     /** Whether the command can only be used by an owner */
     public ownerOnly: boolean;
     /** Permissions required by the client to use the command. */
-    public clientPermissions: PermissionString[] | null;
+    public clientPermissions: PermissionsString[] | null;
     /** Permissions required by the user to use the command. */
-    public userPermissions: PermissionString[] | null;
+    public userPermissions: PermissionsString[] | null;
     /** Whether this command's user permissions are based on "moderator" permissions */
     public modPermissions: boolean;
     /** Whether the command can only be used in NSFW channels */
@@ -411,7 +410,9 @@ export default abstract class Command {
      * @param ownerOverride - Whether the bot owner(s) will always have permission
      * @return Whether the user has permission, or an error message to respond with if they don't
      */
-    public hasPermission(instances: CommandInstances, ownerOverride = true): CommandBlockReason | PermissionString[] | true {
+    public hasPermission(
+        instances: CommandInstances, ownerOverride = true
+    ): CommandBlockReason | PermissionsString[] | true {
         const { guildOwnerOnly, ownerOnly, userPermissions, modPermissions, client } = this;
         const { message, interaction } = instances;
         const { channel, guild, member } = (message || interaction)!;
@@ -428,7 +429,7 @@ export default abstract class Command {
             return 'guildOwnerOnly';
         }
 
-        if (channel.type !== 'DM') {
+        if (channel.type !== ChannelType.DM) {
             if (modPermissions && !isMod(member as GuildMember)) {
                 return 'modPermissions';
             }
@@ -852,14 +853,14 @@ export default abstract class Command {
 
 /**
  * Creates a basic embed.
- * @param text - The text to fill the embed with.
+ * @param name - The text to fill the embed with.
  * @param value - The value of the field.
  */
-function embed(text: string, value?: string): MessageEmbed {
-    const embed = new MessageEmbed().setColor('RED');
+function embed(name: string, value?: string): EmbedBuilder {
+    const embed = new EmbedBuilder().setColor(Colors.Red);
 
-    if (value) embed.addField(text, value);
-    else embed.setDescription(text);
+    if (value) embed.addFields([{ name, value }]);
+    else embed.setDescription(name);
 
     return embed;
 }
@@ -903,9 +904,9 @@ function parseChannelType(type: SlashCommandChannelType): number {
 }
 
 async function replyAll(
-    { message, interaction }: CommandInstances, options: MessageEmbed | MessageOptions | string
+    { message, interaction }: CommandInstances, options: EmbedBuilder | MessageOptions | string
 ): Promise<APIMessage | Message | null> {
-    if (options instanceof MessageEmbed) options = { embeds: [options] };
+    if (options instanceof EmbedBuilder) options = { embeds: [options] };
     if (typeof options === 'string') options = { content: options };
     if (interaction) {
         if (interaction.deferred || interaction.replied) {
@@ -920,19 +921,19 @@ async function replyAll(
     return null;
 }
 
+const isModConditions: PermissionsString[] = [
+    'BanMembers', 'DeafenMembers', 'KickMembers', 'ManageChannels', 'ManageEmojisAndStickers', 'ManageGuild',
+    'ManageMessages', 'ManageNicknames', 'ManageRoles', 'ManageThreads', 'ManageWebhooks', 'MoveMembers',
+    'MuteMembers'
+];
+
 function isMod(roleOrMember: GuildMember): boolean {
     if (!roleOrMember) return false;
     const { permissions } = roleOrMember;
-    if (permissions.has('ADMINISTRATOR')) return true;
-
-    const conditions: PermissionResolvable = [
-        'BAN_MEMBERS', 'DEAFEN_MEMBERS', 'KICK_MEMBERS', 'MANAGE_CHANNELS', 'MANAGE_EMOJIS_AND_STICKERS', 'MANAGE_GUILD',
-        'MANAGE_MESSAGES', 'MANAGE_NICKNAMES', 'MANAGE_ROLES', 'MANAGE_THREADS', 'MANAGE_WEBHOOKS', 'MOVE_MEMBERS',
-        'MUTE_MEMBERS'
-    ];
+    if (permissions.has('Administrator')) return true;
 
     const values = [];
-    for (const condition of conditions) {
+    for (const condition of isModConditions) {
         values.push(permissions.has(condition));
     }
 

@@ -1,6 +1,6 @@
 import ArgumentType from './base';
 import Util from '../util';
-import { GuildMember, Util as DjsUtil } from 'discord.js';
+import { escapeMarkdown, GuildMember } from 'discord.js';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 import Argument from '../commands/argument';
@@ -39,7 +39,7 @@ export default class MemberArgumentType extends ArgumentType {
         if (exactMembers.size > 0) members = exactMembers;
 
         return members.size <= 15 ?
-            `${Util.disambiguation(members.map(mem => DjsUtil.escapeMarkdown(mem.user.tag)), 'members')}\n` :
+            `${Util.disambiguation(members.map(mem => escapeMarkdown(mem.user.tag)), 'members')}\n` :
             'Multiple members found. Please be more specific.';
     }
 

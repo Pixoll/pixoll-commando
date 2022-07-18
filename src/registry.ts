@@ -1,6 +1,8 @@
 /* eslint-disable new-cap */
-import { ApplicationCommand, ApplicationCommandOption, Collection } from 'discord.js';
-import { RESTPostAPIChatInputApplicationCommandsJSONBody as RestAPIApplicationCommand } from 'discord-api-types/rest/v9';
+import {
+    ApplicationCommand, ApplicationCommandOption, ApplicationCommandType, Collection,
+    RESTPostAPIChatInputApplicationCommandsJSONBody as RestAPIApplicationCommand
+} from 'discord.js';
 import path from 'path';
 import requireAll from 'require-all';
 import CommandoClient from './client';
@@ -702,8 +704,7 @@ function getUpdatedSlashCommands(
             // @ts-expect-error: no string index
             delete apiCommand[prop];
         }
-        // @ts-expect-error: number is not assignable to property's type
-        apiCommand.type = 1;
+        apiCommand.type = ApplicationCommandType.ChatInput;
         parseApiCmdOptions(apiCommand.options);
         if (apiCommand.options.length === 0) {
             // @ts-expect-error: operand must be optional
@@ -719,7 +720,6 @@ function getUpdatedSlashCommands(
 
     const map2 = new Map() as Map<string, boolean>;
     newCommands.forEach(el => map2.set(el.name, true));
-    // @ts-expect-error: conversion of types might be mistake because of insufficiently overlapping
     const removed = oldCommands.filter(el => !map2.has(el.name)) as RestAPIApplicationCommand[];
 
     return [updated, removed];

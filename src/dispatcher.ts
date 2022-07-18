@@ -1,7 +1,12 @@
 import { oneLine, stripIndent } from 'common-tags';
 import {
-    MessageEmbed, MessageButton, MessageActionRow, Message, CommandInteraction, GuildMember, TextBasedChannel,
-    CommandInteractionOption
+    EmbedBuilder, ButtonBuilder, ActionRowBuilder, Message, CommandInteraction, GuildMember, TextBasedChannel,
+    CommandInteractionOption,
+    Colors,
+    InteractionType,
+    ChannelType,
+    ButtonStyle,
+    ApplicationCommandOptionType
 } from 'discord.js';
 import CommandoClient from './client';
 import { ArgumentResponse } from './commands/argument';
@@ -41,7 +46,7 @@ export declare class CommandoInteraction extends CommandInteraction {
     public guild: CommandoGuild | null;
     // @ts-expect-error: CommandoMember is not assignable to Member
     public member: CommandoMember | null;
-    public channel: TextBasedChannel;
+    public get channel(): TextBasedChannel;
 }
 
 /** Handles parsing messages and running commands from them */
@@ -153,8 +158,8 @@ export default class CommandDispatcher {
                         break commandResponses;
                     }
 
-                    const responseEmbed = new MessageEmbed()
-                        .setColor('RED')
+                    const responseEmbed = new EmbedBuilder()
+                        .setColor(Colors.Red)
                         .setDescription(`The \`${cmdMsg.command.name}\` command is disabled.`);
 
                     // @ts-expect-error: Message[] not assignable to ArgumentResponse
@@ -191,18 +196,20 @@ export default class CommandDispatcher {
      * @param interaction - The interaction to handle
      */
     protected async handleSlash(interaction: CommandoInteraction): Promise<unknown> {
-        if (!interaction.isCommand()) return;
+        if (interaction.type !== InteractionType.ApplicationCommand) return;
 
         // Get the matching command
         const { commandName, channelId, channel, guild, user, guildId, client, options, deferred, replied } = interaction;
         const command = this.registry.resolveCommand(commandName);
         if (!command) return;
+
         const { groupId, memberName } = command;
+        const { user: clientUser } = client;
 
         if (guild) {
             // Obtain the member for the ClientUser if it doesn't already exist
-            if (!guild.members.cache.has(client.user!.id)) {
-                await guild.members.fetch(client.user!.id);
+            if (!guild.members.cache.has(clientUser!.id)) {
+                await guild.members.fetch(clientUser!.id);
             }
 
             // @ts-expect-error: some TextBasedChannel sub-types are not assignable to GuildChannelResolvable
@@ -260,8 +267,8 @@ export default class CommandDispatcher {
         }
 
         // Ensure the client user has the required permissions
-        if (channel.type !== 'DM' && command.clientPermissions) {
-            const missing = channel.permissionsFor(client.user!)?.missing(command.clientPermissions) || [];
+        if (channel.type !== ChannelType.DM && command.clientPermissions) {
+            const missing = channel.permissionsFor(clientUser!)?.missing(command.clientPermissions) || [];
             if (missing.length > 0) {
                 const data = { missing };
                 client.emit('commandBlock', { interaction }, 'clientPermissions', data);
@@ -270,18 +277,18 @@ export default class CommandDispatcher {
         }
 
         if (command.deprecated) {
-            const embed = new MessageEmbed()
-                .setColor('GOLD')
-                .addField(
-                    `The \`${command.name}\` command has been marked as deprecated!`,
-                    `Please start using the \`${command.replacing}\` command from now on.`
-                );
+            const embed = new EmbedBuilder()
+                .setColor(Colors.Gold)
+                .addFields([{
+                    name: `The \`${command.name}\` command has been marked as deprecated!`,
+                    value: `Please start using the \`${command.replacing}\` command from now on.`
+                }]);
 
             await channel.send({ content: user.toString(), embeds: [embed] });
         }
 
         // Parses the options into an arguments object
-        const args = {};
+        const args: Record<string, unknown> = {};
         for (const option of options.data) parseSlashArgs(args, option);
 
         // Run the command
@@ -296,31 +303,35 @@ export default class CommandDispatcher {
             await promise;
 
             if (Util.probability(2)) {
-                const { user: clientUser, botInvite } = client;
-                const embed = new MessageEmbed()
+                const { botInvite } = client;
+                const embed = new EmbedBuilder()
                     .setColor('#4c9f4c')
-                    .addField(`Enjoying ${clientUser!.username}?`, oneLine`
+                    .addFields([{
+                        name: `Enjoying ${clientUser!.username}?`,
+                        value: oneLine`
                         The please consider voting for it! It helps the bot to become more noticed
                         between other bots. And perhaps consider adding it to any of your own servers
-                        as well!
-                    `);
-                const vote = new MessageButton()
+                        as well!`
+                    }]);
+                const vote = new ButtonBuilder()
                     .setEmoji('👍')
                     .setLabel('Vote me')
-                    .setStyle('LINK')
+                    .setStyle(ButtonStyle.Link)
                     .setURL('https://top.gg/bot/802267523058761759/vote');
-                const invite = new MessageButton()
+                const invite = new ButtonBuilder()
                     .setEmoji('🔗')
                     .setLabel('Invite me')
-                    .setStyle('LINK')
+                    .setStyle(ButtonStyle.Link)
                     .setURL(botInvite!);
-                const row = new MessageActionRow().addComponents(vote, invite);
+
+                const row = new ActionRowBuilder<ButtonBuilder>().addComponents(vote, invite);
+
                 await channel.send({ embeds: [embed], components: [row] }).catch(() => null);
             }
 
             return;
         } catch (err) {
-            client.emit('commandError', command, err, { interaction });
+            client.emit('commandError', command, err as Error, { interaction }, args);
             if (err instanceof FriendlyError) {
                 if (deferred || replied) {
                     return await interaction.editReply({ content: err.message, components: [], embeds: [] });
@@ -496,23 +507,23 @@ function parseSlashArgs(
     } else {
         name = Util.removeDashes(name);
         switch (type) {
-            case 'BOOLEAN':
-            case 'INTEGER':
-            case 'NUMBER':
-            case 'STRING':
-            case 'SUB_COMMAND':
+            case ApplicationCommandOptionType.Boolean:
+            case ApplicationCommandOptionType.Integer:
+            case ApplicationCommandOptionType.Number:
+            case ApplicationCommandOptionType.String:
+            case ApplicationCommandOptionType.Subcommand:
                 obj[name] = value ?? null;
                 break;
-            case 'CHANNEL':
+            case ApplicationCommandOptionType.Channel:
                 obj[name] = channel ?? null;
                 break;
-            case 'MENTIONABLE':
+            case ApplicationCommandOptionType.Mentionable:
                 obj[name] = member ?? user ?? channel ?? role ?? null;
                 break;
-            case 'ROLE':
+            case ApplicationCommandOptionType.Role:
                 obj[name] = role ?? null;
                 break;
-            case 'USER':
+            case ApplicationCommandOptionType.User:
                 obj[name] = member ?? user ?? null;
                 break;
         }
