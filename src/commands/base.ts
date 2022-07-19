@@ -92,7 +92,7 @@ interface CommandInfo {
      * The data for the slash command, or `true` to use the same information as the message command.
      * @default false
      */
-    slash?: SlashCommandInfo | boolean; // eslint-disable-line no-use-before-define
+    slash?: SlashCommandInfo | boolean;
     /**
      * Whether the slash command will be registered in the test guild only or not.
      * @default false
@@ -210,7 +210,7 @@ interface SlashCommandInfo {
     /** A short description of the command (1-100 characters) - defaults to {@link CommandInfo}'s `description` */
     description?: string;
     /** Options for the command */
-    options?: SlashCommandOptionInfo[]; // eslint-disable-line no-use-before-define
+    options?: SlashCommandOptionInfo[];
     /**
      * Whether the reply of the slash command should be ephemeral or not
      * @default false
@@ -220,7 +220,7 @@ interface SlashCommandInfo {
 
 interface SlashCommandOptionInfo {
     /** The type of the option */
-    type: SlashCommandOptionType; // eslint-disable-line no-use-before-define
+    type: SlashCommandOptionType;
     /** The name of the option */
     name: string;
     /** The description of the option - required if `type` is `subcommand` or `subcommand-group` */
@@ -235,9 +235,12 @@ interface SlashCommandOptionInfo {
     /** The maximum value permitted - only usable if `type` is `integer` or `number` */
     maxValue?: number;
     /** The choices options for the option - only usable if `type` is `string`, `integer` or `number` */
-    choices?: Array<{ name: string, value: number | string }>;
+    choices?: Array<{
+        name: string;
+        value: number | string;
+    }>;
     /** The type options for the option - only usable if `type` is `channel` */
-    channelTypes?: SlashCommandChannelType[]; // eslint-disable-line no-use-before-define
+    channelTypes?: SlashCommandChannelType[];
     /** The options for the sub-command - only usable if `type` is `subcommand` */
     options?: SlashCommandOptionInfo[];
     /** Enable autocomplete interactions for this option - may not be set to true if `choices` are present */
@@ -556,7 +559,7 @@ export default abstract class Command {
                 usages: 0,
                 timeout: setTimeout(() => {
                     _throttles.delete(userId);
-                }, throttling.duration * 1000)
+                }, throttling.duration * 1000),
             };
             _throttles.set(userId, throttle);
         }
@@ -779,7 +782,7 @@ export default abstract class Command {
         if (info.slash === true) {
             info.slash = {
                 name: info.name,
-                description: info.description
+                description: info.description,
             };
         }
         if (typeof info.slash === 'object') {
@@ -922,9 +925,19 @@ async function replyAll(
 }
 
 const isModConditions: PermissionsString[] = [
-    'BanMembers', 'DeafenMembers', 'KickMembers', 'ManageChannels', 'ManageEmojisAndStickers', 'ManageGuild',
-    'ManageMessages', 'ManageNicknames', 'ManageRoles', 'ManageThreads', 'ManageWebhooks', 'MoveMembers',
-    'MuteMembers'
+    'BanMembers',
+    'DeafenMembers',
+    'KickMembers',
+    'ManageChannels',
+    'ManageEmojisAndStickers',
+    'ManageGuild',
+    'ManageMessages',
+    'ManageNicknames',
+    'ManageRoles',
+    'ManageThreads',
+    'ManageWebhooks',
+    'MoveMembers',
+    'MuteMembers',
 ];
 
 function isMod(roleOrMember: GuildMember): boolean {

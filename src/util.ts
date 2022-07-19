@@ -102,7 +102,7 @@ export default class Util extends null {
      */
     static noReplyPingInDMs(msg: CommandoMessage | Message): MessageOptions {
         const options: MessageOptions = msg.channel.type === ChannelType.DM ? {
-            allowedMentions: { repliedUser: false }
+            allowedMentions: { repliedUser: false },
         } : {};
 
         return options;
@@ -198,7 +198,7 @@ export default class Util extends null {
      * @param allowEmpty Whether an empty string should be allowed
      */
     protected static verifyString(
-        data: string, error = Error, errorMessage = `Expected a string, got ${typeof data} instead.`, allowEmpty = true,
+        data: string, error = Error, errorMessage = `Expected a string, got ${typeof data} instead.`, allowEmpty = true
     ): string {
         /* eslint-disable new-cap */
         if (typeof data !== 'string') throw new error(errorMessage);

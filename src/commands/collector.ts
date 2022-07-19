@@ -88,7 +88,7 @@ export default class ArgumentCollector {
                         values: null,
                         cancelled: result.cancelled,
                         prompts: results.map(res => res.prompts).flat(),
-                        answers: results.map(res => res.answers).flat()
+                        answers: results.map(res => res.answers).flat(),
                     };
                 }
 
@@ -106,7 +106,7 @@ export default class ArgumentCollector {
             values,
             cancelled: null,
             prompts: results.map(res => res.prompts).flat(),
-            answers: results.map(res => res.answers).flat()
+            answers: results.map(res => res.answers).flat(),
         };
     }
 }

@@ -31,7 +31,6 @@ interface ResponseOptions {
     fromEdit?: boolean;
 }
 
-// eslint-disable-next-line no-use-before-define
 export type CommandoMessageResponse = CommandoMessage | Message | Message[] | null;
 
 /**
@@ -212,7 +211,7 @@ export default class CommandoMessage extends Message {
                 .setColor(Colors.Gold)
                 .addFields([{
                     name: `The \`${command!.name}\` command has been marked as deprecated!`,
-                    value: `Please start using the \`${command!.replacing}\` command from now on.`
+                    value: `Please start using the \`${command!.replacing}\` command from now on.`,
                 }]);
 
             await this.replyEmbed(embed);
@@ -273,7 +272,7 @@ export default class CommandoMessage extends Message {
                         value: oneLine`
                         The please consider voting for it! It helps the bot to become more noticed
                         between other bots. And perhaps consider adding it to any of your own servers
-                        as well!`
+                        as well!`,
                     }]);
                 const vote = new ButtonBuilder()
                     .setEmoji('👍')

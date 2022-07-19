@@ -1,8 +1,7 @@
 /* eslint-disable no-use-before-define */
 
-import { RESTPostAPIChatInputApplicationCommandsJSONBody as RestAPIApplicationCommand } from 'discord-api-types/rest/v9';
-import { APIMessage } from 'discord-api-types/v9';
 import {
+    APIMessage,
     CachedManager,
     Client,
     ClientEvents,
@@ -17,9 +16,10 @@ import {
     GuildResolvable,
     InviteGenerationOptions,
     Message,
-    MessageEmbed,
+    EmbedBuilder,
     MessageOptions,
-    PermissionString,
+    PermissionsString,
+    RESTPostAPIChatInputApplicationCommandsJSONBody as RestAPIApplicationCommand,
     Snowflake,
     TextBasedChannel,
     User,
@@ -288,9 +288,9 @@ export abstract class Command {
     /** Whether the command can only be used by an owner */
     ownerOnly: boolean;
     /** Permissions required by the client to use the command. */
-    clientPermissions: PermissionString[] | null;
+    clientPermissions: PermissionsString[] | null;
     /** Permissions required by the user to use the command. */
-    userPermissions: PermissionString[] | null;
+    userPermissions: PermissionsString[] | null;
     /** Whether this command's user permissions are based on "moderator" permissions */
     modPermissions: boolean;
     /** Whether the command can only be used in NSFW channels */
@@ -332,7 +332,7 @@ export abstract class Command {
      * @param ownerOverride - Whether the bot owner(s) will always have permission
      * @return Whether the user has permission, or an error message to respond with if they don't
      */
-    hasPermission(instances: CommandInstances, ownerOverride?: boolean): CommandBlockReason | PermissionString[] | true;
+    hasPermission(instances: CommandInstances, ownerOverride?: boolean): CommandBlockReason | PermissionsString[] | true;
     /**
      * Runs the command
      * @param instances - The message the command is being run for
@@ -652,7 +652,7 @@ export class CommandoGuild extends Guild {
      */
     prefix: string | undefined;
     /** The queued logs for this guild */
-    queuedLogs: MessageEmbed[];
+    queuedLogs: EmbedBuilder[];
 
     /**
      * Sets whether a command is enabled in the guild
@@ -794,7 +794,7 @@ export class CommandoMessage extends Message {
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    embed(embed: MessageEmbed | MessageEmbed[], content?: StringResolvable, options?: MessageOptions):
+    embed(embed: EmbedBuilder | EmbedBuilder[], content?: StringResolvable, options?: MessageOptions):
         Promise<CommandoMessageResponse>;
     /**
      * Responds with a reply + embed
@@ -802,7 +802,7 @@ export class CommandoMessage extends Message {
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    replyEmbed(embed: MessageEmbed | MessageEmbed[], content?: StringResolvable, options?: MessageOptions):
+    replyEmbed(embed: EmbedBuilder | EmbedBuilder[], content?: StringResolvable, options?: MessageOptions):
         Promise<CommandoMessageResponse>;
     /**
      * Parses an argument string into an array of arguments
@@ -966,55 +966,8 @@ export class FriendlyError extends Error {
 
 /** Contains various general-purpose utility methods and constants. */
 export class Util extends null {
-    /** Object that maps every PermissionString to its representation inside the Discord client. */
-    static get permissions(): {
-        readonly CREATE_INSTANT_INVITE: "Create instant invite";
-        readonly KICK_MEMBERS: "Kick members";
-        readonly BAN_MEMBERS: "Ban members";
-        readonly ADMINISTRATOR: "Administrator";
-        readonly MANAGE_CHANNELS: "Manage channels";
-        readonly MANAGE_GUILD: "Manage server";
-        readonly ADD_REACTIONS: "Add reactions";
-        readonly VIEW_AUDIT_LOG: "View audit log";
-        readonly PRIORITY_SPEAKER: "Priority speaker";
-        readonly STREAM: "Video";
-        readonly VIEW_CHANNEL: "View channels";
-        readonly SEND_MESSAGES: "Send messages";
-        readonly SEND_TTS_MESSAGES: "Send TTS messages";
-        readonly MANAGE_MESSAGES: "Manage messages";
-        readonly EMBED_LINKS: "Embed links";
-        readonly ATTACH_FILES: "Attach files";
-        readonly READ_MESSAGE_HISTORY: "Read message history";
-        readonly MENTION_EVERYONE: "Mention everyone";
-        readonly USE_EXTERNAL_EMOJIS: "Use external emojis";
-        readonly VIEW_GUILD_INSIGHTS: "View server insights";
-        readonly CONNECT: "Connect";
-        readonly SPEAK: "Speak";
-        readonly MUTE_MEMBERS: "Mute members";
-        readonly DEAFEN_MEMBERS: "Deafen members";
-        readonly MOVE_MEMBERS: "Move members";
-        readonly USE_VAD: "Use voice activity";
-        readonly CHANGE_NICKNAME: "Change nickname";
-        readonly MANAGE_NICKNAMES: "Manage nicknames";
-        readonly MANAGE_ROLES: "Manage roles";
-        readonly MANAGE_WEBHOOKS: "Manage webhooks";
-        readonly MANAGE_EMOJIS_AND_STICKERS: "Manage emojis and stickers";
-        readonly USE_APPLICATION_COMMANDS: "Use application commands";
-        readonly REQUEST_TO_SPEAK: "Request to speak";
-        readonly MANAGE_EVENTS: "Manage events";
-        readonly MANAGE_THREADS: "Manage threads";
-        /** @deprecated This will be removed in discord.js v14 */
-        readonly USE_PUBLIC_THREADS: "Use public threads";
-        readonly CREATE_PUBLIC_THREADS: "Create public threads";
-        /** @deprecated This will be removed in discord.js v14 */
-        readonly USE_PRIVATE_THREADS: "Use private threads";
-        readonly CREATE_PRIVATE_THREADS: "Create private threads";
-        readonly USE_EXTERNAL_STICKERS: "Use external stickers";
-        readonly SEND_MESSAGES_IN_THREADS: "Send messages in threads";
-        readonly START_EMBEDDED_ACTIVITIES: "Start activities";
-        readonly MODERATE_MEMBERS: "Time out members";
-    };
-
+    /** Object that maps every PermissionsString to its representation inside the Discord client. */
+    static get permissions(): Readonly<Record<PermissionsString, string>>;
     /**
      * Escapes the following characters from a string: `|\{}()[]^$+*?.`.
      * @param str - The string to escape.
@@ -1203,7 +1156,7 @@ export declare class CommandoInteraction extends CommandInteraction {
     client: CommandoClient;
     guild: CommandoGuild | null;
     member: CommandoMember | null;
-    channel: TextBasedChannel;
+    get channel(): TextBasedChannel;
 }
 
 export declare class CommandoMember extends GuildMember {
@@ -1310,7 +1263,7 @@ export type SlashCommandOptionType =
     | 'subcommand'
     | 'user';
 
-export type StringResolvable = string[] | object | string;
+export type StringResolvable = MessageOptions | string[] | string;
 
 /** Result object from obtaining argument values from an {@link ArgumentCollector} */
 export interface ArgumentCollectorResult<T = Record<string, unknown>> {
@@ -1422,7 +1375,7 @@ export interface CommandBlockData {
      * Built-in reasons: `userPermissions` & `clientPermissions`
      * - Missing permissions names
      */
-    missing?: PermissionString[];
+    missing?: PermissionsString[];
 }
 
 /** The command information */
@@ -1477,9 +1430,9 @@ export interface CommandInfo {
      */
     ownerOnly?: boolean;
     /** Permissions required by the client to use the command. */
-    clientPermissions?: PermissionString[];
+    clientPermissions?: PermissionsString[];
     /** Permissions required by the user to use the command. */
-    userPermissions?: PermissionString[];
+    userPermissions?: PermissionsString[];
     /**
      * Whether this command's user permissions are based on "moderator" permissions.
      * @default false
@@ -1574,7 +1527,7 @@ interface CommandoClientEvents extends ClientEvents {
         command: Command,
         error: Error,
         instances: CommandInstances,
-        args: string[] | object | string,
+        args: Record<string, unknown> | string[] | string,
         fromPattern: boolean,
         result?: ArgumentCollectorResult
     ];
@@ -1588,7 +1541,7 @@ interface CommandoClientEvents extends ClientEvents {
         command: Command,
         promise: Promise<unknown>,
         instances: CommandInstances,
-        args: string[] | object | string,
+        args: Record<string, unknown> | string[] | string,
         fromPattern?: boolean,
         result?: ArgumentCollectorResult | null
     ];

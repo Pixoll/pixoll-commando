@@ -281,7 +281,7 @@ export default class CommandDispatcher {
                 .setColor(Colors.Gold)
                 .addFields([{
                     name: `The \`${command.name}\` command has been marked as deprecated!`,
-                    value: `Please start using the \`${command.replacing}\` command from now on.`
+                    value: `Please start using the \`${command.replacing}\` command from now on.`,
                 }]);
 
             await channel.send({ content: user.toString(), embeds: [embed] });
@@ -311,7 +311,7 @@ export default class CommandDispatcher {
                         value: oneLine`
                         The please consider voting for it! It helps the bot to become more noticed
                         between other bots. And perhaps consider adding it to any of your own servers
-                        as well!`
+                        as well!`,
                     }]);
                 const vote = new ButtonBuilder()
                     .setEmoji('👍')

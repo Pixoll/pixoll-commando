@@ -25,7 +25,7 @@ export declare class CommandoInteraction extends CommandInteraction {
     client: CommandoClient;
     guild: CommandoGuild | null;
     member: CommandoMember | null;
-    channel: TextBasedChannel;
+    get channel(): TextBasedChannel;
 }
 /** Handles parsing messages and running commands from them */
 export default class CommandDispatcher {

@@ -53,8 +53,8 @@ interface CommandoClientEvents extends ClientEvents {
         command: Command,
         error: Error,
         instances: CommandInstances,
-        args: string[] | object | string,
-        fromPattern: boolean,
+        args: Record<string, unknown> | string[] | string,
+        fromPattern?: boolean,
         result?: ArgumentCollectorResult
     ];
     commandoGuildCreate: [guild: CommandoGuild];
@@ -67,7 +67,7 @@ interface CommandoClientEvents extends ClientEvents {
         command: Command,
         promise: Promise<unknown>,
         instances: CommandInstances,
-        args: string[] | object | string,
+        args: Record<string, unknown> | string[] | string,
         fromPattern?: boolean,
         result?: ArgumentCollectorResult | null
     ];

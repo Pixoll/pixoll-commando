@@ -9,7 +9,7 @@ import Util from '../util';
 type ArgumentCheckerParams = [
     val: string[] | string,
     originalMsg: CommandoMessage,
-    arg: Argument, // eslint-disable-line no-use-before-define
+    arg: Argument,
     currentMsg?: CommandoMessage
 ]
 
@@ -38,7 +38,7 @@ type ArgumentTypes =
     | 'voice-channel';
 
 /** Either a value or a function that returns a value. The function is passed the CommandoMessage and the Argument. */
-type ArgumentDefault = (msg: CommandoMessage, arg: Argument) => Promise<unknown>; // eslint-disable-line no-use-before-define
+type ArgumentDefault = (msg: CommandoMessage, arg: Argument) => Promise<unknown>;
 
 /** Information for the command argument */
 export interface ArgumentInfo {
@@ -216,7 +216,7 @@ export default class Argument {
                 value: typeof this.default === 'function' ? await this.default(msg, this) : this.default,
                 cancelled: null,
                 prompts: [],
-                answers: []
+                answers: [],
             };
         }
         if (this.infinite) return this.obtainInfinite(msg, [val], promptLimit);
@@ -232,20 +232,20 @@ export default class Argument {
                     value: null,
                     cancelled: 'promptLimit',
                     prompts,
-                    answers
+                    answers,
                 };
             }
 
             const prompt = new EmbedBuilder()
                 .setColor(empty && this.prompt ? Colors.Blue : Colors.Red)
                 .setFooter({
-                    text: wait ? `The command will automatically be cancelled in ${this.wait} seconds.` : ''
+                    text: wait ? `The command will automatically be cancelled in ${this.wait} seconds.` : '',
                 })
                 .addFields([{
                     name: this.prompt,
                     value: stripIndent`
                     **Don't type the whole command again!** Only what I ask for.
-                    Respond with \`cancel\` to cancel the command.`
+                    Respond with \`cancel\` to cancel the command.`,
                 }]);
 
             if (!empty) {
@@ -261,7 +261,7 @@ export default class Argument {
             const responses = await channel.awaitMessages({
                 filter: msg2 => msg2.author.id === author.id,
                 max: 1,
-                time: wait ?? undefined
+                time: wait ?? undefined,
             });
 
             // Make sure they actually answered
@@ -270,7 +270,7 @@ export default class Argument {
                     value: null,
                     cancelled: 'time',
                     prompts,
-                    answers
+                    answers,
                 };
             }
 
@@ -283,7 +283,7 @@ export default class Argument {
                     value: null,
                     cancelled: 'user',
                     prompts,
-                    answers
+                    answers,
                 };
             }
 
@@ -299,7 +299,7 @@ export default class Argument {
             value: await this.parse(val!, msg, (answers.length ? answers[answers.length - 1] : msg) ?? undefined),
             cancelled: null,
             prompts,
-            answers
+            answers,
         };
     }
 
@@ -329,7 +329,7 @@ export default class Argument {
                         value: null,
                         cancelled: 'promptLimit',
                         prompts,
-                        answers
+                        answers,
                     };
                 }
 
@@ -348,10 +348,10 @@ export default class Argument {
                             name: this.prompt,
                             value: stripIndent`
                             **Don't type the whole command again!** Only what I ask for.
-                            Respond with \`cancel\` to cancel the command, or \`finish\` to finish entry up to this point.`
+                            Respond with \`cancel\` to cancel the command, or \`finish\` to finish entry up to this point.`,
                         }])
                         .setFooter({
-                            text: wait ? `The command will automatically be cancelled in ${this.wait} seconds.` : ''
+                            text: wait ? `The command will automatically be cancelled in ${this.wait} seconds.` : '',
                         });
 
                     prompts.push(await msg.replyEmbed(prompt) as ArgumentResponse);
@@ -362,12 +362,12 @@ export default class Argument {
                             name: this.prompt,
                             value: stripIndent`
                             **Don't type the whole command again!** Only what I ask for.
-                            Respond with \`cancel\` to cancel the command, or \`finish\` to finish entry.`
+                            Respond with \`cancel\` to cancel the command, or \`finish\` to finish entry.`,
                         }])
                         .setFooter({
                             text: wait ?
                                 `The command will automatically be cancelled in ${this.wait} seconds, unless you respond.` :
-                                ''
+                                '',
                         });
 
                     prompts.push(await msg.replyEmbed(prompt) as ArgumentResponse);
@@ -377,7 +377,7 @@ export default class Argument {
                 const responses = await msg.channel.awaitMessages({
                     filter: msg2 => msg2.author.id === msg.author.id,
                     max: 1,
-                    time: wait ?? undefined
+                    time: wait ?? undefined,
                 });
 
                 // Make sure they actually answered
@@ -386,7 +386,7 @@ export default class Argument {
                         value: null,
                         cancelled: 'time',
                         prompts,
-                        answers
+                        answers,
                     };
                 }
 
@@ -400,7 +400,7 @@ export default class Argument {
                         value: results.length > 0 ? results : null,
                         cancelled: this.default ? null : results.length > 0 ? null : 'user',
                         prompts,
-                        answers
+                        answers,
                     };
                 }
                 if (lc === 'cancel') {
@@ -408,7 +408,7 @@ export default class Argument {
                         value: null,
                         cancelled: 'user',
                         prompts,
-                        answers
+                        answers,
                     };
                 }
 
@@ -428,7 +428,7 @@ export default class Argument {
                         value: results,
                         cancelled: null,
                         prompts,
-                        answers
+                        answers,
                     };
                 }
             }

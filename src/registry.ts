@@ -243,7 +243,7 @@ export default class CommandoRegistry {
      * or the constructor parameters (with ID, name, and guarded properties)
      * @see {@link CommandoRegistry#registerGroups}
      */
-    public registerGroup(group: CommandGroup | { id: string, name?: string, guarded?: boolean }): this {
+    public registerGroup(group: CommandGroup | { id: string; name?: string; guarded?: boolean }): this {
         const { client, groups } = this;
 
         // @ts-expect-error: CommandGroup has "no construct signature"
@@ -281,7 +281,7 @@ export default class CommandoRegistry {
      *     { id: 'mod', name: 'Moderation' }
      * ]);
      */
-    public registerGroups(groups: Array<CommandGroup | { id: string, name?: string, guarded?: boolean }>): this {
+    public registerGroups(groups: Array<CommandGroup | { id: string; name?: string; guarded?: boolean }>): this {
         if (!Array.isArray(groups)) throw new TypeError('Groups must be an Array.');
         for (const group of groups) {
             this.registerGroup(group);
@@ -653,7 +653,7 @@ function commandFilterInexact(search: string) {
 function isConstructor(func: { new(): unknown }, _class: () => unknown): boolean {
     try {
         new new Proxy(func, {
-            construct: () => Object.prototype
+            construct: () => Object.prototype,
         })();
         if (!_class) return true;
         return func.prototype instanceof _class;
@@ -672,7 +672,7 @@ const apiCmdOptionType = {
     CHANNEL: 7,
     ROLE: 8,
     MENTIONABLE: 9,
-    NUMBER: 10
+    NUMBER: 10,
 };
 
 const apiCmdOptChanType = {
@@ -683,7 +683,7 @@ const apiCmdOptChanType = {
     GUILD_NEWS_THREAD: 10,
     GUILD_PUBLIC_THREAD: 11,
     GUILD_PRIVATE_THREAD: 12,
-    GUILD_STAGE_VOICE: 13
+    GUILD_STAGE_VOICE: 13,
 };
 
 /**

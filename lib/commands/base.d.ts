@@ -1,7 +1,5 @@
 /// <reference types="node" />
-import { APIMessage } from 'discord-api-types/payloads/v9/channel';
-import { RESTPostAPIChatInputApplicationCommandsJSONBody as RestAPIApplicationCommand } from 'discord-api-types/rest/v9';
-import { GuildResolvable, Message, PermissionString, User } from 'discord.js';
+import { GuildResolvable, Message, PermissionsString, User, APIMessage, RESTPostAPIChatInputApplicationCommandsJSONBody as RestAPIApplicationCommand } from 'discord.js';
 import ArgumentCollector, { ArgumentCollectorResult } from './collector';
 import CommandoClient from '../client';
 import CommandGroup from './group';
@@ -68,9 +66,9 @@ interface CommandInfo {
      */
     ownerOnly?: boolean;
     /** Permissions required by the client to use the command. */
-    clientPermissions?: PermissionString[];
+    clientPermissions?: PermissionsString[];
     /** Permissions required by the user to use the command. */
-    userPermissions?: PermissionString[];
+    userPermissions?: PermissionsString[];
     /**
      * Whether this command's user permissions are based on "moderator" permissions.
      * @default false
@@ -183,7 +181,7 @@ export interface CommandBlockData {
      * Built-in reasons: `userPermissions` & `clientPermissions`
      * - Missing permissions names
      */
-    missing?: PermissionString[];
+    missing?: PermissionsString[];
 }
 /** The slash command information */
 interface SlashCommandInfo {
@@ -260,9 +258,9 @@ export default abstract class Command {
     /** Whether the command can only be used by an owner */
     ownerOnly: boolean;
     /** Permissions required by the client to use the command. */
-    clientPermissions: PermissionString[] | null;
+    clientPermissions: PermissionsString[] | null;
     /** Permissions required by the user to use the command. */
-    userPermissions: PermissionString[] | null;
+    userPermissions: PermissionsString[] | null;
     /** Whether this command's user permissions are based on "moderator" permissions */
     modPermissions: boolean;
     /** Whether the command can only be used in NSFW channels */
@@ -314,7 +312,7 @@ export default abstract class Command {
      * @param ownerOverride - Whether the bot owner(s) will always have permission
      * @return Whether the user has permission, or an error message to respond with if they don't
      */
-    hasPermission(instances: CommandInstances, ownerOverride?: boolean): CommandBlockReason | PermissionString[] | true;
+    hasPermission(instances: CommandInstances, ownerOverride?: boolean): CommandBlockReason | PermissionsString[] | true;
     /**
      * Runs the command
      * @param instances - The message the command is being run for

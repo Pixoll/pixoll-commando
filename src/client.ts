@@ -59,8 +59,12 @@ interface CommandoClientEvents extends ClientEvents {
     commandBlock: [instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData];
     commandCancel: [command: Command, reason: string, message: CommandoMessage, result?: ArgumentCollectorResult];
     commandError: [
-        command: Command, error: Error, instances: CommandInstances, args: Record<string, unknown> | string[] | string,
-        fromPattern?: boolean, result?: ArgumentCollectorResult
+        command: Command,
+        error: Error,
+        instances: CommandInstances,
+        args: Record<string, unknown> | string[] | string,
+        fromPattern?: boolean,
+        result?: ArgumentCollectorResult,
     ];
     commandoGuildCreate: [guild: CommandoGuild];
     commandoMessageCreate: [message: CommandoMessage];
@@ -69,16 +73,20 @@ interface CommandoClientEvents extends ClientEvents {
     commandRegister: [command: Command, registry: CommandoRegistry];
     commandReregister: [newCommand: Command, oldCommand: Command];
     commandRun: [
-        command: Command, promise: Promise<unknown>, instances: CommandInstances,
-        args: Record<string, unknown> | string[] | string, fromPattern?: boolean, result?: ArgumentCollectorResult | null
+        command: Command,
+        promise: Promise<unknown>,
+        instances: CommandInstances,
+        args: Record<string, unknown> | string[] | string,
+        fromPattern?: boolean,
+        result?: ArgumentCollectorResult | null,
     ];
     commandStatusChange: [guild: CommandoGuild | null, command: Command, enabled: boolean];
     commandUnregister: [command: Command];
-    databaseReady: [client: CommandoClient]; // eslint-disable-line no-use-before-define
+    databaseReady: [client: CommandoClient];
     groupRegister: [group: CommandGroup, registry: CommandoRegistry];
     groupStatusChange: [guild: CommandoGuild | null, group: CommandGroup, enabled: boolean];
-    guildsReady: [client: CommandoClient]; // eslint-disable-line no-use-before-define
-    modulesReady: [client: CommandoClient]; // eslint-disable-line no-use-before-define
+    guildsReady: [client: CommandoClient];
+    modulesReady: [client: CommandoClient];
     typeRegister: [type: ArgumentType, registry: CommandoRegistry];
     unknownCommand: [message: CommandoMessage];
 }

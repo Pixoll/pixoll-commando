@@ -5,7 +5,7 @@ import CommandoGuild from '../extensions/guild';
 import { DataModel } from './util/schemas';
 
 /** A database schema manager (MongoDB) */
-export default class DatabaseManager<T extends { _id: string, guild?: string }> {
+export default class DatabaseManager<T extends { _id: string; guild?: string }> {
     /** Guild for this database */
     public readonly guild!: CommandoGuild | null;
     /** The name of the schema this manager is for */
