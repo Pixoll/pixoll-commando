@@ -11,7 +11,7 @@ type ArgumentCheckerParams = [
     originalMsg: CommandoMessage,
     arg: Argument,
     currentMsg?: CommandoMessage
-]
+];
 
 type ArgumentTypes =
     | 'boolean'

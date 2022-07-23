@@ -4,7 +4,7 @@ import CommandDispatcher from './dispatcher';
 import CommandoMessage from './extensions/message';
 import CommandoGuild from './extensions/guild';
 import ClientDatabaseManager from './database/ClientDatabaseManager';
-import databaseSchemas from './database/util/schemas';
+import { SimplifiedSchemas } from './database/Schemas';
 import { ArgumentCollectorResult } from './commands/collector';
 import Command, { CommandBlockData, CommandBlockReason, CommandInstances } from './commands/base';
 import CommandGroup from './commands/group';
@@ -95,7 +95,7 @@ export default class CommandoClient extends Client {
     /** The guilds' database manager, mapped by the guilds ids */
     databases: Collection<string, GuildDatabaseManager>;
     /** Object containing all the schemas this client uses. */
-    databaseSchemas: typeof databaseSchemas;
+    databaseSchemas: SimplifiedSchemas;
     /** The client's command dispatcher */
     dispatcher: CommandDispatcher;
     guilds: CommandoGuildManager;

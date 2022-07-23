@@ -1,11 +1,7 @@
-import { Collection } from 'discord.js';
+import { Collection, LimitedCollection } from 'discord.js';
 import CommandoClient from '../client';
-import DatabaseManager from './DatabaseManager';
-import { DisabledSchema, ErrorSchema, FaqSchema, PrefixSchema, ReminderSchema, TodoSchema } from './util/schemas';
-interface DefaultDocument {
-    _id: string;
-    guild?: string;
-}
+import DatabaseManager, { DefaultDocument } from './DatabaseManager';
+import { DisabledSchema, ErrorSchema, FaqSchema, PrefixSchema, ReminderSchema, TodoSchema } from './Schemas';
 /** The client's database manager (MongoDB) */
 export default class ClientDatabaseManager {
     /** Client for this database */
@@ -24,6 +20,5 @@ export default class ClientDatabaseManager {
      * Initializes the caching of this client's data
      * @param data - The data to assign to the client
      */
-    protected init(data: Collection<string, Collection<string, DefaultDocument>>): this;
+    protected init(data: Collection<string, LimitedCollection<string, DefaultDocument>>): this;
 }
-export {};

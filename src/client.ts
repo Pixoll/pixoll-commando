@@ -8,14 +8,14 @@ import CommandDispatcher from './dispatcher';
 import CommandoMessage from './extensions/message';
 import CommandoGuild from './extensions/guild';
 import ClientDatabaseManager from './database/ClientDatabaseManager';
-import databaseSchemas from './database/util/schemas';
-import modulesLoader from './database/util/modules-loader';
+import Schemas, { SimplifiedSchemas } from './database/Schemas';
 import { ArgumentCollectorResult } from './commands/collector';
 import Command, { CommandBlockData, CommandBlockReason, CommandInstances } from './commands/base';
 import CommandGroup from './commands/group';
 import ArgumentType from './types/base';
 import GuildDatabaseManager from './database/GuildDatabaseManager';
 import Util from './util';
+import initializeDB from './database/initializeDB';
 
 interface CommandoClientOptions extends ClientOptions {
     /**
@@ -106,7 +106,7 @@ export default class CommandoClient extends Client {
     /** The guilds' database manager, mapped by the guilds ids */
     public databases: Collection<string, GuildDatabaseManager>;
     /** Object containing all the schemas this client uses. */
-    public databaseSchemas: typeof databaseSchemas;
+    public databaseSchemas: SimplifiedSchemas;
     /** The client's command dispatcher */
     public dispatcher: CommandDispatcher;
     // @ts-expect-error: CommandoGuild is not assignable to Guild
@@ -151,7 +151,8 @@ export default class CommandoClient extends Client {
         this.dispatcher = new CommandDispatcher(this, this.registry);
         this.database = new ClientDatabaseManager(this);
         this.databases = new Collection();
-        this.databaseSchemas = databaseSchemas;
+        // @ts-expect-error: SimplifiedSchemas is meant to narrow and simplify methods for better understanding
+        this.databaseSchemas = Schemas;
         this._prefix = null;
 
         // Parses all the guild instances
@@ -159,8 +160,8 @@ export default class CommandoClient extends Client {
         this.on('guildCreate', this.parseGuild);
 
         // Set up message command handling
-        const catchErr = (err: unknown): void => {
-            this.emit('error', err as Error);
+        const catchErr = (err: Error): void => {
+            this.emit('error', err);
         };
         this.on('messageCreate', async message => {
             const commando = new CommandoMessage(this, message);
@@ -171,18 +172,18 @@ export default class CommandoClient extends Client {
         this.on('messageUpdate', async (oldMessage, newMessage) => {
             const commando = new CommandoMessage(this, newMessage as Message);
             // @ts-expect-error: handleMessage is protected in CommandDispatcher
-            await this.dispatcher.handleMessage(commando, oldMessage as Message).catch(catchErr);
+            await this.dispatcher.handleMessage(commando, oldMessage).catch(catchErr);
         });
 
         // Set up slash command handling
-        this.once('ready', async () => {
+        this.once('ready', () =>
             // @ts-expect-error: registerSlashCommands is protected in CommandoRegistry
-            await this.registry.registerSlashCommands();
-        });
-        this.on('interactionCreate', async interaction => {
+            this.registry.registerSlashCommands()
+        );
+        this.on('interactionCreate', interaction =>
             // @ts-expect-error: handleSlash is protected in CommandDispatcher
-            await this.dispatcher.handleSlash(interaction).catch(catchErr);
-        });
+            this.dispatcher.handleSlash(interaction).catch(catchErr)
+        );
 
         // Fetch the owner(s)
         if (owner) {
@@ -205,9 +206,7 @@ export default class CommandoClient extends Client {
         }
 
         // Establishes MongoDB connection and loads all modules
-        this.once('guildsReady', async () =>
-            await modulesLoader(this)
-        );
+        this.once('guildsReady', () => initializeDB(this));
     }
 
     /**
@@ -238,10 +237,10 @@ export default class CommandoClient extends Client {
         const { owner } = options;
 
         if (!owner) return null;
-        if (typeof owner === 'string') return [cache.get(owner)].filter(u => u) as User[];
+        if (typeof owner === 'string') return Util.removeNullishItems([cache.get(owner)]);
         const owners = [];
         for (const user of owner) owners.push(cache.get(user));
-        return owners.filter(u => u) as User[];
+        return Util.removeNullishItems(owners);
     }
 
     /**

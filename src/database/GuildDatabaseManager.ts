@@ -1,16 +1,10 @@
-import { Collection } from 'discord.js';
+import { Collection, LimitedCollection } from 'discord.js';
 import CommandoGuild from '../extensions/guild';
-import DatabaseManager from './DatabaseManager';
-import schemas from './util/schemas';
-import {
+import DatabaseManager, { DefaultDocument } from './DatabaseManager';
+import schemas, {
     ActiveSchema, AfkSchema, DisabledSchema, McIpSchema, ModerationSchema, ModuleSchema, PollSchema, PrefixSchema,
     ReactionRoleSchema, RuleSchema, SetupSchema, StickyRoleSchema, WelcomeSchema
-} from './util/schemas';
-
-interface DefaultDocument {
-    _id: string;
-    guild?: string;
-}
+} from './Schemas';
 
 /** A guilds' database manager (MongoDB) */
 export default class GuildDatabaseManager {
@@ -37,26 +31,26 @@ export default class GuildDatabaseManager {
     public constructor(guild: CommandoGuild) {
         Object.defineProperty(this, 'guild', { value: guild });
 
-        this.active = new DatabaseManager(schemas.active, guild);
-        this.afk = new DatabaseManager(schemas.afk, guild);
-        this.disabled = new DatabaseManager(schemas.disabled, guild);
-        this.mcIps = new DatabaseManager(schemas.mcIp, guild);
-        this.moderations = new DatabaseManager(schemas.moderations, guild);
-        this.modules = new DatabaseManager(schemas.modules, guild);
-        this.prefixes = new DatabaseManager(schemas.prefixes, guild);
-        this.polls = new DatabaseManager(schemas.polls, guild);
-        this.reactionRoles = new DatabaseManager(schemas.reactionRoles, guild);
-        this.rules = new DatabaseManager(schemas.rules, guild);
-        this.setup = new DatabaseManager(schemas.setup, guild);
-        this.stickyRoles = new DatabaseManager(schemas.stickyRoles, guild);
-        this.welcome = new DatabaseManager(schemas.welcome, guild);
+        this.active = new DatabaseManager(schemas.ActiveModel, guild);
+        this.afk = new DatabaseManager(schemas.AfkModel, guild);
+        this.disabled = new DatabaseManager(schemas.DisabledModel, guild);
+        this.mcIps = new DatabaseManager(schemas.McIpsModel, guild);
+        this.moderations = new DatabaseManager(schemas.ModerationsModel, guild);
+        this.modules = new DatabaseManager(schemas.ModulesModel, guild);
+        this.prefixes = new DatabaseManager(schemas.PrefixesModel, guild);
+        this.polls = new DatabaseManager(schemas.PollsModel, guild);
+        this.reactionRoles = new DatabaseManager(schemas.ReactionRolesModel, guild);
+        this.rules = new DatabaseManager(schemas.RulesModel, guild);
+        this.setup = new DatabaseManager(schemas.SetupModel, guild);
+        this.stickyRoles = new DatabaseManager(schemas.StickyRolesModel, guild);
+        this.welcome = new DatabaseManager(schemas.WelcomeModel, guild);
     }
 
     /**
      * Initializes the caching of this guild's data
      * @param data - The data to assign to the guild
      */
-    protected init(data: Collection<string, Collection<string, DefaultDocument>>): this {
+    protected init(data: Collection<string, LimitedCollection<string, DefaultDocument>>): this {
         for (const [name, schema] of data) {
             // @ts-expect-error: no string index
             const dbManager = this[name] as DatabaseManager<DefaultDocument>;

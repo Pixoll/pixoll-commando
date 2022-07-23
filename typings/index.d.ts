@@ -23,9 +23,10 @@ import {
     Snowflake,
     TextBasedChannel,
     User,
-    UserResolvable
+    UserResolvable,
+    LimitedCollection
 } from 'discord.js';
-import { FilterQuery, Model, UpdateAggregationStage, UpdateQuery } from 'mongoose';
+import { FilterQuery, Model, Types, UpdateAggregationStage, UpdateQuery, UpdateWriteOpResult } from 'mongoose';
 
 //#region Classes
 
@@ -593,7 +594,7 @@ export class CommandoClient extends Client {
     /** The guilds' database manager, mapped by the guilds ids */
     databases: Collection<string, GuildDatabaseManager>;
     /** Object containing all the schemas this client uses. */
-    databaseSchemas: Schemas;
+    databaseSchemas: SimplifiedSchemas;
     /** The client's command dispatcher */
     dispatcher: CommandDispatcher;
     guilds: CommandoGuildManager;
@@ -1005,7 +1006,7 @@ export class Util extends null {
     /**
      * Splits a string into multiple chunks at a designated character that do not exceed a specific length.
      * @param text - Content to split
-     * @param options Options controlling the behavior of the split
+     * @param options - Options controlling the behavior of the split
      */
     static splitMessage(text: string, options?: SplitOptions): string[];
     /**
@@ -1014,13 +1015,19 @@ export class Util extends null {
      * @param obj - The object to mutate.
      * @param newObj - The data to assign.
      */
-     static mutateObjectInstance<T extends object>(obj: object, newObj: T): T;
+    static mutateObjectInstance<T extends object>(obj: object, newObj: T): T;
+    /**
+     * Removes all nullish (`undefined` | `null`) items from an array. Mostly useful for TS.
+     * @param array - Any array that could contain empty items.
+     * @returns An array with all non-nullish items.
+     */
+    static removeNullishItems<T>(array: Array<T | null | undefined>): T[];
     /**
      * Verifies the provided data is a string, otherwise throws provided error.
-     * @param data The string resolvable to resolve
-     * @param error The Error constructor to instantiate. Defaults to Error
-     * @param errorMessage The error message to throw with. Defaults to "Expected string, got <data> instead."
-     * @param allowEmpty Whether an empty string should be allowed
+     * @param data - The string resolvable to resolve
+     * @param error - The Error constructor to instantiate. Defaults to Error
+     * @param errorMessage - The error message to throw with. Defaults to "Expected string, got <data> instead."
+     * @param allowEmpty - Whether an empty string should be allowed
      */
     protected static verifyString(
         data: string, error?: ErrorConstructor, errorMessage?: string, allowEmpty?: boolean
@@ -1031,7 +1038,7 @@ export class Util extends null {
 
 //#region Constants
 
-/** The version of Discord.js Commando */
+/** The package's version */
 export const version: string;
 
 //#endregion
@@ -1049,7 +1056,7 @@ export class ClientDatabaseManager {
      * Initializes the caching of this client's data
      * @param data - The data to assign to the client
      */
-    protected init(data: Collection<string, Collection<string, DefaultDocument>>): this;
+    protected init(data: Collection<string, LimitedCollection<string, DefaultDocument>>): this;
 
     /** Client for this database */
     readonly client: CommandoClient;
@@ -1062,25 +1069,24 @@ export class ClientDatabaseManager {
 }
 
 /** A database schema manager (MongoDB) */
-export class DatabaseManager<T extends { _id: string; guild?: string; }> {
+export class DatabaseManager<T extends DefaultDocument> {
     /**
      * @param schema - The schema of this manager
      * @param guild - The guild this manager is for
      */
-    constructor(schema: Model<T>, guild?: CommandoGuild);
-
+    constructor(schema: ModelFrom<T>, guild?: CommandoGuild);
     /** Filtering function for fetching documents. May only be used in `Array.filter()` or `Collection.filter()` */
-    protected _filterDocuments(filter: FilterQuery<T>): (doc: T) => boolean;
+    protected filterDocuments(filter: FilterQuery<T>): (doc: T) => boolean;
 
     /** Guild for this database */
     readonly guild: CommandoGuild | null;
     /** The name of the schema this manager is for */
-    schema: DataModel<T>;
+    Schema: SimplifiedModel<T>;
     /** The cache for this manager */
-    cache: Collection<string, T>;
+    cache: LimitedCollection<string, T>;
 
     /**
-     * Add a single document to the database, or updates it if there's an existing one
+     * Add a single document to the database
      * @param doc - The document to add
      * @returns The added document
      */
@@ -1093,11 +1099,11 @@ export class DatabaseManager<T extends { _id: string; guild?: string; }> {
     delete(doc: T | string): Promise<T>;
     /**
      * Update a single document of the database
-     * @param toUpdate - The document to update or its ID
-     * @param options - The options for this update
+     * @param doc - The document to update or its ID
+     * @param update - The update to apply
      * @returns The updated document
      */
-    update(toUpdate: T | string, options: T | UpdateAggregationStage | UpdateQuery<T>): Promise<T>;
+    update(doc: T | string, update: T | UpdateAggregationStage | UpdateQuery<T>): Promise<T>;
     /**
      * Fetch a single document
      * @param filter - The ID or fetching filter for this document
@@ -1123,7 +1129,7 @@ export class GuildDatabaseManager {
      * Initializes the caching of this guild's data
      * @param data - The data to assign to the guild
      */
-    protected init(data: Collection<string, Collection<string, DefaultDocument>>): this;
+    protected init(data: Collection<string, LimitedCollection<string, DefaultDocument>>): this;
 
     /** Guild for this database */
     readonly guild: CommandoGuild;
@@ -1147,9 +1153,9 @@ export class GuildDatabaseManager {
 //#region Typedefs
 
 declare class CommandoGuildManager extends CachedManager<Snowflake, CommandoGuild, GuildResolvable> {
-    public create(name: string, options?: GuildCreateOptions): Promise<CommandoGuild>;
-    public fetch(options1: FetchGuildOptions | Snowflake): Promise<CommandoGuild>;
-    public fetch(options2?: FetchGuildsOptions): Promise<Collection<Snowflake, CommandoGuild>>;
+    create(name: string, options?: GuildCreateOptions): Promise<CommandoGuild>;
+    fetch(options1: FetchGuildOptions | Snowflake): Promise<CommandoGuild>;
+    fetch(options2?: FetchGuildsOptions): Promise<Collection<Snowflake, CommandoGuild>>;
 }
 
 export declare class CommandoInteraction extends CommandInteraction {
@@ -1595,15 +1601,14 @@ export interface Inhibition {
     response?: Promise<Message> | null;
 }
 
-export interface DataModel<T> extends Model<T> {
+export interface SimplifiedModel<T> extends Model<T> {
     find(filter: FilterQuery<T>): Promise<T[]>;
     findOne(filter: FilterQuery<T>): Promise<T>;
     findById(id: string): Promise<T>;
-    updateOne(filter: FilterQuery<T>): Promise<T>;
+    updateOne(filter: FilterQuery<T>, update: Omit<T, '_id'> | UpdateQuery<Omit<T, '_id'>>): Promise<UpdateWriteOpResult>;
 }
 
-export interface DefaultDocument {
-    _id: string;
+export interface DefaultDocument extends BaseSchema {
     guild?: string;
 }
 
@@ -1827,36 +1832,40 @@ export interface ThrottlingOptions {
 
 //#region Schemas
 
-export interface Schemas {
-    active: DataModel<ActiveSchema>;
-    afk: DataModel<AfkSchema>;
-    disabled: DataModel<DisabledSchema>;
-    errors: DataModel<ErrorSchema>;
-    faq: DataModel<FaqSchema>;
-    mcIp: DataModel<McIpSchema>;
-    moderations: DataModel<ModerationSchema>;
-    modules: DataModel<ModuleSchema>;
-    polls: DataModel<PollSchema>;
-    prefixes: DataModel<PrefixSchema>;
-    reactionRoles: DataModel<ReactionRoleSchema>;
-    reminders: DataModel<ReminderSchema>;
-    rules: DataModel<RuleSchema>;
-    setup: DataModel<SetupSchema>;
-    stickyRoles: DataModel<StickyRoleSchema>;
-    todo: DataModel<TodoSchema>;
-    welcome: DataModel<WelcomeSchema>;
+export interface SimplifiedSchemas {
+    ActiveModel: SimplifiedModel<ActiveSchema>;
+    AfkModel: SimplifiedModel<AfkSchema>;
+    DisabledModel: SimplifiedModel<DisabledSchema>;
+    ErrorsModel: SimplifiedModel<ErrorSchema>;
+    FaqModel: SimplifiedModel<FaqSchema>;
+    McIpsModel: SimplifiedModel<McIpSchema>;
+    ModerationsModel: SimplifiedModel<ModerationSchema>;
+    ModulesModel: SimplifiedModel<ModuleSchema>;
+    PollsModel: SimplifiedModel<PollSchema>;
+    PrefixesModel: SimplifiedModel<PrefixSchema>;
+    ReactionRolesModel: SimplifiedModel<ReactionRoleSchema>;
+    RemindersModel: SimplifiedModel<ReminderSchema>;
+    RulesModel: SimplifiedModel<RuleSchema>;
+    SetupModel: SimplifiedModel<SetupSchema>;
+    StickyRolesModel: SimplifiedModel<StickyRoleSchema>;
+    TodoModel: SimplifiedModel<TodoSchema>;
+    WelcomeModel: SimplifiedModel<WelcomeSchema>;
 }
 
-declare type TimeBasedModeration = 'mute' | 'temp-ban' | 'time-out';
+type DocumentFrom<T extends BaseSchema = BaseSchema, IncludeId extends boolean = false> = Omit<T, IncludeId extends true ? Exclude<keyof BaseSchema, '_id'> : keyof BaseSchema>;
+
+type ModelFrom<T extends BaseSchema = BaseSchema, IncludeId extends boolean = false> = Model<DocumentFrom<T, IncludeId>>;
+
+declare type TimeBasedModerationType = 'mute' | 'temp-ban' | 'time-out';
 
 interface BaseSchema {
-    readonly _id: string;
+    readonly _id: Types.ObjectId;
     readonly createdAt?: Date;
     readonly updatedAt?: Date;
 }
 
 export interface ActiveSchema extends BaseSchema {
-    type: TimeBasedModeration | 'temp-role';
+    type: TimeBasedModerationType | 'temp-role';
     guild: Snowflake;
     userId: Snowflake;
     userTag: string;
@@ -1891,7 +1900,7 @@ export interface FaqSchema extends BaseSchema {
 }
 
 export interface ModerationSchema extends BaseSchema {
-    type: TimeBasedModeration | 'ban' | 'kick' | 'soft-ban' | 'warn';
+    type: TimeBasedModerationType | 'ban' | 'kick' | 'soft-ban' | 'warn';
     guild: Snowflake;
     userId: Snowflake;
     userTag: string;

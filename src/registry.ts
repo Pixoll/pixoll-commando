@@ -12,7 +12,7 @@ import CommandoMessage from './extensions/message';
 import ArgumentType from './types/base';
 import Util from './util';
 
-declare function require(id: string): unknown;
+declare function require<T>(id: string): T;
 
 interface RequireAllOptions {
     dirname: string;
@@ -369,7 +369,7 @@ export default class CommandoRegistry {
      * registry.registerCommandsIn(path.join(__dirname, 'commands'));
      */
     public registerCommandsIn(options: RequireAllOptions | string): this {
-        const obj = requireAll(options) as Record<string, Record<string, Command>>;
+        const obj: Record<string, Record<string, Command>> = requireAll(options);
         const commands: Command[] = [];
         for (const group of Object.values(obj)) {
             for (const command of Object.values(group)) {
@@ -465,7 +465,7 @@ export default class CommandoRegistry {
                 type = type.replace(/[A-Z]/g, '-$&').toLowerCase();
             }
 
-            this.registerType(require(`./types/${type}`) as ArgumentType);
+            this.registerType(require(`./types/${type}`));
         }
 
         return this;
@@ -698,7 +698,7 @@ function getUpdatedSlashCommands(
     oldCommands = JSON.parse(JSON.stringify(oldCommands));
     newCommands = JSON.parse(JSON.stringify(newCommands));
 
-    oldCommands.forEach(apiCommand => {
+    const parsedOldCommands = oldCommands.map(apiCommand => {
         for (const prop in apiCommand) {
             if (['name', 'description', 'options'].includes(prop)) continue;
             // @ts-expect-error: no string index
@@ -710,17 +710,16 @@ function getUpdatedSlashCommands(
             // @ts-expect-error: operand must be optional
             delete apiCommand.options;
         }
+        return apiCommand as RestAPIApplicationCommand;
     });
 
-    const map1 = new Map() as Map<string, boolean>;
-    // @ts-expect-error: no string index
-    oldCommands.forEach(el => map1.set(JSON.stringify(orderObjProps(el)), true));
-    // @ts-expect-error: no string index
+    const map1: Map<string, boolean> = new Map();
+    parsedOldCommands.forEach(el => map1.set(JSON.stringify(orderObjProps(el)), true));
     const updated = newCommands.filter(el => !map1.has(JSON.stringify(orderObjProps(el))));
 
-    const map2 = new Map() as Map<string, boolean>;
+    const map2: Map<string, boolean> = new Map();
     newCommands.forEach(el => map2.set(el.name, true));
-    const removed = oldCommands.filter(el => !map2.has(el.name)) as RestAPIApplicationCommand[];
+    const removed = parsedOldCommands.filter(el => !map2.has(el.name));
 
     return [updated, removed];
 }
@@ -760,7 +759,7 @@ function parseApiCmdOptions(options: ApplicationCommandOption[]): void {
     });
 }
 
-type Obj = { [key: string]: (Obj | Obj[] | string) };
+type Obj = { [key: string]: (Obj | Obj[] | boolean | number | string | null | undefined) };
 
 function orderObjProps(obj: Obj): Obj {
     const ordered: Obj = {};
@@ -773,7 +772,7 @@ function orderObjProps(obj: Obj): Obj {
             });
             continue;
         }
-        if (typeof value === 'object') {
+        if (typeof value === 'object' && value) {
             ordered[key] = orderObjProps(value);
             continue;
         }

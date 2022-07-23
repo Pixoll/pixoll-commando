@@ -117,7 +117,7 @@ export default class Util extends null {
      */
     static disambiguation(items: Array<Record<string, string> | string>, label: string, property = 'name'): string {
         const itemList = items.map(item =>
-            `"${(property && typeof item !== 'string' ? item[property] : item as string).replace(/ /g, '\xa0')}"`
+            `"${(typeof item !== 'string' ? item[property] : item).replace(/ /g, '\xa0')}"`
         ).join(',   ');
         return `Multiple ${label} found, please be more specific: ${itemList}`;
     }
@@ -136,7 +136,7 @@ export default class Util extends null {
     /**
      * Splits a string into multiple chunks at a designated character that do not exceed a specific length.
      * @param text - Content to split
-     * @param options Options controlling the behavior of the split
+     * @param options - Options controlling the behavior of the split
      */
     static splitMessage(text: string, options: SplitOptions = {}): string[] {
         const { maxLength = 2_000, char = '\n', prepend = '', append = '' } = options;
@@ -148,7 +148,9 @@ export default class Util extends null {
             while (char.length > 0 && splitText.some(elem => elem.length > maxLength)) {
                 const currentChar = char.shift()!;
                 if (currentChar instanceof RegExp) {
-                    splitText = splitText.flatMap(chunk => chunk.match(currentChar)).filter(c => c) as string[];
+                    splitText = Util.removeNullishItems(
+                        splitText.flatMap(chunk => chunk.match(currentChar))
+                    );
                 } else {
                     splitText = splitText.flatMap(chunk => chunk.split(currentChar));
                 }
@@ -169,7 +171,7 @@ export default class Util extends null {
             msg += (msg && msg !== prepend ? char : '') + chunk;
         }
 
-        return messages.concat(msg).filter(m => m);
+        return messages.concat(msg).filter(m => m.length !== 0);
     }
 
     /**
@@ -191,11 +193,20 @@ export default class Util extends null {
     }
 
     /**
+     * Removes all nullish (`undefined` | `null`) items from an array. Mostly useful for TS.
+     * @param array - Any array that could contain empty items.
+     * @returns An array with all non-nullish items.
+     */
+    static removeNullishItems<T>(array: Array<T | null | undefined>): T[] {
+        return array.filter((item): item is T => typeof item !== 'undefined' && item !== null);
+    }
+
+    /**
      * Verifies the provided data is a string, otherwise throws provided error.
-     * @param data The string resolvable to resolve
-     * @param error The Error constructor to instantiate. Defaults to Error
-     * @param errorMessage The error message to throw with. Defaults to "Expected string, got <data> instead."
-     * @param allowEmpty Whether an empty string should be allowed
+     * @param data - The string resolvable to resolve
+     * @param error - The Error constructor to instantiate. Defaults to Error
+     * @param errorMessage - The error message to throw with. Defaults to "Expected string, got <data> instead."
+     * @param allowEmpty - Whether an empty string should be allowed
      */
     protected static verifyString(
         data: string, error = Error, errorMessage = `Expected a string, got ${typeof data} instead.`, allowEmpty = true

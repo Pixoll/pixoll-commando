@@ -1,25 +1,25 @@
-import { Collection } from 'discord.js';
+import { Collection, LimitedCollection } from 'discord.js';
 import { FilterQuery, UpdateAggregationStage, UpdateQuery } from 'mongoose';
 import CommandoGuild from '../extensions/guild';
-import { DataModel } from './util/schemas';
-/** A database schema manager (MongoDB) */
-export default class DatabaseManager<T extends {
-    _id: string;
+import { ModelFrom, SimplifiedModel, BaseSchema } from './Schemas';
+export interface DefaultDocument extends BaseSchema {
     guild?: string;
-}> {
+}
+/** A MongoDB database schema manager */
+export default class DatabaseManager<T extends DefaultDocument> {
     /** Guild for this database */
     readonly guild: CommandoGuild | null;
     /** The name of the schema this manager is for */
-    schema: DataModel<T>;
+    Schema: SimplifiedModel<T>;
     /** The cache for this manager */
-    cache: Collection<string, T>;
+    cache: LimitedCollection<string, T>;
     /**
      * @param schema - The schema of this manager
      * @param guild - The guild this manager is for
      */
-    constructor(schema: DataModel<T>, guild?: CommandoGuild);
+    constructor(schema: ModelFrom<T, boolean>, guild?: CommandoGuild);
     /**
-     * Add a single document to the database, or updates it if there's an existing one
+     * Add a single document to the database.
      * @param doc - The document to add
      * @returns The added document
      */
@@ -32,11 +32,11 @@ export default class DatabaseManager<T extends {
     delete(doc: T | string): Promise<T>;
     /**
      * Update a single document of the database
-     * @param toUpdate - The document to update or its ID
-     * @param options - The options for this update
+     * @param doc - The document to update or its ID
+     * @param update - The update to apply
      * @returns The updated document
      */
-    update(toUpdate: T | string, options: T | UpdateAggregationStage | UpdateQuery<T>): Promise<T>;
+    update(doc: T | string, update: T | UpdateAggregationStage | UpdateQuery<T>): Promise<T>;
     /**
      * Fetch a single document
      * @param filter - The ID or fetching filter for this document
@@ -50,5 +50,5 @@ export default class DatabaseManager<T extends {
      */
     fetchMany(filter?: FilterQuery<T>): Promise<Collection<string, T>>;
     /** Filtering function for fetching documents. May only be used in `Array.filter()` or `Collection.filter()` */
-    protected _filterDocuments(filter: FilterQuery<T>): (doc: T) => boolean;
+    protected filterDocuments(filter: FilterQuery<T>): (doc: T) => boolean;
 }

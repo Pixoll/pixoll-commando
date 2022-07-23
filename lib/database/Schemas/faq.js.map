@@ -1,0 +1,1 @@
+{"version":3,"file":"faq.js","sourceRoot":"","sources":["../../../src/database/Schemas/faq.ts"],"names":[],"mappings":";;AAAA,uCAAyC;AAQzC,MAAM,QAAQ,GAAG,IAAA,gBAAK,EAA0B,KAAK,EAAE,IAAI,iBAAM,CAAC;IAC9D,QAAQ,EAAE,MAAM;IAChB,MAAM,EAAE,MAAM;CACjB,CAAC,EAAE,KAAK,CAAC,CAAC;AAEX,kBAAe,QAAQ,CAAC"}

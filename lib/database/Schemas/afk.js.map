@@ -1,0 +1,1 @@
+{"version":3,"file":"afk.js","sourceRoot":"","sources":["../../../src/database/Schemas/afk.ts"],"names":[],"mappings":";;AAAA,uCAAyC;AASzC,MAAM,QAAQ,GAAG,IAAA,gBAAK,EAA0B,KAAK,EAAE,IAAI,iBAAM,CAAC;IAC9D,KAAK,EAAE,MAAM;IACb,IAAI,EAAE,MAAM;IACZ,MAAM,EAAE,MAAM;CACjB,EAAE,EAAE,UAAU,EAAE,IAAI,EAAE,CAAC,EAAE,KAAK,CAAC,CAAC;AAEjC,kBAAe,QAAQ,CAAC"}

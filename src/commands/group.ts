@@ -71,6 +71,6 @@ export default class CommandGroup {
 
     /** Reloads all of the group's commands */
     public reload(): void {
-        for (const [, command] of this.commands) command.reload();
+        for (const command of this.commands.values()) command.reload();
     }
 }

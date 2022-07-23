@@ -1,0 +1,1 @@
+{"version":3,"file":"prefixes.js","sourceRoot":"","sources":["../../../src/database/Schemas/prefixes.ts"],"names":[],"mappings":";;AAAA,uCAAyC;AASzC,MAAM,aAAa,GAAG,IAAA,gBAAK,EAA6B,UAAU,EAAE,IAAI,iBAAM,CAAC;IAC3E,MAAM,EAAE,OAAO;IACf,KAAK,EAAE,MAAM;IACb,MAAM,EAAE,MAAM;CACjB,CAAC,CAAC,CAAC;AAEJ,kBAAe,aAAa,CAAC"}

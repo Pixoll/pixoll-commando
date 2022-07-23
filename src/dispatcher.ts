@@ -136,7 +136,7 @@ export default class CommandDispatcher {
         }
 
         // Run the command, or reply with an error
-        let responses: ArgumentResponse | null = null;
+        let responses: ArgumentResponse | Message[] | null = null;
         if (cmdMsg) {
             commandResponses: {
                 const inhibited = this.inhibit(cmdMsg);
@@ -162,17 +162,14 @@ export default class CommandDispatcher {
                         .setColor(Colors.Red)
                         .setDescription(`The \`${cmdMsg.command.name}\` command is disabled.`);
 
-                    // @ts-expect-error: Message[] not assignable to ArgumentResponse
                     responses = await cmdMsg.replyEmbed(responseEmbed);
                     break commandResponses;
                 }
 
                 if (!oldMessage || typeof oldCmdMsg !== 'undefined') {
-                    // @ts-expect-error: Message[] not assignable to ArgumentResponse
                     responses = await cmdMsg.run();
                     if (typeof responses === 'undefined') responses = null;
-                    // @ts-expect-error: Message[] not assignable to ArgumentResponse
-                    if (Array.isArray(responses)) responses = await Promise.all(responses as ArgumentResponse);
+                    if (Array.isArray(responses)) responses = await Promise.all(responses);
                 }
             }
 

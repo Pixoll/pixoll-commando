@@ -1,0 +1,1 @@
+{"version":3,"file":"sticky-roles.js","sourceRoot":"","sources":["../../../src/database/Schemas/sticky-roles.ts"],"names":[],"mappings":";;AAAA,uCAAyC;AASzC,MAAM,gBAAgB,GAAG,IAAA,gBAAK,EAAiC,cAAc,EAAE,IAAI,iBAAM,CAAC;IACtF,KAAK,EAAE,MAAM;IACb,IAAI,EAAE,MAAM;IACZ,KAAK,EAAE,CAAC,MAAM,CAAC;CAClB,CAAC,CAAC,CAAC;AAEJ,kBAAe,gBAAgB,CAAC"}

@@ -1,0 +1,1 @@
+{"version":3,"file":"welcome.js","sourceRoot":"","sources":["../../../src/database/Schemas/welcome.ts"],"names":[],"mappings":";;AAAA,uCAAyC;AASzC,MAAM,YAAY,GAAG,IAAA,gBAAK,EAA8B,SAAS,EAAE,IAAI,iBAAM,CAAC;IAC1E,KAAK,EAAE,MAAM;IACb,OAAO,EAAE,MAAM;IACf,OAAO,EAAE,MAAM;CAClB,CAAC,EAAE,SAAS,CAAC,CAAC;AAEf,kBAAe,YAAY,CAAC"}

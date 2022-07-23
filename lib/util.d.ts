@@ -58,7 +58,7 @@ export default class Util extends null {
     /**
      * Splits a string into multiple chunks at a designated character that do not exceed a specific length.
      * @param text - Content to split
-     * @param options Options controlling the behavior of the split
+     * @param options - Options controlling the behavior of the split
      */
     static splitMessage(text: string, options?: SplitOptions): string[];
     /**
@@ -69,11 +69,17 @@ export default class Util extends null {
      */
     static mutateObjectInstance<T extends object>(obj: object, newObj: T): T;
     /**
+     * Removes all nullish (`undefined` | `null`) items from an array. Mostly useful for TS.
+     * @param array - Any array that could contain empty items.
+     * @returns An array with all non-nullish items.
+     */
+    static removeNullishItems<T>(array: Array<T | null | undefined>): T[];
+    /**
      * Verifies the provided data is a string, otherwise throws provided error.
-     * @param data The string resolvable to resolve
-     * @param error The Error constructor to instantiate. Defaults to Error
-     * @param errorMessage The error message to throw with. Defaults to "Expected string, got <data> instead."
-     * @param allowEmpty Whether an empty string should be allowed
+     * @param data - The string resolvable to resolve
+     * @param error - The Error constructor to instantiate. Defaults to Error
+     * @param errorMessage - The error message to throw with. Defaults to "Expected string, got <data> instead."
+     * @param allowEmpty - Whether an empty string should be allowed
      */
     protected static verifyString(data: string, error?: ErrorConstructor, errorMessage?: string, allowEmpty?: boolean): string;
 }
