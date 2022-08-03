@@ -6,3 +6,5 @@ Modified version of Commando for [Pixel](https://top.gg/bot/802267523058761759),
 
 **Note:** The use of "protected" instead of "private" in `.d.ts` and `.ts` files is intentional, as `tsc` removes type
 declarations of private fields, methods and constructors, which I don't want.
+
+Changes from original repository will be noted on a future release.
