@@ -1,15 +1,29 @@
 import { Collection, LimitedCollection } from 'discord.js';
 import CommandoGuild from '../extensions/guild';
-import DatabaseManager, { DefaultDocument } from './DatabaseManager';
+import DatabaseManager from './DatabaseManager';
 import schemas, {
-    ActiveSchema, AfkSchema, DisabledSchema, McIpSchema, ModerationSchema, ModuleSchema, PollSchema, PrefixSchema,
-    ReactionRoleSchema, RuleSchema, SetupSchema, StickyRoleSchema, WelcomeSchema
+    ActiveSchema,
+    AfkSchema,
+    AnySchema,
+    DisabledSchema,
+    McIpSchema,
+    ModerationSchema,
+    ModuleSchema,
+    PollSchema,
+    PrefixSchema,
+    ReactionRoleSchema,
+    RuleSchema,
+    SetupSchema,
+    StickyRoleSchema,
+    WelcomeSchema,
 } from './Schemas';
+
+type SchemaKey = Exclude<keyof GuildDatabaseManager, 'guild'>;
 
 /** A guilds' database manager (MongoDB) */
 export default class GuildDatabaseManager {
     /** Guild for this database */
-    public readonly guild!: CommandoGuild;
+    declare public readonly guild: CommandoGuild;
 
     public active: DatabaseManager<ActiveSchema>;
     public afk: DatabaseManager<AfkSchema>;
@@ -50,11 +64,11 @@ export default class GuildDatabaseManager {
      * Initializes the caching of this guild's data
      * @param data - The data to assign to the guild
      */
-    protected init(data: Collection<string, LimitedCollection<string, DefaultDocument>>): this {
+    protected init(data: Collection<string, LimitedCollection<string, AnySchema>>): this {
         for (const [name, schema] of data) {
-            // @ts-expect-error: no string index
-            const dbManager = this[name] as DatabaseManager<DefaultDocument>;
+            const dbManager = this[name as SchemaKey];
             if (!dbManager) continue;
+            // @ts-expect-error: AnySchema not assignable to individual schema types
             dbManager.cache = schema;
         }
         return this;

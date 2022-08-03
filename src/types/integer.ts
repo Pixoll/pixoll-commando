@@ -1,6 +1,7 @@
 import CommandoClient from '../client';
 import Argument from '../commands/argument';
 import CommandoMessage from '../extensions/message';
+import Util from '../util';
 import ArgumentType from './base';
 
 export default class IntegerArgumentType extends ArgumentType {
@@ -15,10 +16,10 @@ export default class IntegerArgumentType extends ArgumentType {
         if (arg.oneOf && !arg.oneOf.includes(int)) {
             return `Please enter one of the following options: ${arg.oneOf.map(opt => `\`${opt}\``).join(', ')}`;
         }
-        if (arg.min !== null && typeof arg.min !== 'undefined' && int < arg.min) {
+        if (!Util.isNullish(arg.min) && int < arg.min) {
             return `Please enter a number above or exactly ${arg.min}.`;
         }
-        if (arg.max !== null && typeof arg.max !== 'undefined' && int > arg.max) {
+        if (!Util.isNullish(arg.max) && int > arg.max) {
             return `Please enter a number below or exactly ${arg.max}.`;
         }
 

@@ -9,7 +9,7 @@ interface ResponseOptions {
     /** Type of the response */
     type?: ResponseType;
     /** Content of the response */
-    content?: MessageOptions | StringResolvable;
+    content?: MessageOptions | StringResolvable | null;
     /** Options of the response */
     options?: MessageOptions;
     /** Language of the response, if its type is `code` */
@@ -24,9 +24,7 @@ export declare type CommandoMessageResponse = CommandoMessage | Message | Messag
  */
 export default class CommandoMessage extends Message {
     /** The client the message is for */
-    readonly client: CommandoClient;
-    /** The guild this message is for */
-    guild: CommandoGuild;
+    readonly client: CommandoClient<true>;
     /** Whether the message contains a command (even an unknown one) */
     isCommand: boolean;
     /** Command that the message triggers, if any */
@@ -44,6 +42,8 @@ export default class CommandoMessage extends Message {
      * @param data - The message data
      */
     constructor(client: CommandoClient, data: Message);
+    /** The guild this message is for */
+    get guild(): CommandoGuild | null;
     /**
      * Initializes the message for a command
      * @param command - Command the message triggers
@@ -70,7 +70,7 @@ export default class CommandoMessage extends Message {
     anyUsage(command: string, prefix?: string | null, user?: User | null): string;
     /**
      * Parses the argString into usable arguments, based on the argsType and argsCount of the command
-     * @see {@link Command#run}
+     * @see Command#run
      */
     parseArgs(): string[] | string;
     /** Runs the command */

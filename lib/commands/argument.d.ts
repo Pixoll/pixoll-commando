@@ -97,7 +97,7 @@ export default class Argument {
     prompt: string;
     /**
      * Error message for when a value is invalid
-     *  @see {@link ArgumentType#validate}
+     * @see ArgumentType#validate
      */
     error: string | null;
     /** Type of the argument */
@@ -128,17 +128,17 @@ export default class Argument {
     infinite: boolean;
     /**
      * Validator function for validating a value for the argument
-     * @see {@link ArgumentType#validate}
+     * @see ArgumentType#validate
      */
     protected validator: ArgumentInfo['validate'] | null;
     /**
      * Parser function for parsing a value for the argument
-     *  @see {@link ArgumentType#parse}
+     * @see ArgumentType#parse
      */
     protected parser: ArgumentInfo['parse'] | null;
     /**
      * Function to check whether a raw value is considered empty
-     *  @see {@link ArgumentType#isEmpty}
+     * @see ArgumentType#isEmpty
      */
     protected emptyChecker: ArgumentInfo['isEmpty'] | null;
     /** How long to wait for input (in seconds) */
@@ -194,6 +194,6 @@ export default class Argument {
      * @param client - Client to use the registry of
      * @param id - ID of the type to use
      */
-    protected static determineType(client: CommandoClient, id: string[] | string): ArgumentType | null;
+    protected static determineType(client: CommandoClient, id?: string[] | string): ArgumentType | null;
 }
 export {};

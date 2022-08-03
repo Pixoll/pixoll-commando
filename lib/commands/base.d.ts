@@ -1,12 +1,12 @@
 /// <reference types="node" />
-import { GuildResolvable, Message, PermissionsString, User, APIMessage, RESTPostAPIChatInputApplicationCommandsJSONBody as RestAPIApplicationCommand } from 'discord.js';
+import { GuildResolvable, Message, PermissionsString, User, ApplicationCommandData, ChatInputApplicationCommandData } from 'discord.js';
 import ArgumentCollector, { ArgumentCollectorResult } from './collector';
 import CommandoClient from '../client';
 import CommandGroup from './group';
-import { CommandoInteraction } from '../dispatcher';
 import { ArgumentInfo } from './argument';
 import CommandoMessage from '../extensions/message';
 import CommandoGuild from '../extensions/guild';
+import CommandoInteraction from '../extensions/interaction';
 /** Options for throttling usages of the command. */
 interface ThrottlingOptions {
     /** Maximum number of usages of the command allowed in the time frame. */
@@ -83,15 +83,10 @@ interface CommandInfo {
     /** Options for throttling usages of the command. */
     throttling?: ThrottlingOptions;
     /**
-     * The data for the slash command, or `true` to use the same information as the message command.
-     * @default false
-     */
-    slash?: SlashCommandInfo | boolean;
-    /**
      * Whether the slash command will be registered in the test guild only or not.
      * @default false
      */
-    test?: boolean;
+    testEnv?: boolean;
     /** Arguments for the command. */
     args?: ArgumentInfo[];
     /**
@@ -159,9 +154,9 @@ interface Throttle {
 /** The instances the command is being run for */
 export interface CommandInstances {
     /** The message the command is being run for */
-    message?: CommandoMessage | null;
+    message?: CommandoMessage;
     /** The interaction the command is being run for */
-    interaction?: CommandoInteraction | null;
+    interaction?: CommandoInteraction;
 }
 /** The reason of {@link Command#onBlock} */
 export declare type CommandBlockReason = 'clientPermissions' | 'dmOnly' | 'guildOnly' | 'guildOwnerOnly' | 'modPermissions' | 'nsfw' | 'ownerOnly' | 'throttling' | 'userPermissions';
@@ -183,50 +178,10 @@ export interface CommandBlockData {
      */
     missing?: PermissionsString[];
 }
-/** The slash command information */
-interface SlashCommandInfo {
-    /** The name of the command (must be lowercase, 1-32 characters) - defaults to {@link CommandInfo}'s `name` */
-    name?: string;
-    /** A short description of the command (1-100 characters) - defaults to {@link CommandInfo}'s `description` */
-    description?: string;
-    /** Options for the command */
-    options?: SlashCommandOptionInfo[];
-    /**
-     * Whether the reply of the slash command should be ephemeral or not
-     * @default false
-     */
-    ephemeral?: boolean;
+interface SlashCommandInfo extends ChatInputApplicationCommandData {
+    /** Whether the deferred reply should be ephemeral or not */
+    deferEphemeral?: boolean;
 }
-interface SlashCommandOptionInfo {
-    /** The type of the option */
-    type: SlashCommandOptionType;
-    /** The name of the option */
-    name: string;
-    /** The description of the option - required if `type` is `subcommand` or `subcommand-group` */
-    description: string;
-    /**
-     * Whether the option is required or not
-     * @default false
-     */
-    required?: boolean;
-    /** The minimum value permitted - only usable if `type` is `integer` or `number` */
-    minValue?: number;
-    /** The maximum value permitted - only usable if `type` is `integer` or `number` */
-    maxValue?: number;
-    /** The choices options for the option - only usable if `type` is `string`, `integer` or `number` */
-    choices?: Array<{
-        name: string;
-        value: number | string;
-    }>;
-    /** The type options for the option - only usable if `type` is `channel` */
-    channelTypes?: SlashCommandChannelType[];
-    /** The options for the sub-command - only usable if `type` is `subcommand` */
-    options?: SlashCommandOptionInfo[];
-    /** Enable autocomplete interactions for this option - may not be set to true if `choices` are present */
-    autocomplete?: boolean;
-}
-declare type SlashCommandOptionType = 'boolean' | 'channel' | 'integer' | 'mentionable' | 'number' | 'role' | 'string' | 'subcommand-group' | 'subcommand' | 'user';
-declare type SlashCommandChannelType = 'guild-category' | 'guild-news-thread' | 'guild-news' | 'guild-private-thread' | 'guild-public-thread' | 'guild-stage-voice' | 'guild-text' | 'guild-voice';
 /** A command that can be run in a client */
 export default abstract class Command {
     /** Client that this command is for */
@@ -238,7 +193,7 @@ export default abstract class Command {
     /** ID of the group the command belongs to */
     groupId: string;
     /** The group the command belongs to, assigned upon registration */
-    group: CommandGroup | null;
+    group: CommandGroup;
     /** Name of the command within the group */
     memberName: string;
     /** Short description of the command */
@@ -292,20 +247,19 @@ export default abstract class Command {
      */
     replacing: string | null;
     /** Whether this command will be registered in the test guild only or not */
-    test: boolean;
+    testEnv: boolean;
     /** The data for the slash command */
-    slash: SlashCommandInfo | boolean;
+    slashInfo?: ApplicationCommandData | SlashCommandInfo;
     /** Whether the command is enabled globally */
     protected _globalEnabled: boolean;
-    /** The slash command data to send to the API */
-    protected _slashToAPI: RestAPIApplicationCommand | null;
     /** Current throttle objects for the command, mapped by user ID */
     protected _throttles: Map<string, Throttle>;
     /**
      * @param client - The client the command is for
      * @param info - The command information
+     * @param slashInfo - The slash command information
      */
-    constructor(client: CommandoClient, info: CommandInfo);
+    constructor(client: CommandoClient, info: CommandInfo, slashInfo?: ApplicationCommandData | SlashCommandInfo);
     /**
      * Checks whether the user has permission to use the command
      * @param instances - The triggering command instances
@@ -335,7 +289,7 @@ export default abstract class Command {
      * - throttling: `throttle` ({@link Object}), `remaining` ({@link number}) time in seconds
      * - userPermissions & clientPermissions: `missing` ({@link Array}<{@link string}>) permission names
      */
-    onBlock(instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData): Promise<APIMessage | Message | null>;
+    onBlock(instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData): Promise<Message | null>;
     /**
      * Called when the command produces an error while running
      * @param err - Error that was thrown
@@ -393,9 +347,10 @@ export default abstract class Command {
      */
     protected static validateInfo(client: CommandoClient, info: CommandInfo): void;
     /**
-     * Parses the slash command information, so it's usable by the API
-     * @param info - Info to parse
+     * Validates the slash command information
+     * @param info - Info to validate
+     * @param slashInfo - Slash info to validate
      */
-    protected static parseSlash(info: SlashCommandInfo | SlashCommandOptionInfo[]): RestAPIApplicationCommand;
+    protected static validateSlashInfo(info: CommandInfo, slashInfo: ApplicationCommandData): void;
 }
 export {};

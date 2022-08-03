@@ -1,4 +1,4 @@
-import { Client, Collection, ClientOptions, InviteGenerationOptions, CachedManager, Snowflake, GuildResolvable, GuildCreateOptions, FetchGuildOptions, FetchGuildsOptions, UserResolvable, Guild, User, ClientEvents, Message } from 'discord.js';
+import { Client, Collection, ClientOptions, InviteGenerationOptions, CachedManager, Snowflake, GuildResolvable, GuildCreateOptions, FetchGuildOptions, UserResolvable, Guild, User, ClientEvents, Message, OAuth2Guild, FetchGuildsOptions } from 'discord.js';
 import CommandoRegistry from './registry';
 import CommandDispatcher from './dispatcher';
 import CommandoMessage from './extensions/message';
@@ -42,9 +42,9 @@ interface CommandoClientOptions extends ClientOptions {
     excludeModules?: string[];
 }
 declare class CommandoGuildManager extends CachedManager<Snowflake, CommandoGuild, GuildResolvable> {
-    create(name: string, options?: GuildCreateOptions): Promise<CommandoGuild>;
+    create(options: GuildCreateOptions): Promise<CommandoGuild>;
     fetch(options: FetchGuildOptions | Snowflake): Promise<CommandoGuild>;
-    fetch(options?: FetchGuildsOptions): Promise<Collection<Snowflake, CommandoGuild>>;
+    fetch(options?: FetchGuildsOptions): Promise<Collection<Snowflake, OAuth2Guild>>;
 }
 interface CommandoClientEvents extends ClientEvents {
     commandBlock: [instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData];
@@ -73,19 +73,24 @@ interface CommandoClientEvents extends ClientEvents {
     ];
     commandStatusChange: [guild: CommandoGuild | null, command: Command, enabled: boolean];
     commandUnregister: [command: Command];
-    databaseReady: [client: CommandoClient];
+    databaseReady: [client: CommandoClient<true>];
     groupRegister: [group: CommandGroup, registry: CommandoRegistry];
     groupStatusChange: [guild: CommandoGuild | null, group: CommandGroup, enabled: boolean];
-    guildsReady: [client: CommandoClient];
-    modulesReady: [client: CommandoClient];
+    guildsReady: [client: CommandoClient<true>];
+    modulesReady: [client: CommandoClient<true>];
     typeRegister: [type: ArgumentType, registry: CommandoRegistry];
     unknownCommand: [message: CommandoMessage];
+}
+export declare interface CommandoClient {
+    on<K extends keyof CommandoClientEvents>(event: K, listener: (...args: CommandoClientEvents[K]) => void): this;
+    once<K extends keyof CommandoClientEvents>(event: K, listener: (...args: CommandoClientEvents[K]) => void): this;
+    emit<K extends keyof CommandoClientEvents>(event: K, ...args: CommandoClientEvents[K]): boolean;
 }
 /**
  * Discord.js Client with a command framework
  * @augments Client
  */
-export default class CommandoClient extends Client {
+export declare class CommandoClient<Ready extends boolean = boolean> extends Client<Ready> {
     /** Internal global command prefix, controlled by the {@link CommandoClient#prefix} getter/setter */
     protected _prefix?: string | null;
     /** Invite for the bot */
@@ -103,9 +108,6 @@ export default class CommandoClient extends Client {
     options: CommandoClientOptions;
     /** The client's command registry */
     registry: CommandoRegistry;
-    on<K extends keyof CommandoClientEvents>(event: K, listener: (...args: CommandoClientEvents[K]) => void): this;
-    once<K extends keyof CommandoClientEvents>(event: K, listener: (...args: CommandoClientEvents[K]) => void): this;
-    emit<K extends keyof CommandoClientEvents>(event: K, ...args: CommandoClientEvents[K]): boolean;
     /**
      * @param options - Options for the client
      */
@@ -129,6 +131,8 @@ export default class CommandoClient extends Client {
      * @param user - User to check for ownership
      */
     isOwner(user: UserResolvable): boolean;
+    /** Initializes all default listeners that make the client work. */
+    protected initDefaultListeners(): void;
     /** Parses all {@link Guild} instances into {@link CommandoGuild}s. */
     protected parseGuilds(): void;
     /**
@@ -137,4 +141,4 @@ export default class CommandoClient extends Client {
      */
     protected parseGuild(guild: Guild): void;
 }
-export {};
+export default CommandoClient;

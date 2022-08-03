@@ -1,12 +1,9 @@
 import { Collection, LimitedCollection } from 'discord.js';
 import { FilterQuery, UpdateAggregationStage, UpdateQuery } from 'mongoose';
 import CommandoGuild from '../extensions/guild';
-import { ModelFrom, SimplifiedModel, BaseSchema } from './Schemas';
-export interface DefaultDocument extends BaseSchema {
-    guild?: string;
-}
+import { ModelFrom, SimplifiedModel, AnySchema } from './Schemas';
 /** A MongoDB database schema manager */
-export default class DatabaseManager<T extends DefaultDocument> {
+export default class DatabaseManager<T extends AnySchema> {
     /** Guild for this database */
     readonly guild: CommandoGuild | null;
     /** The name of the schema this manager is for */

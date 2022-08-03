@@ -47,7 +47,7 @@ export default class UserArgumentType extends ArgumentType {
 
     public parse(val: string, msg: CommandoMessage): User | null {
         const matches = val.match(/^(?:<@!?)?([0-9]+)>?$/);
-        if (matches) return msg.client.users.cache.get(matches[1]) || null;
+        if (matches) return msg.client.users.cache.get(matches[1]) ?? null;
 
         if (!msg.guild) return null;
 

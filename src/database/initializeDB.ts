@@ -2,8 +2,7 @@ import { Collection, LimitedCollection } from 'discord.js';
 import { connect } from 'mongoose';
 import requireAll from 'require-all';
 import CommandoClient from '../client';
-import { DefaultDocument } from './DatabaseManager';
-import Schemas, { ModelFrom } from './Schemas';
+import Schemas, { AnySchema, ModelFrom } from './Schemas';
 import Util from '../util';
 
 type Module = (client: CommandoClient) => Promise<unknown>;
@@ -41,14 +40,14 @@ async function connectDB(client: CommandoClient): Promise<boolean> {
 async function cacheDB(client: CommandoClient): Promise<void> {
     const { database, databases, guilds } = client;
 
-    const schemas = Object.values(Schemas) as Array<ModelFrom<DefaultDocument, true>>;
+    const schemas = Object.values(Schemas) as Array<ModelFrom<AnySchema, true>>;
     // Resolves all promises at once after getting all data.
     const schemasData = await Promise.all(schemas.map(schema => schema.find({})));
 
-    const data: Collection<string, LimitedCollection<string, DefaultDocument>> = new Collection();
+    const data = new Collection<string, LimitedCollection<string, AnySchema>>();
     for (let i = 0; i < schemas.length; i++) {
         const schemaName = Util.removeDashes(schemas[i].collection.name);
-        const entries = schemasData[i].map<[string, DefaultDocument]>(doc => [doc._id.toString(), doc]);
+        const entries = schemasData[i].map<[string, AnySchema]>(doc => [doc._id.toString(), doc]);
 
         const documents = new LimitedCollection({
             maxSize: 200,
@@ -80,17 +79,18 @@ async function loadModules(client: CommandoClient): Promise<void> {
     const { modulesDir, excludeModules } = options;
 
     if (!modulesDir) return;
-    const features = requireAll(modulesDir) as Record<string, Record<string, Module>>;
-    for (const folderName of Object.keys(features)) {
-        const folder = features[folderName];
+    const modules = requireAll(modulesDir) as Record<string, Record<string, Module>>;
+    for (const folderName of Object.keys(modules)) {
+        const folder = modules[folderName];
         if (typeof folder !== 'object') continue;
         for (const fileName in folder) {
             if (excludeModules?.includes(fileName)) continue;
             const file = folder[fileName];
+            // eslint-disable-next-line no-await-in-loop
             await file(client);
-            client.emit('debug', `Loaded feature ${folderName}/${fileName}`);
+            client.emit('debug', `Loaded module ${folderName}/${fileName}`);
         }
     }
-    client.emit('debug', 'Loaded client features');
+    client.emit('debug', 'Loaded client module');
     client.emit('modulesReady', client);
 }

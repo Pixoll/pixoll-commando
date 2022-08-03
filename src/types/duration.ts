@@ -3,6 +3,7 @@ import ms from 'ms';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 import Argument from '../commands/argument';
+import Util from '../util';
 
 export default class DurationArgumentType extends ArgumentType {
     public constructor(client: CommandoClient) {
@@ -20,10 +21,10 @@ export default class DurationArgumentType extends ArgumentType {
             return 'The max. usable duration is `1 year`. Please try again.';
         }
 
-        if (arg.min !== null && typeof arg.min !== 'undefined' && int < arg.min) {
+        if (!Util.isNullish(arg.min) && int < arg.min) {
             return `Please enter a duration above or exactly ${ms(arg.min)}.`;
         }
-        if (arg.max !== null && typeof arg.max !== 'undefined' && int > arg.max) {
+        if (!Util.isNullish(arg.max) && int > arg.max) {
             return `Please enter a duration below or exactly ${ms(arg.max)}.`;
         }
 

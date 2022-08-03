@@ -11,7 +11,6 @@ import { CommandGroupResolvable, CommandResolvable } from '../registry';
 // @ts-expect-error: Guild's constructor is private
 export default class CommandoGuild extends Guild {
     /** The client the guild is for */
-    // @ts-expect-error: CommandoClient not assignable to Client<boolean>
     declare public readonly client: CommandoClient;
     /** The database manager for the guild */
     public database: GuildDatabaseManager;
@@ -29,7 +28,7 @@ export default class CommandoGuild extends Guild {
      * @param data - The guild data
      */
     public constructor(client: CommandoClient, data: Guild) {
-        // @ts-expect-error: CommandoClient not assignable to Client<boolean>
+        // @ts-expect-error: data.toJSON() does not work
         super(client, { id: data.id });
         Object.assign(this, data);
 
@@ -80,12 +79,11 @@ export default class CommandoGuild extends Guild {
     public isCommandEnabled(command: CommandResolvable): boolean {
         const { registry } = this.client;
         command = registry.resolveCommand(command);
-        // @ts-expect-error: _globalEnabled only accessible from Command
-        const { name, guarded, _globalEnabled } = command;
+        const { name, guarded } = command;
         if (guarded) return true;
         const commandEnabled = this._commandsEnabled.get(name);
-        if (!this._commandsEnabled || typeof commandEnabled === 'undefined') {
-            return _globalEnabled;
+        if (typeof commandEnabled === 'undefined') {
+            return command.isEnabledIn(null);
         }
         return commandEnabled;
     }
@@ -113,12 +111,11 @@ export default class CommandoGuild extends Guild {
     public isGroupEnabled(group: CommandGroupResolvable): boolean {
         const { registry } = this.client;
         group = registry.resolveGroup(group);
-        // @ts-expect-error: _globalEnabled only accessible from CommandGroup
-        const { id, guarded, _globalEnabled } = group;
+        const { id, guarded } = group;
         if (guarded) return true;
         const groupEnabled = this._commandsEnabled.get(id);
-        if (!this._groupsEnabled || typeof groupEnabled === 'undefined') {
-            return _globalEnabled;
+        if (typeof groupEnabled === 'undefined') {
+            return group.isEnabledIn(null);
         }
         return groupEnabled;
     }
@@ -128,7 +125,7 @@ export default class CommandoGuild extends Guild {
      * @param command - A command + arg string
      * @param user - User to use for the mention command format
      */
-    public commandUsage(command: string, user: User = this.client.user!): string {
+    public commandUsage(command: string, user: User | null = this.client.user): string {
         return Command.usage(command, this.prefix, user);
     }
 }

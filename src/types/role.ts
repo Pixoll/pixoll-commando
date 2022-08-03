@@ -11,6 +11,8 @@ export default class RoleArgumentType extends ArgumentType {
     }
 
     public validate(val: string, msg: CommandoMessage, arg: Argument): boolean | string {
+        if (!msg.guild) return false;
+
         const matches = val.match(/^(?:<@&)?([0-9]+)>?$/);
         if (matches) return msg.guild.roles.cache.has(matches[1]);
 
@@ -35,8 +37,10 @@ export default class RoleArgumentType extends ArgumentType {
     }
 
     public parse(val: string, msg: CommandoMessage): Role | null {
+        if (!msg.guild) return null;
+
         const matches = val.match(/^(?:<@&)?([0-9]+)>?$/);
-        if (matches) return msg.guild.roles.cache.get(matches[1]) || null;
+        if (matches) return msg.guild.roles.cache.get(matches[1]) ?? null;
 
         const search = val.toLowerCase();
         const roles = msg.guild.roles.cache.filter(nameFilterInexact(search));

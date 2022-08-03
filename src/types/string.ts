@@ -1,6 +1,7 @@
 import CommandoClient from '../client';
 import Argument from '../commands/argument';
 import CommandoMessage from '../extensions/message';
+import Util from '../util';
 import ArgumentType from './base';
 
 export default class StringArgumentType extends ArgumentType {
@@ -12,10 +13,10 @@ export default class StringArgumentType extends ArgumentType {
         if (arg.oneOf && !arg.oneOf.includes(val.toLowerCase())) {
             return `Please enter one of the following options: ${arg.oneOf.map(opt => `\`${opt}\``).join(', ')}`;
         }
-        if (arg.min !== null && typeof arg.min !== 'undefined' && val.length < arg.min) {
+        if (!Util.isNullish(arg.min) && val.length < arg.min) {
             return `Please keep the ${arg.label} above or exactly ${arg.min} characters.`;
         }
-        if (arg.max !== null && typeof arg.max !== 'undefined' && val.length > arg.max) {
+        if (!Util.isNullish(arg.max) && val.length > arg.max) {
             return `Please keep the ${arg.label} below or exactly ${arg.max} characters.`;
         }
 

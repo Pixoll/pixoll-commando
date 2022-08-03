@@ -75,6 +75,12 @@ export default class Util extends null {
      */
     static removeNullishItems<T>(array: Array<T | null | undefined>): T[];
     /**
+     * Checks if a value is undefined.
+     * @param val - The value to check.
+     * @returns Whether the value is nullish.
+     */
+    static isNullish(val: unknown): val is null | undefined;
+    /**
      * Verifies the provided data is a string, otherwise throws provided error.
      * @param data - The string resolvable to resolve
      * @param error - The Error constructor to instantiate. Defaults to Error

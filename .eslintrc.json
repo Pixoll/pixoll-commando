@@ -17,8 +17,8 @@
             {
                 "arrays": "always-multiline",
                 "objects": "always-multiline",
-                "imports": "never",
-                "exports": "never",
+                "imports": "always-multiline",
+                "exports": "always-multiline",
                 "functions": "never"
             }
         ],
@@ -94,6 +94,12 @@
         "array-element-newline": [
             "error",
             "consistent"
+        ],
+        "no-duplicate-imports": [
+            "error"
+        ],
+        "no-await-in-loop": [
+            "error"
         ]
     },
     "overrides": [

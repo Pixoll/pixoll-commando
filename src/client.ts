@@ -1,7 +1,22 @@
 import {
-    Client, PermissionsBitField, Collection, ClientOptions, InviteGenerationOptions, CachedManager, Snowflake,
-    GuildResolvable, GuildCreateOptions, FetchGuildOptions, FetchGuildsOptions, UserResolvable, Guild, User, ClientEvents,
-    Message
+    Client,
+    PermissionsBitField,
+    Collection,
+    ClientOptions,
+    InviteGenerationOptions,
+    CachedManager,
+    Snowflake,
+    GuildResolvable,
+    GuildCreateOptions,
+    FetchGuildOptions,
+    UserResolvable,
+    Guild,
+    User,
+    ClientEvents,
+    Message,
+    OAuth2Guild,
+    FetchGuildsOptions,
+    CommandInteraction,
 } from 'discord.js';
 import CommandoRegistry from './registry';
 import CommandDispatcher from './dispatcher';
@@ -16,6 +31,7 @@ import ArgumentType from './types/base';
 import GuildDatabaseManager from './database/GuildDatabaseManager';
 import Util from './util';
 import initializeDB from './database/initializeDB';
+import CommandoInteraction from './extensions/interaction';
 
 interface CommandoClientOptions extends ClientOptions {
     /**
@@ -50,9 +66,9 @@ interface CommandoClientOptions extends ClientOptions {
 }
 
 declare class CommandoGuildManager extends CachedManager<Snowflake, CommandoGuild, GuildResolvable> {
-    public create(name: string, options?: GuildCreateOptions): Promise<CommandoGuild>;
+    public create(options: GuildCreateOptions): Promise<CommandoGuild>;
     public fetch(options: FetchGuildOptions | Snowflake): Promise<CommandoGuild>;
-    public fetch(options?: FetchGuildsOptions): Promise<Collection<Snowflake, CommandoGuild>>;
+    public fetch(options?: FetchGuildsOptions): Promise<Collection<Snowflake, OAuth2Guild>>;
 }
 
 interface CommandoClientEvents extends ClientEvents {
@@ -82,20 +98,26 @@ interface CommandoClientEvents extends ClientEvents {
     ];
     commandStatusChange: [guild: CommandoGuild | null, command: Command, enabled: boolean];
     commandUnregister: [command: Command];
-    databaseReady: [client: CommandoClient];
+    databaseReady: [client: CommandoClient<true>];
     groupRegister: [group: CommandGroup, registry: CommandoRegistry];
     groupStatusChange: [guild: CommandoGuild | null, group: CommandGroup, enabled: boolean];
-    guildsReady: [client: CommandoClient];
-    modulesReady: [client: CommandoClient];
+    guildsReady: [client: CommandoClient<true>];
+    modulesReady: [client: CommandoClient<true>];
     typeRegister: [type: ArgumentType, registry: CommandoRegistry];
     unknownCommand: [message: CommandoMessage];
+}
+
+export declare interface CommandoClient {
+    on<K extends keyof CommandoClientEvents>(event: K, listener: (...args: CommandoClientEvents[K]) => void): this;
+    once<K extends keyof CommandoClientEvents>(event: K, listener: (...args: CommandoClientEvents[K]) => void): this;
+    emit<K extends keyof CommandoClientEvents>(event: K, ...args: CommandoClientEvents[K]): boolean;
 }
 
 /**
  * Discord.js Client with a command framework
  * @augments Client
  */
-export default class CommandoClient extends Client {
+export class CommandoClient<Ready extends boolean = boolean> extends Client<Ready> {
     /** Internal global command prefix, controlled by the {@link CommandoClient#prefix} getter/setter */
     protected _prefix?: string | null;
 
@@ -109,19 +131,11 @@ export default class CommandoClient extends Client {
     public databaseSchemas: SimplifiedSchemas;
     /** The client's command dispatcher */
     public dispatcher: CommandDispatcher;
-    // @ts-expect-error: CommandoGuild is not assignable to Guild
     declare public guilds: CommandoGuildManager;
     /** Options for the client */
     declare public options: CommandoClientOptions;
     /** The client's command registry */
     public registry: CommandoRegistry;
-
-    // @ts-expect-error: missing implementation
-    public on<K extends keyof CommandoClientEvents>(event: K, listener: (...args: CommandoClientEvents[K]) => void): this;
-    // @ts-expect-error: missing implementation
-    public once<K extends keyof CommandoClientEvents>(event: K, listener: (...args: CommandoClientEvents[K]) => void): this;
-    // @ts-expect-error: missing implementation
-    public emit<K extends keyof CommandoClientEvents>(event: K, ...args: CommandoClientEvents[K]): boolean;
 
     /**
      * @param options - Options for the client
@@ -155,35 +169,7 @@ export default class CommandoClient extends Client {
         this.databaseSchemas = Schemas;
         this._prefix = null;
 
-        // Parses all the guild instances
-        this.once('ready', this.parseGuilds);
-        this.on('guildCreate', this.parseGuild);
-
-        // Set up message command handling
-        const catchErr = (err: Error): void => {
-            this.emit('error', err);
-        };
-        this.on('messageCreate', async message => {
-            const commando = new CommandoMessage(this, message);
-            this.emit('commandoMessageCreate', commando);
-            // @ts-expect-error: handleMessage is protected in CommandDispatcher
-            await this.dispatcher.handleMessage(commando).catch(catchErr);
-        });
-        this.on('messageUpdate', async (oldMessage, newMessage) => {
-            const commando = new CommandoMessage(this, newMessage as Message);
-            // @ts-expect-error: handleMessage is protected in CommandDispatcher
-            await this.dispatcher.handleMessage(commando, oldMessage).catch(catchErr);
-        });
-
-        // Set up slash command handling
-        this.once('ready', () =>
-            // @ts-expect-error: registerSlashCommands is protected in CommandoRegistry
-            this.registry.registerSlashCommands()
-        );
-        this.on('interactionCreate', interaction =>
-            // @ts-expect-error: handleSlash is protected in CommandDispatcher
-            this.dispatcher.handleSlash(interaction).catch(catchErr)
-        );
+        this.initDefaultListeners();
 
         // Fetch the owner(s)
         if (owner) {
@@ -204,9 +190,6 @@ export default class CommandoClient extends Client {
                 });
             });
         }
-
-        // Establishes MongoDB connection and loads all modules
-        this.once('guildsReady', () => initializeDB(this));
     }
 
     /**
@@ -216,7 +199,7 @@ export default class CommandoClient extends Client {
      */
     public get prefix(): string | undefined {
         const { _prefix, options } = this;
-        if (typeof _prefix === 'undefined' || _prefix === null) return options.prefix;
+        if (Util.isNullish(_prefix)) return options.prefix;
         return _prefix;
     }
 
@@ -262,11 +245,47 @@ export default class CommandoClient extends Client {
         throw new RangeError('The client\'s "owner" option is an unknown value.');
     }
 
+    /** Initializes all default listeners that make the client work. */
+    protected initDefaultListeners(): void {
+        // Parses all the guild instances
+        this.once('ready', this.parseGuilds);
+        this.on('guildCreate', this.parseGuild);
+
+        // Set up message command handling
+        const catchErr = (err: Error): void => {
+            this.emit('error', err);
+        };
+        this.on('messageCreate', async message => {
+            const commando = new CommandoMessage(this, message);
+            this.emit('commandoMessageCreate', commando);
+            // @ts-expect-error: handleMessage is protected in CommandDispatcher
+            await this.dispatcher.handleMessage(commando).catch(catchErr);
+        });
+        this.on('messageUpdate', async (oldMessage, newMessage) => {
+            const commando = new CommandoMessage(this, newMessage as Message);
+            // @ts-expect-error: handleMessage is protected in CommandDispatcher
+            await this.dispatcher.handleMessage(commando, oldMessage).catch(catchErr);
+        });
+
+        // Set up slash command handling
+        this.once('ready', () =>
+            // @ts-expect-error: registerSlashCommands is protected in CommandoRegistry
+            this.registry.registerSlashCommands()
+        );
+        this.on('interactionCreate', interaction => {
+            const commando = new CommandoInteraction(this, interaction as CommandInteraction);
+            // @ts-expect-error: handleSlash is protected in CommandDispatcher
+            this.dispatcher.handleSlash(commando).catch(catchErr);
+        });
+
+        // Establishes MongoDB connection and loads all modules
+        this.once('guildsReady', () => initializeDB(this));
+    }
+
     /** Parses all {@link Guild} instances into {@link CommandoGuild}s. */
     protected parseGuilds(): void {
-        // @ts-expect-error: CommandoGuild is not assignable to Guild
         this.guilds.cache.forEach(guild => this.parseGuild(guild));
-        this.emit('guildsReady', this);
+        this.emit('guildsReady', this as CommandoClient<true>);
     }
 
     /**
@@ -279,3 +298,5 @@ export default class CommandoClient extends Client {
         this.emit('commandoGuildCreate', mutatedGuild);
     }
 }
+
+export default CommandoClient;

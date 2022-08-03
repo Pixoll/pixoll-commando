@@ -24,7 +24,11 @@ import {
     TextBasedChannel,
     User,
     UserResolvable,
-    LimitedCollection
+    LimitedCollection,
+    OAuth2Guild,
+    ChatInputApplicationCommandData,
+    ApplicationCommandData,
+    CommandInteractionOption
 } from 'discord.js';
 import { FilterQuery, Model, Types, UpdateAggregationStage, UpdateQuery, UpdateWriteOpResult } from 'mongoose';
 
@@ -40,17 +44,17 @@ export class Argument {
 
     /**
      * Validator function for validating a value for the argument
-     * @see {@link ArgumentType#validate}
+     * @see ArgumentType#validate
      */
     protected validator: ArgumentInfo['validate'] | null;
     /**
      * Parser function for parsing a value for the argument
-     *  @see {@link ArgumentType#parse}
+     * @see ArgumentType#parse
      */
     protected parser: ArgumentInfo['parse'] | null;
     /**
      * Function to check whether a raw value is considered empty
-     *  @see {@link ArgumentType#isEmpty}
+     * @see ArgumentType#isEmpty
      */
     protected emptyChecker: ArgumentInfo['isEmpty'] | null;
     /**
@@ -71,7 +75,7 @@ export class Argument {
      * @param client - Client to use the registry of
      * @param id - ID of the type to use
      */
-    protected static determineType(client: CommandoClient, id: string[] | string): ArgumentType | null;
+    protected static determineType(client: CommandoClient, id?: string[] | string): ArgumentType | null;
 
     /** Key for the argument */
     key: string;
@@ -81,7 +85,7 @@ export class Argument {
     prompt: string;
     /**
      * Error message for when a value is invalid
-     *  @see {@link ArgumentType#validate}
+     * @see ArgumentType#validate
      */
     error: string | null;
     /** Type of the argument */
@@ -233,13 +237,12 @@ export abstract class Command {
     /**
      * @param client - The client the command is for
      * @param info - The command information
+     * @param slashInfo - The slash command information
      */
-    constructor(client: CommandoClient, info: CommandInfo);
+    constructor(client: CommandoClient, info: CommandInfo, slashInfo?: ApplicationCommandData | SlashCommandInfo);
 
     /** Whether the command is enabled globally */
     protected _globalEnabled: boolean;
-    /** The slash command data to send to the API */
-    protected _slashToAPI: RestAPIApplicationCommand | null;
     /** Current throttle objects for the command, mapped by user ID */
     protected _throttles: Map<string, Throttle>;
 
@@ -255,10 +258,11 @@ export abstract class Command {
      */
     protected static validateInfo(client: CommandoClient, info: CommandInfo): void;
     /**
-     * Parses the slash command information, so it's usable by the API
-     * @param info - Info to parse
+     * Validates the slash command information
+     * @param info - Info to validate
+     * @param slashInfo - Slash info to validate
      */
-    protected static parseSlash(info: SlashCommandInfo | SlashCommandOptionInfo[]): RestAPIApplicationCommand;
+    protected static validateSlashInfo(info: CommandInfo, slashInfo: ApplicationCommandData): void;
 
     /** Client that this command is for */
     readonly client: CommandoClient;
@@ -269,7 +273,7 @@ export abstract class Command {
     /** ID of the group the command belongs to */
     groupId: string;
     /** The group the command belongs to, assigned upon registration */
-    group: CommandGroup | null;
+    group: CommandGroup;
     /** Name of the command within the group */
     memberName: string;
     /** Short description of the command */
@@ -323,9 +327,9 @@ export abstract class Command {
      */
     replacing: string | null;
     /** Whether this command will be registered in the test guild only or not */
-    test: boolean;
+    testEnv: boolean;
     /** The data for the slash command */
-    slash: SlashCommandInfo | boolean;
+    slashInfo?: ApplicationCommandData | SlashCommandInfo;
 
     /**
      * Checks whether the user has permission to use the command
@@ -361,8 +365,7 @@ export abstract class Command {
      * - throttling: `throttle` ({@link Object}), `remaining` ({@link number}) time in seconds
      * - userPermissions & clientPermissions: `missing` ({@link Array}<{@link string}>) permission names
      */
-    onBlock(instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData):
-        Promise<APIMessage | Message | null>;
+    onBlock(instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData): Promise<Message | null>;
     /**
      * Called when the command produces an error while running
      * @param err - Error that was thrown
@@ -438,10 +441,10 @@ export class CommandDispatcher {
      */
     protected handleMessage(message: CommandoMessage, oldMessage?: Message): Promise<void>;
     /**
-     * Handle a slash command interaction
+     * Handle a new slash command interaction
      * @param interaction - The interaction to handle
      */
-    protected handleSlash(interaction: CommandoInteraction): Promise<unknown>;
+    protected handleSlash(interaction: CommandoInteraction): Promise<void>;
     /**
      * Check whether a message should be handled
      * @param message - The message to handle
@@ -449,10 +452,15 @@ export class CommandDispatcher {
      */
     protected shouldHandleMessage(message: CommandoMessage, oldMessage?: Message): boolean;
     /**
-     * Inhibits a command message
-     * @param {CommandoMessage} cmdMsg - Command message to inhibit
+     * Check whether an interaction should be handled
+     * @param interaction - The interaction to handle
      */
-    protected inhibit(cmdMsg: CommandoMessage): Inhibition | null;
+    protected shouldHandleSlash(interaction: CommandoInteraction): boolean;
+    /**
+     * Inhibits a command message
+     * @param message - Command message to inhibit
+     */
+    protected inhibit(message: CommandoMessage): Inhibition | null;
     /**
      * Caches a command message to be editable
      * @param message - Triggering message
@@ -570,7 +578,7 @@ export class CommandGroup {
  * Discord.js Client with a command framework
  * @augments Client
  */
-export class CommandoClient extends Client {
+export class CommandoClient<Ready extends boolean = boolean> extends Client<Ready> {
     /**
      * @param options - Options for the client
      */
@@ -579,6 +587,8 @@ export class CommandoClient extends Client {
     /** Internal global command prefix, controlled by the {@link CommandoClient#prefix} getter/setter */
     protected _prefix?: string | null;
 
+    /** Initializes all default listeners that make the client work. */
+    protected initDefaultListeners(): void;
     /** Parses all {@link Guild} instances into {@link CommandoGuild}s. */
     protected parseGuilds(): void;
     /**
@@ -682,7 +692,40 @@ export class CommandoGuild extends Guild {
      * @param command - A command + arg string
      * @param user - User to use for the mention command format
      */
-    commandUsage(command: string, user?: User): string;
+    commandUsage(command: string, user?: User | null): string;
+}
+
+/**
+ * An extension of the base Discord.js CommandInteraction class to add command-related functionality.
+ * @augments CommandInteraction
+ */
+export default class CommandoInteraction extends CommandInteraction {
+    /**
+     * @param client - The client the interaction is for
+     * @param data - The interaction data
+     */
+    constructor(client: CommandoClient, data: CommandInteraction);
+
+    /** Command that the interaction triggers */
+    protected _command: Command | null;
+
+    get author(): User;
+    get channel(): TextBasedChannel;
+    /** The client the interaction is for */
+    readonly client: CommandoClient<true>;
+    /** Command that the interaction triggers */
+    get command(): Command;
+    /** The guild this message is for */
+    get guild(): CommandoGuild | null;
+    member: CommandoMember | null;
+
+    /**
+     * Parses the options data into usable arguments
+     * @see Command#run
+     */
+    parseArgs(options: CommandInteractionOption[]): Record<string, unknown>;
+    /** Runs the command */
+    run(): Promise<void>;
 }
 
 /**
@@ -731,9 +774,9 @@ export class CommandoMessage extends Message {
     protected deleteRemainingResponses(): void;
 
     /** The client the message is for */
-    readonly client: CommandoClient;
+    readonly client: CommandoClient<true>;
     /** The guild this message is for */
-    guild: CommandoGuild;
+    get guild(): CommandoGuild | null;
     /** Whether the message contains a command (even an unknown one) */
     isCommand: boolean;
     /** Command that the message triggers, if any */
@@ -765,7 +808,7 @@ export class CommandoMessage extends Message {
     anyUsage(command: string, prefix?: string | null, user?: User | null): string;
     /**
      * Parses the argString into usable arguments, based on the argsType and argsCount of the command
-     * @see {@link Command#run}
+     * @see Command#run
      */
     parseArgs(): string[] | string;
     /** Runs the command */
@@ -843,7 +886,7 @@ export class CommandoRegistry {
      * Registers a single group
      * @param group - A CommandGroup instance
      * or the constructor parameters (with ID, name, and guarded properties)
-     * @see {@link CommandoRegistry#registerGroups}
+     * @see CommandoRegistry#registerGroups
      */
     registerGroup(group: CommandGroup | {
         id: string;
@@ -868,7 +911,7 @@ export class CommandoRegistry {
     /**
      * Registers a single command
      * @param command - Either a Command instance, or a constructor for one
-     * @see {@link CommandoRegistry#registerCommands}
+     * @see CommandoRegistry#registerCommands
      */
     registerCommand(command: Command): this;
     /**
@@ -888,7 +931,7 @@ export class CommandoRegistry {
     /**
      * Registers a single argument type
      * @param type - Either an ArgumentType instance, or a constructor for one
-     * @see {@link CommandoRegistry#registerTypes}
+     * @see CommandoRegistry#registerTypes
      */
     registerType(type: ArgumentType): this;
     /**
@@ -1023,6 +1066,12 @@ export class Util extends null {
      */
     static removeNullishItems<T>(array: Array<T | null | undefined>): T[];
     /**
+     * Checks if a value is undefined.
+     * @param val - The value to check.
+     * @returns Whether the value is nullish.
+     */
+    static isNullish(val: unknown): val is null | undefined;
+    /**
      * Verifies the provided data is a string, otherwise throws provided error.
      * @param data - The string resolvable to resolve
      * @param error - The Error constructor to instantiate. Defaults to Error
@@ -1056,7 +1105,7 @@ export class ClientDatabaseManager {
      * Initializes the caching of this client's data
      * @param data - The data to assign to the client
      */
-    protected init(data: Collection<string, LimitedCollection<string, DefaultDocument>>): this;
+    protected init(data: Collection<string, LimitedCollection<string, AnySchema>>): this;
 
     /** Client for this database */
     readonly client: CommandoClient;
@@ -1069,7 +1118,7 @@ export class ClientDatabaseManager {
 }
 
 /** A database schema manager (MongoDB) */
-export class DatabaseManager<T extends DefaultDocument> {
+export class DatabaseManager<T extends AnySchema> {
     /**
      * @param schema - The schema of this manager
      * @param guild - The guild this manager is for
@@ -1129,7 +1178,7 @@ export class GuildDatabaseManager {
      * Initializes the caching of this guild's data
      * @param data - The data to assign to the guild
      */
-    protected init(data: Collection<string, LimitedCollection<string, DefaultDocument>>): this;
+    protected init(data: Collection<string, LimitedCollection<string, AnySchema>>): this;
 
     /** Guild for this database */
     readonly guild: CommandoGuild;
@@ -1153,16 +1202,9 @@ export class GuildDatabaseManager {
 //#region Typedefs
 
 declare class CommandoGuildManager extends CachedManager<Snowflake, CommandoGuild, GuildResolvable> {
-    create(name: string, options?: GuildCreateOptions): Promise<CommandoGuild>;
-    fetch(options1: FetchGuildOptions | Snowflake): Promise<CommandoGuild>;
-    fetch(options2?: FetchGuildsOptions): Promise<Collection<Snowflake, CommandoGuild>>;
-}
-
-export declare class CommandoInteraction extends CommandInteraction {
-    client: CommandoClient;
-    guild: CommandoGuild | null;
-    member: CommandoMember | null;
-    get channel(): TextBasedChannel;
+    create(options: GuildCreateOptions): Promise<CommandoGuild>;
+    fetch(options: FetchGuildOptions | Snowflake): Promise<CommandoGuild>;
+    fetch(options?: FetchGuildsOptions): Promise<Collection<Snowflake, OAuth2Guild>>;
 }
 
 export declare class CommandoMember extends GuildMember {
@@ -1242,32 +1284,10 @@ export type CommandResolvable = Command | CommandoMessage | string;
  * - A single string identifying the reason the command is blocked
  * - An Inhibition object
  */
-declare type Inhibitor = (msg: CommandoMessage) => Inhibition | boolean | string;
+declare type Inhibitor = (msg: CommandoMessage) => Inhibition | string;
 
 /** Type of the response */
 export type ResponseType = 'code' | 'direct' | 'plain' | 'reply';
-
-export type SlashCommandChannelType =
-    | 'guild-category'
-    | 'guild-news-thread'
-    | 'guild-news'
-    | 'guild-private-thread'
-    | 'guild-public-thread'
-    | 'guild-stage-voice'
-    | 'guild-text'
-    | 'guild-voice';
-
-export type SlashCommandOptionType =
-    | 'boolean'
-    | 'channel'
-    | 'integer'
-    | 'mentionable'
-    | 'number'
-    | 'role'
-    | 'string'
-    | 'subcommand-group'
-    | 'subcommand'
-    | 'user';
 
 export type StringResolvable = MessageOptions | string[] | string;
 
@@ -1453,15 +1473,10 @@ export interface CommandInfo {
     /** Options for throttling usages of the command. */
     throttling?: ThrottlingOptions;
     /**
-     * The data for the slash command, or `true` to use the same information as the message command.
-     * @default false
-     */
-    slash?: SlashCommandInfo | boolean;
-    /**
      * Whether the slash command will be registered in the test guild only or not.
      * @default false
      */
-    test?: boolean;
+    testEnv?: boolean;
     /** Arguments for the command. */
     args?: ArgumentInfo[];
     /**
@@ -1521,9 +1536,9 @@ export interface CommandInfo {
 /** The instances the command is being run for */
 export interface CommandInstances {
     /** The message the command is being run for */
-    message?: CommandoMessage | null;
+    message?: CommandoMessage;
     /** The interaction the command is being run for */
-    interaction?: CommandoInteraction | null;
+    interaction?: CommandoInteraction;
 }
 
 interface CommandoClientEvents extends ClientEvents {
@@ -1606,10 +1621,6 @@ export interface SimplifiedModel<T> extends Model<T> {
     findOne(filter: FilterQuery<T>): Promise<T>;
     findById(id: string): Promise<T>;
     updateOne(filter: FilterQuery<T>, update: Omit<T, '_id'> | UpdateQuery<Omit<T, '_id'>>): Promise<UpdateWriteOpResult>;
-}
-
-export interface DefaultDocument extends BaseSchema {
-    guild?: string;
 }
 
 /** Object specifying which types to register */
@@ -1739,7 +1750,7 @@ export interface ResponseOptions {
     /** Type of the response */
     type?: ResponseType;
     /** Content of the response */
-    content?: MessageOptions | StringResolvable;
+    content?: MessageOptions | StringResolvable | null;
     /** Options of the response */
     options?: MessageOptions;
     /** Language of the response, if its type is `code` */
@@ -1749,47 +1760,9 @@ export interface ResponseOptions {
 }
 
 /** The slash command information */
-export interface SlashCommandInfo {
-    /** The name of the command (must be lowercase, 1-32 characters) - defaults to {@link CommandInfo}'s `name` */
-    name?: string;
-    /** A short description of the command (1-100 characters) - defaults to {@link CommandInfo}'s `description` */
-    description?: string;
-    /** Options for the command */
-    options?: SlashCommandOptionInfo[];
-    /**
-     * Whether the reply of the slash command should be ephemeral or not
-     * @default false
-     */
-    ephemeral?: boolean;
-}
-
-export interface SlashCommandOptionInfo {
-    /** The type of the option */
-    type: SlashCommandOptionType;
-    /** The name of the option */
-    name: string;
-    /** The description of the option - required if `type` is `subcommand` or `subcommand-group` */
-    description: string;
-    /**
-     * Whether the option is required or not
-     * @default false
-     */
-    required?: boolean;
-    /** The minimum value permitted - only usable if `type` is `integer` or `number` */
-    minValue?: number;
-    /** The maximum value permitted - only usable if `type` is `integer` or `number` */
-    maxValue?: number;
-    /** The choices options for the option - only usable if `type` is `string`, `integer` or `number` */
-    choices?: Array<{
-        name: string;
-        value: number | string;
-    }>;
-    /** The type options for the option - only usable if `type` is `channel` */
-    channelTypes?: SlashCommandChannelType[];
-    /** The options for the sub-command - only usable if `type` is `subcommand` */
-    options?: SlashCommandOptionInfo[];
-    /** Enable autocomplete interactions for this option - may not be set to true if `choices` are present */
-    autocomplete?: boolean;
+export interface SlashCommandInfo extends ChatInputApplicationCommandData {
+    /** Whether the deferred reply should be ephemeral or not */
+    deferEphemeral?: boolean;
 }
 
 /** Options for splitting a message */
@@ -1831,6 +1804,26 @@ export interface ThrottlingOptions {
 //#endregion
 
 //#region Schemas
+
+export type AnySchema = BaseSchema & Partial<
+    | ActiveSchema
+    | AfkSchema
+    | DisabledSchema
+    | ErrorSchema
+    | FaqSchema
+    | McIpSchema
+    | ModerationSchema
+    | ModuleSchema
+    | PollSchema
+    | PrefixSchema
+    | ReactionRoleSchema
+    | ReminderSchema
+    | RuleSchema
+    | SetupSchema
+    | StickyRoleSchema
+    | TodoSchema
+    | WelcomeSchema
+> & { guild?: string };
 
 export interface SimplifiedSchemas {
     ActiveModel: SimplifiedModel<ActiveSchema>;

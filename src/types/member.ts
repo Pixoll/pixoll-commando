@@ -11,6 +11,8 @@ export default class MemberArgumentType extends ArgumentType {
     }
 
     public async validate(val: string, msg: CommandoMessage, arg: Argument): Promise<boolean | string> {
+        if (!msg.guild) return false;
+
         const matches = val.match(/^(?:<@!?)?([0-9]+)>?$/);
         if (matches) {
             try {
@@ -44,6 +46,8 @@ export default class MemberArgumentType extends ArgumentType {
     }
 
     public parse(val: string, msg: CommandoMessage): GuildMember | null {
+        if (!msg.guild) return null;
+
         const matches = val.match(/^(?:<@!?)?([0-9]+)>?$/);
         if (matches) return msg.guild.members.resolve(matches[1]) ?? null;
 

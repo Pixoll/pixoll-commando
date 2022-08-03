@@ -30,6 +30,26 @@ export type ModelFrom<T extends BaseSchema = BaseSchema, IncludeId extends boole
     DocumentFrom<T, IncludeId>
 >;
 
+export type AnySchema = BaseSchema & Partial<
+    | ActiveSchema
+    | AfkSchema
+    | DisabledSchema
+    | ErrorSchema
+    | FaqSchema
+    | McIpSchema
+    | ModerationSchema
+    | ModuleSchema
+    | PollSchema
+    | PrefixSchema
+    | ReactionRoleSchema
+    | ReminderSchema
+    | RuleSchema
+    | SetupSchema
+    | StickyRoleSchema
+    | TodoSchema
+    | WelcomeSchema
+> & { guild?: string };
+
 export {
     BaseSchema,
     ActiveSchema,
@@ -48,7 +68,7 @@ export {
     SetupSchema,
     StickyRoleSchema,
     TodoSchema,
-    WelcomeSchema
+    WelcomeSchema,
 };
 
 export interface SimplifiedSchemas {

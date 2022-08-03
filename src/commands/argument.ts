@@ -129,7 +129,7 @@ export default class Argument {
     public prompt: string;
     /**
      * Error message for when a value is invalid
-     *  @see {@link ArgumentType#validate}
+     * @see ArgumentType#validate
      */
     public error: string | null;
     /** Type of the argument */
@@ -160,17 +160,17 @@ export default class Argument {
     public infinite: boolean;
     /**
      * Validator function for validating a value for the argument
-     * @see {@link ArgumentType#validate}
+     * @see ArgumentType#validate
      */
     protected validator: ArgumentInfo['validate'] | null;
     /**
      * Parser function for parsing a value for the argument
-     *  @see {@link ArgumentType#parse}
+     * @see ArgumentType#parse
      */
     protected parser: ArgumentInfo['parse'] | null;
     /**
      * Function to check whether a raw value is considered empty
-     *  @see {@link ArgumentType#isEmpty}
+     * @see ArgumentType#isEmpty
      */
     protected emptyChecker: ArgumentInfo['isEmpty'] | null;
     /** How long to wait for input (in seconds) */
@@ -187,7 +187,7 @@ export default class Argument {
         this.label = info.label || info.key;
         this.prompt = info.prompt;
         this.error = info.error || null;
-        this.type = Argument.determineType(client, info.type!);
+        this.type = Argument.determineType(client, info.type);
         this.max = info.max ?? null;
         this.min = info.min ?? null;
         this.default = info.default ?? null;
@@ -226,6 +226,7 @@ export default class Argument {
         const answers: ArgumentResponse[] = [];
         let valid = !empty ? await this.validate(val!, msg) : false;
 
+        /* eslint-disable no-await-in-loop */
         while (!valid || typeof valid === 'string') {
             if (prompts.length >= promptLimit) {
                 return {
@@ -278,7 +279,7 @@ export default class Argument {
             val = answers[answers.length - 1]!.content;
 
             // See if they want to cancel
-            if (val!.toLowerCase() === 'cancel') {
+            if (val.toLowerCase() === 'cancel') {
                 return {
                     value: null,
                     cancelled: 'user',
@@ -287,16 +288,14 @@ export default class Argument {
                 };
             }
 
-            const first = responses.first()!;
-            // @ts-expect-error: Message<boolean> is not assignable to CommandoMessage
+            const first = responses.first() as CommandoMessage;
             empty = this.isEmpty(val!, msg, first);
-            // @ts-expect-error: Message<boolean> is not assignable to CommandoMessage
             valid = await this.validate(val!, msg, first);
         }
+        /* eslint-enable no-await-in-loop */
 
         return {
-            // @ts-expect-error: Message<boolean> is not assignable to CommandoMessage
-            value: await this.parse(val!, msg, (answers.length ? answers[answers.length - 1] : msg) ?? undefined),
+            value: await this.parse(val!, msg, (answers[answers.length - 1] as CommandoMessage) ?? msg),
             cancelled: null,
             prompts,
             answers,
@@ -316,6 +315,7 @@ export default class Argument {
         const answers: ArgumentResponse[] = [];
         let currentVal = 0;
 
+        /* eslint-disable no-await-in-loop */
         // eslint-disable-next-line no-constant-condition
         while (true) {
             let val = vals && vals[currentVal] ? vals[currentVal] : null;
@@ -394,7 +394,7 @@ export default class Argument {
                 val = answers[answers.length - 1]!.content;
 
                 // See if they want to finish or cancel
-                const lc = val!.toLowerCase();
+                const lc = val.toLowerCase();
                 if (lc === 'finish') {
                     return {
                         value: results.length > 0 ? results : null,
@@ -412,13 +412,11 @@ export default class Argument {
                     };
                 }
 
-                // @ts-expect-error: Message<boolean> is not assignable to CommandoMessage
-                valid = await this.validate(val!, msg, responses.first()!);
+                valid = await this.validate(val!, msg, responses.first() as CommandoMessage);
             }
 
             results.push(await this.parse(
-                // @ts-expect-error: Message<boolean> is not assignable to CommandoMessage
-                val!, msg, (answers.length ? answers[answers.length - 1] : msg) ?? undefined
+                val!, msg, (answers[answers.length - 1] as CommandoMessage) ?? msg
             ) as ArgumentResponse);
 
             if (vals) {
@@ -433,6 +431,7 @@ export default class Argument {
                 }
             }
         }
+        /* eslint-enable no-await-in-loop */
     }
 
     /**
@@ -529,7 +528,7 @@ export default class Argument {
      * @param client - Client to use the registry of
      * @param id - ID of the type to use
      */
-    protected static determineType(client: CommandoClient, id: string[] | string): ArgumentType | null {
+    protected static determineType(client: CommandoClient, id?: string[] | string): ArgumentType | null {
         if (!id) return null;
         if (Array.isArray(id)) id = id.join('|');
         if (!id.includes('|')) return client.registry.types.get(id)!;

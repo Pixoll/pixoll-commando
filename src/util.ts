@@ -198,7 +198,16 @@ export default class Util extends null {
      * @returns An array with all non-nullish items.
      */
     static removeNullishItems<T>(array: Array<T | null | undefined>): T[] {
-        return array.filter((item): item is T => typeof item !== 'undefined' && item !== null);
+        return array.filter((item): item is T => !Util.isNullish(item));
+    }
+
+    /**
+     * Checks if a value is undefined.
+     * @param val - The value to check.
+     * @returns Whether the value is nullish.
+     */
+    static isNullish(val: unknown): val is null | undefined {
+        return typeof val === 'undefined' || val === null;
     }
 
     /**

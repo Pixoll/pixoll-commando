@@ -1,17 +1,14 @@
-import { oneLine, stripIndent } from 'common-tags';
 import {
-    EmbedBuilder, ButtonBuilder, ActionRowBuilder, Message, CommandInteraction, GuildMember, TextBasedChannel,
-    CommandInteractionOption,
+    EmbedBuilder,
+    Message,
     Colors,
     InteractionType,
-    ChannelType,
-    ButtonStyle,
-    ApplicationCommandOptionType
+    ApplicationCommandType,
 } from 'discord.js';
 import CommandoClient from './client';
 import { ArgumentResponse } from './commands/argument';
-import FriendlyError from './errors/friendly';
-import CommandoGuild from './extensions/guild';
+import { CommandBlockReason } from './commands/base';
+import CommandoInteraction from './extensions/interaction';
 import CommandoMessage, { CommandoMessageResponse } from './extensions/message';
 import CommandoRegistry from './registry';
 import Util from './util';
@@ -31,28 +28,12 @@ interface Inhibition {
  * - A single string identifying the reason the command is blocked
  * - An Inhibition object
  */
-type Inhibitor = (msg: CommandoMessage) => Inhibition | boolean | string;
-
-// @ts-expect-error: GuildMember's constructor is private
-declare class CommandoMember extends GuildMember {
-    // @ts-expect-error: CommandoGuild is not assignable to Guild
-    public guild: CommandoGuild;
-}
-
-export declare class CommandoInteraction extends CommandInteraction {
-    // @ts-expect-error: CommandoClient is not assignable to Client
-    public client: CommandoClient;
-    // @ts-expect-error: CommandoGuild is not assignable to Guild
-    public guild: CommandoGuild | null;
-    // @ts-expect-error: CommandoMember is not assignable to Member
-    public member: CommandoMember | null;
-    public get channel(): TextBasedChannel;
-}
+type Inhibitor = (msg: CommandoMessage) => Inhibition | string;
 
 /** Handles parsing messages and running commands from them */
 export default class CommandDispatcher {
     /** Client this dispatcher handles messages for */
-    public readonly client!: CommandoClient;
+    declare public readonly client: CommandoClient;
     /** Registry this dispatcher uses */
     public registry: CommandoRegistry;
     /** Functions that can block commands from running */
@@ -189,154 +170,27 @@ export default class CommandDispatcher {
     }
 
     /**
-     * Handle a slash command interaction
+     * Handle a new slash command interaction
      * @param interaction - The interaction to handle
      */
-    protected async handleSlash(interaction: CommandoInteraction): Promise<unknown> {
-        if (interaction.type !== InteractionType.ApplicationCommand) return;
+    protected async handleSlash(interaction: CommandoInteraction): Promise<void> {
+        if (!this.shouldHandleSlash(interaction)) return;
 
-        // Get the matching command
-        const { commandName, channelId, channel, guild, user, guildId, client, options, deferred, replied } = interaction;
-        const command = this.registry.resolveCommand(commandName);
-        if (!command) return;
+        const { command, guild } = interaction;
 
-        const { groupId, memberName } = command;
-        const { user: clientUser } = client;
+        if (!command.isEnabledIn(guild)) {
+            const responseEmbed = new EmbedBuilder()
+                .setColor(Colors.Red)
+                .setDescription(`The \`${command.name}\` command is disabled.`);
 
-        if (guild) {
-            // Obtain the member for the ClientUser if it doesn't already exist
-            if (!guild.members.cache.has(clientUser!.id)) {
-                await guild.members.fetch(clientUser!.id);
-            }
-
-            // @ts-expect-error: some TextBasedChannel sub-types are not assignable to GuildChannelResolvable
-            const clientPerms = guild.me!.permissionsIn(channel).serialize();
-            if (clientPerms.VIEW_CHANNEL && !clientPerms.SEND_MESSAGES) {
-                return await user.send(stripIndent`
-                    It seems like I cannot **Send Messages** in this channel: ${channel.toString()}
-                    Please try in another channel, or contact the admins of **${guild.name}** to solve this issue.
-                `).catch(() => null);
-            }
-
-            if (!clientPerms.USE_APPLICATION_COMMANDS) {
-                return await user.send(stripIndent`
-                    It seems like I cannot **Use Application Commands** in this channel: ${channel.toString()}
-                    Please try in another channel, or contact the admins of **${guild.name}** to solve this issue.
-                `).catch(() => null);
-            }
-
-            // Obtain the member if we don't have it
-            if (!guild.members.cache.has(user.id)) {
-                // @ts-expect-error: GuildMember is not assignable to CommandoMember
-                interaction.member = await guild.members.fetch(user);
-            }
-
-            // Make sure the command is usable in this context
-            if (command.dmOnly) {
-                client.emit('commandBlock', { interaction }, 'dmOnly');
-                return await command.onBlock({ interaction }, 'dmOnly');
-            }
-        }
-
-        // Make sure the command is usable in this context
-        if ((command.guildOnly || command.guildOwnerOnly) && !guild) {
-            client.emit('commandBlock', { interaction }, 'guildOnly');
-            return await command.onBlock({ interaction }, 'guildOnly');
-        }
-
-        // Ensure the channel is a NSFW one if required
-        // @ts-expect-error: 'nsfw' does not exist in DMChannel
-        if (command.nsfw && !channel.nsfw) {
-            client.emit('commandBlock', { interaction }, 'nsfw');
-            return await command.onBlock({ interaction }, 'nsfw');
-        }
-
-        // Ensure the user has permission to use the command
-        const hasPermission = command.hasPermission({ interaction });
-        if (hasPermission !== true) {
-            if (typeof hasPermission === 'string') {
-                client.emit('commandBlock', { interaction }, hasPermission);
-                return await command.onBlock({ interaction }, hasPermission);
-            }
-            const data = { missing: hasPermission };
-            client.emit('commandBlock', { interaction }, 'userPermissions', data);
-            return await command.onBlock({ interaction }, 'userPermissions', data);
-        }
-
-        // Ensure the client user has the required permissions
-        if (channel.type !== ChannelType.DM && command.clientPermissions) {
-            const missing = channel.permissionsFor(clientUser!)?.missing(command.clientPermissions) || [];
-            if (missing.length > 0) {
-                const data = { missing };
-                client.emit('commandBlock', { interaction }, 'clientPermissions', data);
-                return await command.onBlock({ interaction }, 'clientPermissions', data);
-            }
-        }
-
-        if (command.deprecated) {
-            const embed = new EmbedBuilder()
-                .setColor(Colors.Gold)
-                .addFields([{
-                    name: `The \`${command.name}\` command has been marked as deprecated!`,
-                    value: `Please start using the \`${command.replacing}\` command from now on.`,
-                }]);
-
-            await channel.send({ content: user.toString(), embeds: [embed] });
-        }
-
-        // Parses the options into an arguments object
-        const args: Record<string, unknown> = {};
-        for (const option of options.data) parseSlashArgs(args, option);
-
-        // Run the command
-        try {
-            const location = guildId ? `${guildId}:${channelId}` : `DM:${user.id}`;
-            client.emit('debug', `Running slash command "${groupId}:${memberName}" at "${location}".`);
-            // @ts-expect-error: ephemeral does not exist in boolean
-            await interaction.deferReply({ ephemeral: !!command.slash.ephemeral }).catch(() => null);
-            const promise = command.run({ interaction }, args);
-
-            client.emit('commandRun', command, promise, { interaction }, args);
-            await promise;
-
-            if (Util.probability(2)) {
-                const { botInvite } = client;
-                const embed = new EmbedBuilder()
-                    .setColor('#4c9f4c')
-                    .addFields([{
-                        name: `Enjoying ${clientUser!.username}?`,
-                        value: oneLine`
-                        The please consider voting for it! It helps the bot to become more noticed
-                        between other bots. And perhaps consider adding it to any of your own servers
-                        as well!`,
-                    }]);
-                const vote = new ButtonBuilder()
-                    .setEmoji('👍')
-                    .setLabel('Vote me')
-                    .setStyle(ButtonStyle.Link)
-                    .setURL('https://top.gg/bot/802267523058761759/vote');
-                const invite = new ButtonBuilder()
-                    .setEmoji('🔗')
-                    .setLabel('Invite me')
-                    .setStyle(ButtonStyle.Link)
-                    .setURL(botInvite!);
-
-                const row = new ActionRowBuilder<ButtonBuilder>().addComponents(vote, invite);
-
-                await channel.send({ embeds: [embed], components: [row] }).catch(() => null);
-            }
-
+            await interaction.reply({
+                embeds: [responseEmbed],
+                ephemeral: true,
+            });
             return;
-        } catch (err) {
-            client.emit('commandError', command, err as Error, { interaction }, args);
-            if (err instanceof FriendlyError) {
-                if (deferred || replied) {
-                    return await interaction.editReply({ content: err.message, components: [], embeds: [] });
-                }
-                return await interaction.reply(err.message);
-            }
-            return await command.onError(err as Error, { interaction }, args);
         }
+
+        interaction.run();
     }
 
     /**
@@ -345,12 +199,12 @@ export default class CommandDispatcher {
      * @param oldMessage - The old message before the update
      */
     protected shouldHandleMessage(message: CommandoMessage, oldMessage?: Message): boolean {
-        const { partial, author, channelId, content } = message;
-        const { client, _awaiting } = this;
+        const { partial, author, channelId, content, client } = message;
+        const { _awaiting } = this;
 
         // Ignore partial and bot messages
         if (partial) return false;
-        if (author.bot || author.id === client.user!.id) return false;
+        if (author.bot || author.id === client.user.id) return false;
 
         // Ignore messages from users that the bot is already waiting for input from
         if (_awaiting.has(author.id + channelId)) return false;
@@ -362,19 +216,36 @@ export default class CommandDispatcher {
     }
 
     /**
-     * Inhibits a command message
-     * @param {CommandoMessage} cmdMsg - Command message to inhibit
+     * Check whether an interaction should be handled
+     * @param interaction - The interaction to handle
      */
-    protected inhibit(cmdMsg: CommandoMessage): Inhibition | null {
+    protected shouldHandleSlash(interaction: CommandoInteraction): boolean {
+        const { author, client, commandType, type } = interaction;
+
+        // Ignore bot messages
+        if (author.bot || author.id === client.user.id) return false;
+
+        // Ignore anything but slash commands
+        if (type !== InteractionType.ApplicationCommand) return false;
+        if (commandType !== ApplicationCommandType.ChatInput) return false;
+
+        return true;
+    }
+
+    /**
+     * Inhibits a command message
+     * @param message - Command message to inhibit
+     */
+    protected inhibit(message: CommandoMessage): Inhibition | null {
         const { inhibitors, client } = this;
         for (const inhibitor of inhibitors) {
-            let inhibit = inhibitor(cmdMsg);
+            let inhibit = inhibitor(message);
             if (inhibit) {
-                if (typeof inhibit !== 'object') inhibit = { reason: inhibit as string, response: null };
+                if (typeof inhibit !== 'object') inhibit = { reason: inhibit, response: null };
 
                 const valid = typeof inhibit.reason === 'string'
-                    && (typeof inhibit.response === 'undefined'
-                        || inhibit.response === null
+                    && (
+                        Util.isNullish(inhibit.response)
                         || Util.isPromise(inhibit.response)
                     );
                 if (!valid) {
@@ -383,8 +254,7 @@ export default class CommandDispatcher {
                     );
                 }
 
-                // @ts-expect-error: string is not assignable to CommandBlockReason
-                client.emit('commandBlock', { message: cmdMsg }, inhibit.reason, inhibit);
+                client.emit('commandBlock', { message }, inhibit.reason as CommandBlockReason);
                 return inhibit;
             }
         }
@@ -468,7 +338,7 @@ export default class CommandDispatcher {
             // @ts-expect-error: initCommand is protected in CommandoMessage
             return message.initCommand(registry.unknownCommand, prefixless ? content : matches[1], null);
         }
-        const argString = content.substring(matches[1].length + (matches[2] ? matches[2].length : 0));
+        const argString = content.substring(matches[1].length + (matches[2]?.length ?? 0));
         // @ts-expect-error: initCommand is protected in CommandoMessage
         return message.initCommand(commands[0], argString, null);
     }
@@ -479,7 +349,7 @@ export default class CommandDispatcher {
      */
     protected buildCommandPattern(prefix?: string): RegExp {
         const { client, _commandPatterns } = this;
-        const { id } = client.user!;
+        const { id } = (client as CommandoClient<true>).user;
 
         let pattern: RegExp;
         if (prefix) {
@@ -494,36 +364,4 @@ export default class CommandDispatcher {
         client.emit('debug', `Built command pattern for prefix "${prefix}": ${pattern}`);
         return pattern;
     }
-}
-
-function parseSlashArgs(
-    obj: Record<string, unknown>, { name, value, type, channel, member, user, role, options }: CommandInteractionOption
-): void {
-    if (name && (value === null || typeof value === 'undefined')) {
-        obj.subCommand = name;
-    } else {
-        name = Util.removeDashes(name);
-        switch (type) {
-            case ApplicationCommandOptionType.Boolean:
-            case ApplicationCommandOptionType.Integer:
-            case ApplicationCommandOptionType.Number:
-            case ApplicationCommandOptionType.String:
-            case ApplicationCommandOptionType.Subcommand:
-                obj[name] = value ?? null;
-                break;
-            case ApplicationCommandOptionType.Channel:
-                obj[name] = channel ?? null;
-                break;
-            case ApplicationCommandOptionType.Mentionable:
-                obj[name] = member ?? user ?? channel ?? role ?? null;
-                break;
-            case ApplicationCommandOptionType.Role:
-                obj[name] = role ?? null;
-                break;
-            case ApplicationCommandOptionType.User:
-                obj[name] = member ?? user ?? null;
-                break;
-        }
-    }
-    options?.forEach(opt => parseSlashArgs(obj, opt));
 }

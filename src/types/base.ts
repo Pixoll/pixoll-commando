@@ -5,7 +5,7 @@ import CommandoMessage from '../extensions/message';
 /** A type for command arguments */
 export default abstract class ArgumentType {
     /** Client that this argument type is for */
-    public readonly client!: CommandoClient;
+    declare public readonly client: CommandoClient;
     /** ID of this argument type (this is what you specify in {@link ArgumentInfo#type}) */
     public id: string;
 

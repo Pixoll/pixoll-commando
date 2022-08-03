@@ -1,12 +1,22 @@
 import { Collection, LimitedCollection } from 'discord.js';
 import CommandoClient from '../client';
-import DatabaseManager, { DefaultDocument } from './DatabaseManager';
-import Schemas, { DisabledSchema, ErrorSchema, FaqSchema, PrefixSchema, ReminderSchema, TodoSchema } from './Schemas';
+import DatabaseManager from './DatabaseManager';
+import Schemas, {
+    AnySchema,
+    DisabledSchema,
+    ErrorSchema,
+    FaqSchema,
+    PrefixSchema,
+    ReminderSchema,
+    TodoSchema,
+} from './Schemas';
+
+type SchemaKey = Exclude<keyof ClientDatabaseManager, 'client'>;
 
 /** The client's database manager (MongoDB) */
 export default class ClientDatabaseManager {
     /** Client for this database */
-    public readonly client!: CommandoClient;
+    declare public readonly client: CommandoClient;
     public disabled: DatabaseManager<DisabledSchema>;
     public errors: DatabaseManager<ErrorSchema>;
     public faq: DatabaseManager<FaqSchema>;
@@ -32,11 +42,11 @@ export default class ClientDatabaseManager {
      * Initializes the caching of this client's data
      * @param data - The data to assign to the client
      */
-    protected init(data: Collection<string, LimitedCollection<string, DefaultDocument>>): this {
+    protected init(data: Collection<string, LimitedCollection<string, AnySchema>>): this {
         for (const [name, schema] of data) {
-            // @ts-expect-error: no string index
-            const dbManager = this[name] as DatabaseManager<DefaultDocument>;
+            const dbManager = this[name as SchemaKey];
             if (!dbManager) continue;
+            // @ts-expect-error: AnySchema not assignable to individual schema types
             dbManager.cache = schema;
         }
         return this;

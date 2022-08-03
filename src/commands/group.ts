@@ -5,7 +5,7 @@ import Command from './base';
 /** A group for commands. Whodathunkit? */
 export default class CommandGroup {
     /** Client that this group is for */
-    public readonly client!: CommandoClient;
+    declare public readonly client: CommandoClient;
     /** ID of this group */
     public id: string;
     /** Name of this group */

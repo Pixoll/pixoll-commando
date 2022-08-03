@@ -2,16 +2,13 @@ import { Collection, LimitedCollection } from 'discord.js';
 import { isEqual } from 'lodash';
 import { FilterQuery, UpdateAggregationStage, UpdateQuery } from 'mongoose';
 import CommandoGuild from '../extensions/guild';
-import { ModelFrom, SimplifiedModel, BaseSchema } from './Schemas';
-
-export interface DefaultDocument extends BaseSchema {
-    guild?: string;
-}
+import Util from '../util';
+import { ModelFrom, SimplifiedModel, AnySchema } from './Schemas';
 
 /** A MongoDB database schema manager */
-export default class DatabaseManager<T extends DefaultDocument> {
+export default class DatabaseManager<T extends AnySchema> {
     /** Guild for this database */
-    public readonly guild!: CommandoGuild | null;
+    declare public readonly guild: CommandoGuild | null;
     /** The name of the schema this manager is for */
     public Schema: SimplifiedModel<T>;
     /** The cache for this manager */
@@ -71,7 +68,7 @@ export default class DatabaseManager<T extends DefaultDocument> {
             }
             doc = fetched;
         }
-        if (typeof doc === 'undefined' || doc === null) {
+        if (Util.isNullish(doc)) {
             throw new TypeError('Document cannot be undefined or null.');
         }
 
@@ -106,7 +103,7 @@ export default class DatabaseManager<T extends DefaultDocument> {
             }
             doc = fetched;
         }
-        if (typeof doc === 'undefined' || doc === null) {
+        if (Util.isNullish(doc)) {
             throw new TypeError('Document cannot be undefined or null.');
         }
 

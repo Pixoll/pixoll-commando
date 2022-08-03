@@ -2,6 +2,7 @@ import ms from 'ms';
 import CommandoClient from '../client';
 import Argument from '../commands/argument';
 import CommandoMessage from '../extensions/message';
+import Util from '../util';
 import ArgumentType from './base';
 
 export default class DateArgumentType extends ArgumentType {
@@ -80,7 +81,7 @@ export default class DateArgumentType extends ArgumentType {
             return parsed + formatter - offset;
         }) || [defaultDate.getUTCHours(), defaultDate.getUTCMinutes()];
 
-        const arr = [...dateNumbers, ...timeNumbers].filter(n => typeof n !== 'undefined');
+        const arr = [...dateNumbers, ...timeNumbers].filter(n => !Util.isNullish(n));
         const date = new Date(...(arr as [number, number, number, number, number]));
         return date;
     }

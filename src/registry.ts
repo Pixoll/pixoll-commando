@@ -1,7 +1,8 @@
 /* eslint-disable new-cap */
 import {
-    ApplicationCommand, ApplicationCommandOption, ApplicationCommandType, Collection,
-    RESTPostAPIChatInputApplicationCommandsJSONBody as RestAPIApplicationCommand
+    ApplicationCommand,
+    ApplicationCommandData,
+    Collection,
 } from 'discord.js';
 import path from 'path';
 import requireAll from 'require-all';
@@ -155,7 +156,7 @@ export type CommandGroupResolvable = CommandGroup | string;
 /** Handles registration and searching of commands and groups */
 export default class CommandoRegistry {
     /** The client this registry is for */
-    public readonly client!: CommandoClient;
+    declare public readonly client: CommandoClient;
     /** Registered commands, mapped by their name */
     public commands: Collection<string, Command>;
     /** Registered command groups, mapped by their ID */
@@ -183,65 +184,61 @@ export default class CommandoRegistry {
     /** Registers every client and guild slash command available - this may only be called upon startup. */
     protected async registerSlashCommands(): Promise<void> {
         const { commands, client } = this;
-        const { application, options, guilds } = client;
+        const { application, options, guilds }: CommandoClient<true> = client;
 
-        // @ts-expect-error: _slashToAPI should only be accessed inside of Command
-        const testCommands = commands.filter(cmd => cmd.test && !!cmd.slash).map(cmd => cmd._slashToAPI!);
-        if (testCommands.length !== 0) {
+        const testCommands = commands.filter(cmd => cmd.testEnv && !!cmd.slashInfo)
+            .mapValues(cmd => cmd.slashInfo as ApplicationCommandData);
+        if (testCommands.size !== 0) {
             if (typeof options.testGuild !== 'string') throw new TypeError('Client testGuild must be a string.');
 
             const guild = guilds.resolve(options.testGuild);
             if (!guild) throw new TypeError('Client testGuild must be a valid Guild ID.');
 
             const current = await guild.commands.fetch();
-            const [updated, removed] = getUpdatedSlashCommands(current.toJSON(), testCommands);
+            const { created, updated, removed } = getUpdatedSlashCommands(current.toJSON(), testCommands);
             const promises: Array<Promise<ApplicationCommand | null>> = [];
-            for (const command of updated) {
-                const match = current.find(cmd => cmd.name === command.name);
-                if (match) {
-                    promises.push(guild.commands.edit(match, command));
-                } else {
-                    promises.push(guild.commands.create(command));
-                }
+
+            for (const command of created) {
+                promises.push(guild.commands.create(command));
+            }
+            for (const [id, command] of updated) {
+                promises.push(guild.commands.edit(id, command));
             }
             for (const command of removed) {
-                const match = current.find(cmd => cmd.name === command.name);
-                if (match) promises.push(guild.commands.delete(match));
+                promises.push(guild.commands.delete(command));
             }
-            await Promise.all(promises);
 
-            client.emit('debug', `Loaded ${testCommands.length} guild slash commands`);
+            await Promise.all(promises);
+            client.emit('debug', `Loaded ${testCommands.size} guild slash commands`);
         }
 
-        // @ts-expect-error: _slashToAPI should only be accessed inside of Command
-        const slashCommands = commands.filter(cmd => !cmd.test && !!cmd.slash).map(cmd => cmd._slashToAPI!);
-        if (slashCommands.length === 0) return;
+        const slashCommands = commands.filter(cmd => !cmd.testEnv && !!cmd.slashInfo)
+            .mapValues(cmd => cmd.slashInfo as ApplicationCommandData);
+        if (slashCommands.size === 0) return;
 
-        const current = await application!.commands.fetch();
-        const [updated, removed] = getUpdatedSlashCommands(current.toJSON(), slashCommands);
+        const current = await application.commands.fetch();
+        const { created, updated, removed } = getUpdatedSlashCommands(current.toJSON(), slashCommands);
         const promises: Array<Promise<ApplicationCommand | null>> = [];
-        for (const command of updated) {
-            const match = current.find(cmd => cmd.name === command.name);
-            if (match) {
-                promises.push(application!.commands.edit(match, command));
-            } else {
-                promises.push(application!.commands.create(command));
-            }
+
+        for (const command of created) {
+            promises.push(application.commands.create(command));
+        }
+        for (const [id, command] of updated) {
+            promises.push(application.commands.edit(id, command));
         }
         for (const command of removed) {
-            const match = current.find(cmd => cmd.name === command.name);
-            if (match) promises.push(application!.commands.delete(match));
+            promises.push(application.commands.delete(command));
         }
-        await Promise.all(promises);
 
-        client.emit('debug', `Loaded ${slashCommands.length} public slash commands`);
+        await Promise.all(promises);
+        client.emit('debug', `Loaded ${slashCommands.size} public slash commands`);
     }
 
     /**
      * Registers a single group
      * @param group - A CommandGroup instance
      * or the constructor parameters (with ID, name, and guarded properties)
-     * @see {@link CommandoRegistry#registerGroups}
+     * @see CommandoRegistry#registerGroups
      */
     public registerGroup(group: CommandGroup | { id: string; name?: string; guarded?: boolean }): this {
         const { client, groups } = this;
@@ -252,20 +249,16 @@ export default class CommandoRegistry {
             group = new CommandGroup(client, group.id, group.name, group.guarded);
         }
 
-        const existing = groups.get(group.id);
+        const builtGroup = group as CommandGroup;
+
+        const existing = groups.get(builtGroup.id);
         if (existing) {
-            existing.name = group.name!;
-            client.emit('debug', `Group ${group.id} is already registered. Renamed it to "${group.name}".`);
+            existing.name = builtGroup.name;
+            client.emit('debug', `Group ${builtGroup.id} is already registered. Renamed it to "${builtGroup.name}".`);
         } else {
-            groups.set(group.id, group as CommandGroup);
-            /**
-             * Emitted when a group is registered
-             * @event CommandoClient#groupRegister
-             * @param {CommandGroup} group - Group that was registered
-             * @param {CommandoRegistry} registry - Registry that the group was registered to
-             */
-            client.emit('groupRegister', group as CommandGroup, this);
-            client.emit('debug', `Registered group ${group.id}.`);
+            groups.set(builtGroup.id, builtGroup);
+            client.emit('groupRegister', builtGroup, this);
+            client.emit('debug', `Registered group ${builtGroup.id}.`);
         }
 
         return this;
@@ -282,7 +275,7 @@ export default class CommandoRegistry {
      * ]);
      */
     public registerGroups(groups: Array<CommandGroup | { id: string; name?: string; guarded?: boolean }>): this {
-        if (!Array.isArray(groups)) throw new TypeError('Groups must be an Array.');
+        if (!Array.isArray(groups)) throw new TypeError('Groups must be an array.');
         for (const group of groups) {
             this.registerGroup(group);
         }
@@ -292,7 +285,7 @@ export default class CommandoRegistry {
     /**
      * Registers a single command
      * @param command - Either a Command instance, or a constructor for one
-     * @see {@link CommandoRegistry#registerCommands}
+     * @see CommandoRegistry#registerCommands
      */
     public registerCommand(command: Command): this {
         const { client, commands, groups, unknownCommand } = this;
@@ -327,12 +320,6 @@ export default class CommandoRegistry {
         commands.set(name, command);
         if (unknown) this.unknownCommand = command;
 
-        /**
-         * Emitted when a command is registered
-         * @event CommandoClient#commandRegister
-         * @param {Command} command - Command that was registered
-         * @param {CommandoRegistry} registry - Registry that the command was registered to
-         */
         client.emit('commandRegister', command, this);
         client.emit('debug', `Registered command ${group.id}:${memberName}.`);
 
@@ -345,7 +332,7 @@ export default class CommandoRegistry {
      * @param ignoreInvalid - Whether to skip over invalid objects without throwing an error
      */
     public registerCommands(commands: Command[], ignoreInvalid = false): this {
-        if (!Array.isArray(commands)) throw new TypeError('Commands must be an Array.');
+        if (!Array.isArray(commands)) throw new TypeError('Commands must be an array.');
         for (const command of commands) {
             // @ts-expect-error: Command not assignable to 'new () => unknown'
             const valid = isConstructor(command, Command) || isConstructor(command.default, Command)
@@ -384,7 +371,7 @@ export default class CommandoRegistry {
     /**
      * Registers a single argument type
      * @param type - Either an ArgumentType instance, or a constructor for one
-     * @see {@link CommandoRegistry#registerTypes}
+     * @see CommandoRegistry#registerTypes
      */
     public registerType(type: ArgumentType): this {
         const { client, types } = this;
@@ -401,12 +388,6 @@ export default class CommandoRegistry {
         // Add the type
         types.set(type.id, type);
 
-        /**
-         * Emitted when an argument type is registered
-         * @event CommandoClient#typeRegister
-         * @param {ArgumentType} type - Argument type that was registered
-         * @param {CommandoRegistry} registry - Registry that the type was registered to
-         */
         client.emit('typeRegister', type, this);
         client.emit('debug', `Registered argument type ${type.id}.`);
 
@@ -419,7 +400,7 @@ export default class CommandoRegistry {
      * @param ignoreInvalid - Whether to skip over invalid objects without throwing an error
      */
     public registerTypes(types: ArgumentType[], ignoreInvalid = false): this {
-        if (!Array.isArray(types)) throw new TypeError('Types must be an Array.');
+        if (!Array.isArray(types)) throw new TypeError('Types must be an array.');
         for (const type of types) {
             // @ts-expect-error: ArgumentType not assignable to 'new () => unknown'
             const valid = isConstructor(type, ArgumentType) || isConstructor(type.default, ArgumentType)
@@ -454,8 +435,8 @@ export default class CommandoRegistry {
         const defaultTypes = Object.keys(requireAll(path.join(__dirname, '/types')))
             .filter(k => k !== 'base' && k !== 'union')
             .reduce<DefaultTypesOptions>((obj, k) => {
-                // @ts-expect-error: no string index
-                obj[Util.removeDashes(k)] = true;
+                const key = Util.removeDashes(k) as keyof DefaultTypesOptions;
+                obj[key] = true;
                 return obj;
             }, {});
         Object.assign(defaultTypes, types);
@@ -500,12 +481,6 @@ export default class CommandoRegistry {
         if (unknownCommand === oldCommand) this.unknownCommand = null;
         if (unknown) this.unknownCommand = command;
 
-        /**
-         * Emitted when a command is reregistered
-         * @event CommandoClient#commandReregister
-         * @param {Command} newCommand - New command
-         * @param {Command} oldCommand - Old command
-         */
         client.emit('commandReregister', command, oldCommand);
         client.emit('debug', `Reregistered command ${groupId}:${memberName}.`);
     }
@@ -519,14 +494,9 @@ export default class CommandoRegistry {
         const { name, groupId, memberName } = command;
 
         commands.delete(name);
-        command.group!.commands.delete(name);
+        command.group.commands.delete(name);
         if (unknownCommand === command) this.unknownCommand = null;
 
-        /**
-         * Emitted when a command is unregistered
-         * @event CommandoClient#commandUnregister
-         * @param {Command} command - Command that was unregistered
-         */
         client.emit('commandUnregister', command);
         client.emit('debug', `Unregistered command ${groupId}:${memberName}.`);
     }
@@ -662,121 +632,38 @@ function isConstructor(func: { new(): unknown }, _class: () => unknown): boolean
     }
 }
 
-const apiCmdOptionType = {
-    SUB_COMMAND: 1,
-    SUB_COMMAND_GROUP: 2,
-    STRING: 3,
-    INTEGER: 4,
-    BOOLEAN: 5,
-    USER: 6,
-    CHANNEL: 7,
-    ROLE: 8,
-    MENTIONABLE: 9,
-    NUMBER: 10,
-};
-
-const apiCmdOptChanType = {
-    GUILD_TEXT: 0,
-    GUILD_VOICE: 2,
-    GUILD_CATEGORY: 4,
-    GUILD_NEWS: 5,
-    GUILD_NEWS_THREAD: 10,
-    GUILD_PUBLIC_THREAD: 11,
-    GUILD_PRIVATE_THREAD: 12,
-    GUILD_STAGE_VOICE: 13,
-};
-
 /**
- * Compares and returns the difference between a set of arrays
- * @param oldCommands - The old array
- * @param newCommands - The new array
+ * Compares old and new slash commands
+ * @param oldCommands - The old commands
+ * @param newCommands - The new commands
  * @returns `[updated, removed]`
  */
 function getUpdatedSlashCommands(
-    oldCommands: ApplicationCommand[] = [], newCommands: RestAPIApplicationCommand[] = []
-): RestAPIApplicationCommand[][] {
-    oldCommands = JSON.parse(JSON.stringify(oldCommands));
-    newCommands = JSON.parse(JSON.stringify(newCommands));
-
-    const parsedOldCommands = oldCommands.map(apiCommand => {
-        for (const prop in apiCommand) {
-            if (['name', 'description', 'options'].includes(prop)) continue;
-            // @ts-expect-error: no string index
-            delete apiCommand[prop];
-        }
-        apiCommand.type = ApplicationCommandType.ChatInput;
-        parseApiCmdOptions(apiCommand.options);
-        if (apiCommand.options.length === 0) {
-            // @ts-expect-error: operand must be optional
-            delete apiCommand.options;
-        }
-        return apiCommand as RestAPIApplicationCommand;
-    });
-
-    const map1: Map<string, boolean> = new Map();
-    parsedOldCommands.forEach(el => map1.set(JSON.stringify(orderObjProps(el)), true));
-    const updated = newCommands.filter(el => !map1.has(JSON.stringify(orderObjProps(el))));
-
-    const map2: Map<string, boolean> = new Map();
-    newCommands.forEach(el => map2.set(el.name, true));
-    const removed = parsedOldCommands.filter(el => !map2.has(el.name));
-
-    return [updated, removed];
-}
-
-/**
- * @param options - The options to parse
- */
-function parseApiCmdOptions(options: ApplicationCommandOption[]): void {
-    options.forEach(option => {
-        // @ts-expect-error: required does not exist in some sub-types
-        if (option.required === false) delete option.required;
-
-        for (const prop in option) {
-            // @ts-expect-error: no string index
-            if (typeof option[prop] === 'undefined') {
-                // @ts-expect-error: no string index
-                delete option[prop];
-                continue;
-            }
-            if (prop.toLowerCase() === prop) continue;
-            const toApply = prop.replace(/[A-Z]/g, '_$&').toLowerCase();
-            // @ts-expect-error: no string index
-            option[toApply] = option[prop];
-            // @ts-expect-error: no string index
-            delete option[prop];
-            if (toApply === 'channel_types') {
-                // @ts-expect-error: channel_types "does not exist" in APIApplicationCommandOption
-                for (let i = 0; i < option[toApply].length; i++) {
-                    // @ts-expect-error: channel_types "does not exist" in APIApplicationCommandOption
-                    option[toApply][i] = apiCmdOptChanType[option[toApply][i]];
-                }
-            }
-        }
-        // @ts-expect-error: no number index
-        option.type = apiCmdOptionType[option.type];
-        if ('options' in option && option.options) parseApiCmdOptions(option.options);
-    });
-}
-
-type Obj = { [key: string]: (Obj | Obj[] | boolean | number | string | null | undefined) };
-
-function orderObjProps(obj: Obj): Obj {
-    const ordered: Obj = {};
-    for (const key of Object.keys(obj).sort()) {
-        const value = obj[key];
-        if (Array.isArray(value)) {
-            ordered[key] = [];
-            value.forEach(nested => {
-                (ordered[key] as Obj[]).push(orderObjProps(nested));
-            });
+    oldCommands: ApplicationCommand[], newCommands: Collection<string, ApplicationCommandData>
+): {
+    created: ApplicationCommandData[];
+    /** Updated commands mapped by their ids */
+    updated: Map<string, ApplicationCommandData>;
+    removed: ApplicationCommand[];
+} {
+    const created: ApplicationCommandData[] = [];
+    const updated = new Map<string, ApplicationCommandData>();
+    for (const [, newCommand] of newCommands) {
+        const appCommand = oldCommands.find(cmd => cmd.name === newCommand.name);
+        if (!appCommand) {
+            created.push(newCommand);
             continue;
         }
-        if (typeof value === 'object' && value) {
-            ordered[key] = orderObjProps(value);
-            continue;
+        if (!appCommand.equals(newCommand)) {
+            updated.set(appCommand.id, newCommand);
         }
-        ordered[key] = value;
     }
-    return ordered;
+
+    const removed = oldCommands.filter(cmd => !newCommands.has(cmd.name));
+
+    return {
+        created,
+        updated,
+        removed,
+    };
 }

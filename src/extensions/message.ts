@@ -1,9 +1,13 @@
 import {
-    Message, EmbedBuilder, User, MessageOptions, TextBasedChannel, ButtonBuilder, ActionRowBuilder, MessageEditOptions,
+    Message,
+    EmbedBuilder,
+    User,
+    MessageOptions,
+    TextBasedChannel,
+    MessageEditOptions,
     escapeMarkdown,
     ChannelType,
     Colors,
-    ButtonStyle
 } from 'discord.js';
 import { oneLine, stripIndent } from 'common-tags';
 import Command from '../commands/base';
@@ -22,7 +26,7 @@ interface ResponseOptions {
     /** Type of the response */
     type?: ResponseType;
     /** Content of the response */
-    content?: MessageOptions | StringResolvable;
+    content?: MessageOptions | StringResolvable | null;
     /** Options of the response */
     options?: MessageOptions;
     /** Language of the response, if its type is `code` */
@@ -40,11 +44,7 @@ export type CommandoMessageResponse = CommandoMessage | Message | Message[] | nu
 // @ts-expect-error: Message's constructor is private
 export default class CommandoMessage extends Message {
     /** The client the message is for */
-    // @ts-expect-error: CommandoClient not assignable to Client<boolean>
-    declare public readonly client: CommandoClient;
-    /** The guild this message is for */
-    // @ts-expect-error: CommandoGuild not assignable to Guild
-    declare public guild: CommandoGuild;
+    declare public readonly client: CommandoClient<true>;
     /** Whether the message contains a command (even an unknown one) */
     public isCommand: boolean;
     /** Command that the message triggers, if any */
@@ -63,7 +63,7 @@ export default class CommandoMessage extends Message {
      * @param data - The message data
      */
     public constructor(client: CommandoClient, data: Message) {
-        // @ts-expect-error: CommandoClient not assignable to Client<boolean>
+        // @ts-expect-error: data.toJSON() does not work
         super(client, { id: data.id });
         Object.assign(this, data);
 
@@ -73,6 +73,11 @@ export default class CommandoMessage extends Message {
         this.patternMatches = null;
         this.responses = new Map();
         this.responsePositions = new Map();
+    }
+
+    /** The guild this message is for */
+    get guild(): CommandoGuild | null {
+        return super.guild as CommandoGuild;
     }
 
     /**
@@ -97,7 +102,7 @@ export default class CommandoMessage extends Message {
      * prefixed command format
      * @param user - User to use for the mention command format
      */
-    public usage(argString?: string, prefix?: string | null, user: User | null = this.client.user!): string {
+    public usage(argString?: string, prefix?: string | null, user: User | null = this.client.user): string {
         const { guild, client, command } = this;
         prefix ??= guild?.prefix ?? client.prefix;
         return command!.usage(argString, prefix, user);
@@ -110,7 +115,7 @@ export default class CommandoMessage extends Message {
      * prefixed command format
      * @param user - User to use for the mention command format
      */
-    public anyUsage(command: string, prefix?: string | null, user: User | null = this.client.user!): string {
+    public anyUsage(command: string, prefix?: string | null, user: User | null = this.client.user): string {
         const { guild, client } = this;
         prefix ??= guild?.prefix ?? client.prefix;
         return Command.usage(command, prefix, user);
@@ -118,7 +123,7 @@ export default class CommandoMessage extends Message {
 
     /**
      * Parses the argString into usable arguments, based on the argsType and argsCount of the command
-     * @see {@link Command#run}
+     * @see Command#run
      */
     public parseArgs(): string[] | string {
         const { command, argString } = this;
@@ -138,80 +143,85 @@ export default class CommandoMessage extends Message {
     /** Runs the command */
     public async run(): Promise<CommandoMessageResponse> {
         const { guild, guildId, channel, channelId, author, client, command, patternMatches, argString } = this;
-        const { groupId, memberName } = command!;
+        if (!command) return null;
 
-        // Obtain the member for the ClientUser if it doesn't already exist
-        if (channel.type !== ChannelType.DM && !guild.members.cache.has(client.user!.id)) {
-            await guild.members.fetch(client.user!.id);
-        }
+        const { groupId, memberName } = command;
+        const { user: clientUser } = client;
 
-        // Checks if the client has permission to send messages
-        // @ts-expect-error: some TextBasedChannel sub-types are not assignable to GuildChannelResolvable
-        const clientPerms = guild?.me!.permissionsIn(channel).serialize();
-        if (clientPerms && clientPerms.VIEW_CHANNEL && !clientPerms.SEND_MESSAGES) {
-            return await this.direct(stripIndent`
-                It seems like I cannot **Send Messages** in this channel: ${channel.toString()}
-                Please try in another channel, or contact the admins of **${guild.name}** to solve this issue.
-            `).catch(() => null);
+        if (guild && channel.type !== ChannelType.DM) {
+            const { members } = guild;
+
+            // Obtain the member for the ClientUser if it doesn't already exist
+            if (!members.cache.has(clientUser.id)) {
+                await members.fetch(clientUser.id);
+            }
+
+            // Checks if the client has permission to send messages
+            const clientPerms = members.me!.permissionsIn(channel).serialize();
+            if (clientPerms && clientPerms.ViewChannel && !clientPerms.SendMessages) {
+                return await this.direct(stripIndent`
+                    It seems like I cannot **Send Messages** in this channel: ${channel.toString()}
+                    Please try in another channel, or contact the admins of **${guild.name}** to solve this issue.
+                `).catch(() => null);
+            }
+
+            // Make sure the command is usable in this context
+            if (command.dmOnly) {
+                client.emit('commandBlock', { message: this }, 'dmOnly');
+                return await command.onBlock({ message: this }, 'dmOnly');
+            }
         }
 
         // Make sure the command is usable in this context
-        if (command!.dmOnly && guild) {
-            client.emit('commandBlock', { message: this }, 'dmOnly');
-            return await command!.onBlock({ message: this }, 'dmOnly') as Message;
-        }
-
-        // Make sure the command is usable in this context
-        if ((command!.guildOnly || command!.guildOwnerOnly) && !guild) {
+        if ((command.guildOnly || command.guildOwnerOnly) && !guild) {
             client.emit('commandBlock', { message: this }, 'guildOnly');
-            return await command!.onBlock({ message: this }, 'guildOnly') as Message;
+            return await command.onBlock({ message: this }, 'guildOnly');
         }
 
         // Ensure the channel is a NSFW one if required
-        // @ts-expect-error: 'nsfw' does not exist in DMChannel
-        if (command!.nsfw && !channel.nsfw) {
+        if ('nsfw' in channel && !channel.nsfw) {
             client.emit('commandBlock', { message: this }, 'nsfw');
-            return await command!.onBlock({ message: this }, 'nsfw') as Message;
+            return await command.onBlock({ message: this }, 'nsfw');
         }
 
         // Ensure the user has permission to use the command
-        const hasPermission = command!.hasPermission({ message: this });
+        const hasPermission = command.hasPermission({ message: this });
         if (channel.type !== ChannelType.DM && hasPermission !== true) {
             if (typeof hasPermission === 'string') {
                 client.emit('commandBlock', { message: this }, hasPermission);
-                return await command!.onBlock({ message: this }, hasPermission) as Message;
+                return await command.onBlock({ message: this }, hasPermission);
             }
             const data = { missing: hasPermission };
             client.emit('commandBlock', { message: this }, 'userPermissions', data);
-            return await command!.onBlock({ message: this }, 'userPermissions', data) as Message;
+            return await command.onBlock({ message: this }, 'userPermissions', data);
         }
 
         // Ensure the client user has the required permissions
-        if (channel.type !== ChannelType.DM && command!.clientPermissions) {
-            const missing = channel.permissionsFor(client.user!)?.missing(command!.clientPermissions) || [];
+        if (channel.type !== ChannelType.DM && command.clientPermissions) {
+            const missing = channel.permissionsFor(clientUser)?.missing(command.clientPermissions) || [];
             if (missing.length > 0) {
                 const data = { missing };
                 client.emit('commandBlock', { message: this }, 'clientPermissions', data);
-                return await command!.onBlock({ message: this }, 'clientPermissions', data) as Message;
+                return await command.onBlock({ message: this }, 'clientPermissions', data);
             }
         }
 
         // Throttle the command
         // @ts-expect-error: method throttle is protected 
-        const throttle = command!.throttle(author.id);
-        if (throttle && throttle.usages + 1 > command!.throttling!.usages) {
-            const remaining = (throttle.start + (command!.throttling!.duration * 1000) - Date.now()) / 1000;
+        const throttle = command.throttle(author.id);
+        if (throttle && throttle.usages + 1 > command.throttling!.usages) {
+            const remaining = (throttle.start + (command.throttling!.duration * 1000) - Date.now()) / 1000;
             const data = { throttle, remaining };
             client.emit('commandBlock', { message: this }, 'throttling', data);
-            return await command!.onBlock({ message: this }, 'throttling', data) as Message;
+            return await command.onBlock({ message: this }, 'throttling', data);
         }
 
-        if (command!.deprecated) {
+        if (command.deprecated) {
             const embed = new EmbedBuilder()
                 .setColor(Colors.Gold)
                 .addFields([{
-                    name: `The \`${command!.name}\` command has been marked as deprecated!`,
-                    value: `Please start using the \`${command!.replacing}\` command from now on.`,
+                    name: `The \`${command.name}\` command has been marked as deprecated!`,
+                    value: `Please start using the \`${command.replacing}\` command from now on.`,
                 }]);
 
             await this.replyEmbed(embed);
@@ -220,19 +230,19 @@ export default class CommandoMessage extends Message {
         // Figure out the command arguments
         let args: Record<string, unknown> | string[] | string | null = patternMatches;
         let collResult = null;
-        if (!args && command!.argsCollector) {
-            const collArgs = command!.argsCollector.args;
+        if (!args && command.argsCollector) {
+            const collArgs = command.argsCollector.args;
             const count = collArgs[collArgs.length - 1].infinite ? Infinity : collArgs.length;
-            const provided = CommandoMessage.parseArgs(argString!.trim(), count, command!.argsSingleQuotes);
+            const provided = CommandoMessage.parseArgs(argString!.trim(), count, command.argsSingleQuotes);
 
-            collResult = await command!.argsCollector.obtain(this, provided);
+            collResult = await command.argsCollector.obtain(this, provided);
             if (collResult.cancelled) {
                 if (collResult.prompts.length === 0 || collResult.cancelled === 'promptLimit') {
                     const err = new CommandFormatError(this);
                     return this.reply({ content: err.message, ...Util.noReplyPingInDMs(this) });
                 }
 
-                client.emit('commandCancel', command!, collResult.cancelled, this, collResult);
+                client.emit('commandCancel', command, collResult.cancelled, this, collResult);
                 return this.reply({ content: 'Cancelled command.', ...Util.noReplyPingInDMs(this) });
             }
             args = collResult.values;
@@ -246,60 +256,31 @@ export default class CommandoMessage extends Message {
             const location = guildId ? `${guildId}:${channelId}` : `DM:${author.id}`;
             client.emit('debug', `Running message command "${groupId}:${memberName}" at "${location}".`);
             await channel.sendTyping().catch(() => null);
-            const promise = command!.run({ message: this }, args, fromPattern, collResult);
+            const promise = command.run({ message: this }, args, fromPattern, collResult);
 
-            client.emit('commandRun', command!, promise, { message: this }, args, fromPattern, collResult);
+            client.emit('commandRun', command, promise, { message: this }, args, fromPattern, collResult);
             const retVal = await promise;
-            const isValid = retVal instanceof Message || Array.isArray(retVal) || retVal === null
-                || typeof retVal === 'undefined';
+            const isValid = retVal instanceof Message || Array.isArray(retVal) || Util.isNullish(retVal);
             if (!isValid) {
                 const retValType = retVal !== null ? (
                     // @ts-expect-error: constructor does not exist in never
                     retVal?.constructor ? retVal.constructor.name : typeof retVal
                 ) : null;
                 throw new TypeError(oneLine`
-                    Command ${command!.name}'s run() resolved with an unknown type (${retValType}). Command run methods
-                    must return a Promise that resolve with a Message, Array of Messages, or null/undefined.
+                    Command ${command.name}'s run() resolved with an unknown type (${retValType}). Command run methods
+                    must return a Promise that resolve with a Message, array of Messages, or null/undefined.
                 `);
-            }
-
-            if (Util.probability(2)) {
-                const { user, botInvite } = client;
-                const embed = new EmbedBuilder()
-                    .setColor('#4c9f4c')
-                    .addFields([{
-                        name: `Enjoying ${user!.username}?`,
-                        value: oneLine`
-                        The please consider voting for it! It helps the bot to become more noticed
-                        between other bots. And perhaps consider adding it to any of your own servers
-                        as well!`,
-                    }]);
-                const vote = new ButtonBuilder()
-                    .setEmoji('👍')
-                    .setLabel('Vote me')
-                    .setStyle(ButtonStyle.Link)
-                    .setURL('https://top.gg/bot/802267523058761759/vote');
-                const invite = new ButtonBuilder()
-                    .setEmoji('🔗')
-                    .setLabel('Invite me')
-                    .setStyle(ButtonStyle.Link)
-                    .setURL(botInvite!);
-
-                const row = new ActionRowBuilder<ButtonBuilder>().addComponents(vote, invite);
-
-                await channel.send({ embeds: [embed], components: [row] }).catch(() => null);
             }
 
             return retVal;
         } catch (err) {
-            const message = await this.fetch().catch(() => null);
-            // @ts-expect-error: Message<boolean> not assignable to CommandoMessage
-            client.emit('commandError', command!, err as Error, { message }, args, fromPattern, collResult);
+            client.emit(
+                'commandError', command, err as Error, { message: this }, args, fromPattern, collResult ?? undefined
+            );
             if (err instanceof FriendlyError) {
                 return await this.reply(err.message);
             }
-            // @ts-expect-error: Message<boolean> not assignable to CommandoMessage
-            return await command!.onError(err, { message }, args, fromPattern, collResult);
+            return await command.onError(err as Error, { message: this }, args, fromPattern, collResult);
         }
     }
 
@@ -315,7 +296,7 @@ export default class CommandoMessage extends Message {
 
         if (type === 'reply' && channel.type === ChannelType.DM) type = 'plain';
         if (type !== 'direct') {
-            if (guild && channel.type !== ChannelType.DM && !channel.permissionsFor(client.user!)?.has('SendMessages')) {
+            if (guild && channel.type !== ChannelType.DM && !channel.permissionsFor(client.user)?.has('SendMessages')) {
                 type = 'direct';
             }
         }
@@ -401,13 +382,13 @@ export default class CommandoMessage extends Message {
      * @param options - Options for the message
      */
     public say(content: StringResolvable, options?: MessageOptions): Promise<CommandoMessageResponse> {
+        let msgContent: StringResolvable | null = content;
         if (!options && typeof content === 'object' && !Array.isArray(content)) {
             options = content;
-            // @ts-expect-error: null not assignable to StringResolvable
-            content = null;
+            msgContent = null;
         }
         if (typeof options !== 'object') options = {};
-        return this.respond({ type: 'plain', content, options });
+        return this.respond({ type: 'plain', content: msgContent, options });
     }
 
     /**
@@ -416,13 +397,13 @@ export default class CommandoMessage extends Message {
      * @param options - Options for the message
      */
     public direct(content: StringResolvable, options?: MessageOptions): Promise<CommandoMessageResponse> {
+        let msgContent: StringResolvable | null = content;
         if (!options && typeof content === 'object' && !Array.isArray(content)) {
             options = content;
-            // @ts-expect-error: null not assignable to StringResolvable
-            content = null;
+            msgContent = null;
         }
         if (typeof options !== 'object') options = {};
-        return this.respond({ type: 'direct', content, options });
+        return this.respond({ type: 'direct', content: msgContent, options });
     }
 
     /**
@@ -432,13 +413,13 @@ export default class CommandoMessage extends Message {
      * @param options - Options for the message
      */
     public code(lang: string, content: StringResolvable, options?: MessageOptions): Promise<CommandoMessageResponse> {
+        let msgContent: StringResolvable | null = content;
         if (!options && typeof content === 'object' && !Array.isArray(content)) {
             options = content;
-            // @ts-expect-error: null not assignable to StringResolvable
-            content = null;
+            msgContent = null;
         }
         if (typeof options !== 'object') options = {};
-        return this.respond({ type: 'code', content, lang, options });
+        return this.respond({ type: 'code', content: msgContent, lang, options });
     }
 
     /**
@@ -450,14 +431,14 @@ export default class CommandoMessage extends Message {
     public embed(
         embed: EmbedBuilder | EmbedBuilder[], content: StringResolvable = '', options?: MessageOptions
     ): Promise<CommandoMessageResponse> {
+        let msgContent: StringResolvable | null = content;
         if (!options && typeof content === 'object' && !Array.isArray(content)) {
             options = content;
-            // @ts-expect-error: null not assignable to StringResolvable
-            content = null;
+            msgContent = null;
         }
         if (typeof options !== 'object') options = {};
         options.embeds = Array.isArray(embed) ? embed : [embed];
-        return this.respond({ type: 'plain', content, options });
+        return this.respond({ type: 'plain', content: msgContent, options });
     }
 
     /**
@@ -469,14 +450,14 @@ export default class CommandoMessage extends Message {
     public replyEmbed(
         embed: EmbedBuilder | EmbedBuilder[], content: StringResolvable = '', options?: MessageOptions
     ): Promise<CommandoMessageResponse> {
+        let msgContent: StringResolvable | null = content;
         if (!options && typeof content === 'object' && !Array.isArray(content)) {
             options = content;
-            // @ts-expect-error: null not assignable to StringResolvable
-            content = null;
+            msgContent = null;
         }
         if (typeof options !== 'object') options = {};
         options.embeds = Array.isArray(embed) ? embed : [embed];
-        return this.respond({ type: 'reply', content, options });
+        return this.respond({ type: 'reply', content: msgContent, options });
     }
 
     /**

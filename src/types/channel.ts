@@ -11,6 +11,8 @@ export default class ChannelArgumentType extends ArgumentType {
     }
 
     public validate(val: string, msg: CommandoMessage, arg: Argument): boolean | string {
+        if (!msg.guild) return false;
+
         const matches = val.match(/^(?:<#)?([0-9]+)>?$/);
         if (matches) return msg.guild.channels.cache.has(matches[1]);
 
@@ -35,6 +37,8 @@ export default class ChannelArgumentType extends ArgumentType {
     }
 
     public parse(val: string, msg: CommandoMessage): GuildBasedChannel | null {
+        if (!msg.guild) return null;
+
         const matches = val.match(/^(?:<#)?([0-9]+)>?$/);
         if (matches) return msg.guild.channels.cache.get(matches[1]) ?? null;
 

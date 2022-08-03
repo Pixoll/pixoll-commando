@@ -30,6 +30,8 @@ export default class CustomEmojiArgumentType extends ArgumentType {
     }
 
     public parse(value: string, msg: CommandoMessage): GuildEmoji | null {
+        if (!msg.guild) return null;
+
         const matches = value.match(/^(?:<a?:([a-zA-Z0-9_]+):)?([0-9]+)>?$/);
         if (matches) return msg.client.emojis.cache.get(matches[2]) ?? null;
 

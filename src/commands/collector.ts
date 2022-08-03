@@ -22,7 +22,7 @@ export interface ArgumentCollectorResult<T = Record<string, unknown>> {
 /** Obtains, validates, and prompts for argument values */
 export default class ArgumentCollector {
     /** Client this collector is for */
-    public readonly client!: CommandoClient;
+    declare public readonly client: CommandoClient;
     /** Arguments the collector handles */
     public args: Argument[];
     /** Maximum number of times to prompt for a single argument */
@@ -35,7 +35,7 @@ export default class ArgumentCollector {
      */
     public constructor(client: CommandoClient, args: ArgumentInfo[], promptLimit = Infinity) {
         if (!client) throw new TypeError('Collector client must be specified.');
-        if (!args || !Array.isArray(args)) throw new TypeError('Collector args must be an Array.');
+        if (!args || !Array.isArray(args)) throw new TypeError('Collector args must be an array.');
         if (promptLimit === null) promptLimit = Infinity;
 
         Object.defineProperty(this, 'client', { value: client });
@@ -64,26 +64,26 @@ export default class ArgumentCollector {
         msg: CommandoMessage, provided: unknown[] = [], promptLimit = this.promptLimit
     ): Promise<ArgumentCollectorResult> {
         const { author, channelId } = msg;
-        const { dispatcher } = this.client;
+        // @ts-expect-error: _awaiting should not be used outside of class CommandDispatcher
+        const { _awaiting } = this.client.dispatcher;
         const { args } = this;
         const id = author.id + channelId;
 
-        // @ts-expect-error: _awaiting should not be used outside of class CommandDispatcher
-        dispatcher._awaiting.add(id);
+        _awaiting.add(id);
         const values: Record<string, unknown> = {};
         const results = [];
 
         try {
             for (let i = 0; i < args.length; i++) {
                 const arg = args[i];
+                // eslint-disable-next-line no-await-in-loop
                 const result = await arg.obtain(
                     msg, (arg.infinite ? provided.slice(i) : provided[i]) as string, promptLimit
                 );
                 results.push(result);
 
                 if (result.cancelled) {
-                    // @ts-expect-error: _awaiting should not be used outside of class CommandDispatcher
-                    dispatcher._awaiting.delete(id);
+                    _awaiting.delete(id);
                     return {
                         values: null,
                         cancelled: result.cancelled,
@@ -95,13 +95,11 @@ export default class ArgumentCollector {
                 values[arg.key] = result.value;
             }
         } catch (err) {
-            // @ts-expect-error: _awaiting should not be used outside of class CommandDispatcher
-            dispatcher._awaiting.delete(id);
+            _awaiting.delete(id);
             throw err;
         }
 
-        // @ts-expect-error: _awaiting should not be used outside of class CommandDispatcher
-        dispatcher._awaiting.delete(id);
+        _awaiting.delete(id);
         return {
             values,
             cancelled: null,

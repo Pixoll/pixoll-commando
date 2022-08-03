@@ -24,7 +24,10 @@ export interface SimplifiedModel<T> extends Model<T> {
     updateOne(filter: FilterQuery<T>, update: Omit<T, '_id'> | UpdateQuery<Omit<T, '_id'>>): Promise<UpdateWriteOpResult>;
 }
 export declare type ModelFrom<T extends BaseSchema = BaseSchema, IncludeId extends boolean = false> = Model<DocumentFrom<T, IncludeId>>;
-export { BaseSchema, ActiveSchema, AfkSchema, DisabledSchema, ErrorSchema, FaqSchema, McIpSchema, ModerationSchema, ModuleSchema, PollSchema, PrefixSchema, ReactionRoleSchema, ReminderSchema, RuleSchema, SetupSchema, StickyRoleSchema, TodoSchema, WelcomeSchema };
+export declare type AnySchema = BaseSchema & Partial<ActiveSchema | AfkSchema | DisabledSchema | ErrorSchema | FaqSchema | McIpSchema | ModerationSchema | ModuleSchema | PollSchema | PrefixSchema | ReactionRoleSchema | ReminderSchema | RuleSchema | SetupSchema | StickyRoleSchema | TodoSchema | WelcomeSchema> & {
+    guild?: string;
+};
+export { BaseSchema, ActiveSchema, AfkSchema, DisabledSchema, ErrorSchema, FaqSchema, McIpSchema, ModerationSchema, ModuleSchema, PollSchema, PrefixSchema, ReactionRoleSchema, ReminderSchema, RuleSchema, SetupSchema, StickyRoleSchema, TodoSchema, WelcomeSchema, };
 export interface SimplifiedSchemas {
     ActiveModel: SimplifiedModel<ActiveSchema>;
     AfkModel: SimplifiedModel<AfkSchema>;

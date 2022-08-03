@@ -1,6 +1,6 @@
-import { Message, CommandInteraction, GuildMember, TextBasedChannel } from 'discord.js';
+import { Message } from 'discord.js';
 import CommandoClient from './client';
-import CommandoGuild from './extensions/guild';
+import CommandoInteraction from './extensions/interaction';
 import CommandoMessage, { CommandoMessageResponse } from './extensions/message';
 import CommandoRegistry from './registry';
 interface Inhibition {
@@ -17,16 +17,7 @@ interface Inhibition {
  * - A single string identifying the reason the command is blocked
  * - An Inhibition object
  */
-declare type Inhibitor = (msg: CommandoMessage) => Inhibition | boolean | string;
-declare class CommandoMember extends GuildMember {
-    guild: CommandoGuild;
-}
-export declare class CommandoInteraction extends CommandInteraction {
-    client: CommandoClient;
-    guild: CommandoGuild | null;
-    member: CommandoMember | null;
-    get channel(): TextBasedChannel;
-}
+declare type Inhibitor = (msg: CommandoMessage) => Inhibition | string;
 /** Handles parsing messages and running commands from them */
 export default class CommandDispatcher {
     /** Client this dispatcher handles messages for */
@@ -73,10 +64,10 @@ export default class CommandDispatcher {
      */
     protected handleMessage(message: CommandoMessage, oldMessage?: Message): Promise<void>;
     /**
-     * Handle a slash command interaction
+     * Handle a new slash command interaction
      * @param interaction - The interaction to handle
      */
-    protected handleSlash(interaction: CommandoInteraction): Promise<unknown>;
+    protected handleSlash(interaction: CommandoInteraction): Promise<void>;
     /**
      * Check whether a message should be handled
      * @param message - The message to handle
@@ -84,10 +75,15 @@ export default class CommandDispatcher {
      */
     protected shouldHandleMessage(message: CommandoMessage, oldMessage?: Message): boolean;
     /**
-     * Inhibits a command message
-     * @param {CommandoMessage} cmdMsg - Command message to inhibit
+     * Check whether an interaction should be handled
+     * @param interaction - The interaction to handle
      */
-    protected inhibit(cmdMsg: CommandoMessage): Inhibition | null;
+    protected shouldHandleSlash(interaction: CommandoInteraction): boolean;
+    /**
+     * Inhibits a command message
+     * @param message - Command message to inhibit
+     */
+    protected inhibit(message: CommandoMessage): Inhibition | null;
     /**
      * Caches a command message to be editable
      * @param message - Triggering message

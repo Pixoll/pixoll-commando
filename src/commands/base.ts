@@ -1,16 +1,36 @@
 import {
-    GuildMember, GuildResolvable, Message, EmbedBuilder, MessageOptions, PermissionsString, User, ChannelType, Colors,
-    APIMessage, RESTPostAPIChatInputApplicationCommandsJSONBody as RestAPIApplicationCommand
+    GuildMember,
+    GuildResolvable,
+    Message,
+    EmbedBuilder,
+    MessageOptions,
+    PermissionsString,
+    User,
+    ChannelType,
+    Colors,
+    ApplicationCommandType,
+    ApplicationCommandData,
+    SlashCommandBuilder,
+    PermissionsBitField,
+    ApplicationCommandOptionType,
+    ApplicationCommandOptionBase,
+    ApplicationCommandOptionData,
+    APIApplicationCommandOptionChoice,
+    SharedNameAndDescription,
+    SharedSlashCommandOptions,
+    InteractionReplyOptions,
+    ChatInputApplicationCommandData,
+    ContextMenuCommandBuilder,
 } from 'discord.js';
 import path from 'path';
 import ArgumentCollector, { ArgumentCollectorResult } from './collector';
 import Util from '../util';
 import CommandoClient from '../client';
 import CommandGroup from './group';
-import { CommandoInteraction } from '../dispatcher';
 import { ArgumentInfo } from './argument';
 import CommandoMessage from '../extensions/message';
 import CommandoGuild from '../extensions/guild';
+import CommandoInteraction from '../extensions/interaction';
 
 /** Options for throttling usages of the command. */
 interface ThrottlingOptions {
@@ -89,15 +109,10 @@ interface CommandInfo {
     /** Options for throttling usages of the command. */
     throttling?: ThrottlingOptions;
     /**
-     * The data for the slash command, or `true` to use the same information as the message command.
-     * @default false
-     */
-    slash?: SlashCommandInfo | boolean;
-    /**
      * Whether the slash command will be registered in the test guild only or not.
      * @default false
      */
-    test?: boolean;
+    testEnv?: boolean;
     /** Arguments for the command. */
     args?: ArgumentInfo[];
     /**
@@ -167,9 +182,9 @@ interface Throttle {
 /** The instances the command is being run for */
 export interface CommandInstances {
     /** The message the command is being run for */
-    message?: CommandoMessage | null;
+    message?: CommandoMessage;
     /** The interaction the command is being run for */
-    interaction?: CommandoInteraction | null;
+    interaction?: CommandoInteraction;
 }
 
 /** The reason of {@link Command#onBlock} */
@@ -203,76 +218,15 @@ export interface CommandBlockData {
     missing?: PermissionsString[];
 }
 
-/** The slash command information */
-interface SlashCommandInfo {
-    /** The name of the command (must be lowercase, 1-32 characters) - defaults to {@link CommandInfo}'s `name` */
-    name?: string;
-    /** A short description of the command (1-100 characters) - defaults to {@link CommandInfo}'s `description` */
-    description?: string;
-    /** Options for the command */
-    options?: SlashCommandOptionInfo[];
-    /**
-     * Whether the reply of the slash command should be ephemeral or not
-     * @default false
-     */
-    ephemeral?: boolean;
+interface SlashCommandInfo extends ChatInputApplicationCommandData {
+    /** Whether the deferred reply should be ephemeral or not */
+    deferEphemeral?: boolean;
 }
-
-interface SlashCommandOptionInfo {
-    /** The type of the option */
-    type: SlashCommandOptionType;
-    /** The name of the option */
-    name: string;
-    /** The description of the option - required if `type` is `subcommand` or `subcommand-group` */
-    description: string;
-    /**
-     * Whether the option is required or not
-     * @default false
-     */
-    required?: boolean;
-    /** The minimum value permitted - only usable if `type` is `integer` or `number` */
-    minValue?: number;
-    /** The maximum value permitted - only usable if `type` is `integer` or `number` */
-    maxValue?: number;
-    /** The choices options for the option - only usable if `type` is `string`, `integer` or `number` */
-    choices?: Array<{
-        name: string;
-        value: number | string;
-    }>;
-    /** The type options for the option - only usable if `type` is `channel` */
-    channelTypes?: SlashCommandChannelType[];
-    /** The options for the sub-command - only usable if `type` is `subcommand` */
-    options?: SlashCommandOptionInfo[];
-    /** Enable autocomplete interactions for this option - may not be set to true if `choices` are present */
-    autocomplete?: boolean;
-}
-
-type SlashCommandOptionType =
-    | 'boolean'
-    | 'channel'
-    | 'integer'
-    | 'mentionable'
-    | 'number'
-    | 'role'
-    | 'string'
-    | 'subcommand-group'
-    | 'subcommand'
-    | 'user';
-
-type SlashCommandChannelType =
-    | 'guild-category'
-    | 'guild-news-thread'
-    | 'guild-news'
-    | 'guild-private-thread'
-    | 'guild-public-thread'
-    | 'guild-stage-voice'
-    | 'guild-text'
-    | 'guild-voice';
 
 /** A command that can be run in a client */
 export default abstract class Command {
     /** Client that this command is for */
-    public readonly client!: CommandoClient;
+    declare public readonly client: CommandoClient;
     /** Name of this command */
     public name: string;
     /** Aliases for this command */
@@ -280,7 +234,7 @@ export default abstract class Command {
     /** ID of the group the command belongs to */
     public groupId: string;
     /** The group the command belongs to, assigned upon registration */
-    public group: CommandGroup | null;
+    declare public group: CommandGroup;
     /** Name of the command within the group */
     public memberName: string;
     /** Short description of the command */
@@ -334,26 +288,25 @@ export default abstract class Command {
      */
     public replacing: string | null;
     /** Whether this command will be registered in the test guild only or not */
-    public test: boolean;
+    public testEnv: boolean;
     /** The data for the slash command */
-    public slash: SlashCommandInfo | boolean;
+    public slashInfo?: ApplicationCommandData | SlashCommandInfo;
     /** Whether the command is enabled globally */
     protected _globalEnabled: boolean;
-    /** The slash command data to send to the API */
-    protected _slashToAPI: RestAPIApplicationCommand | null;
     /** Current throttle objects for the command, mapped by user ID */
     protected _throttles: Map<string, Throttle>;
 
     /**
      * @param client - The client the command is for
      * @param info - The command information
+     * @param slashInfo - The slash command information
      */
-    public constructor(client: CommandoClient, info: CommandInfo) {
+    public constructor(client: CommandoClient, info: CommandInfo, slashInfo?: ApplicationCommandData | SlashCommandInfo) {
         Command.validateInfo(client, info);
+        if (slashInfo) Command.validateSlashInfo(info, slashInfo);
 
         Object.defineProperty(this, 'client', { value: client });
 
-        this.client;
         this.name = info.name;
         this.aliases = info.aliases ?? [];
         if (info.autoAliases) {
@@ -364,7 +317,6 @@ export default abstract class Command {
         }
 
         this.groupId = info.group;
-        this.group = null;
         this.memberName = info.memberName ?? this.name;
         this.description = info.description;
         this.format = info.format ?? null;
@@ -400,10 +352,9 @@ export default abstract class Command {
         this.unknown = !!info.unknown;
         this.deprecated = !!info.deprecated;
         this.replacing = info.replacing ?? null;
-        this.test = !!info.test;
-        this.slash = info.slash ?? false;
+        this.testEnv = !!info.testEnv;
+        this.slashInfo = slashInfo;
         this._globalEnabled = true;
-        this._slashToAPI = this.slash ? Command.parseSlash(JSON.parse(JSON.stringify(this.slash))) : null;
         this._throttles = new Map();
     }
 
@@ -477,7 +428,7 @@ export default abstract class Command {
      */
     public onBlock(
         instances: CommandInstances, reason: CommandBlockReason, data: CommandBlockData = {}
-    ): Promise<APIMessage | Message | null> {
+    ): Promise<Message | null> {
         const { name } = this;
         const { message, interaction } = instances;
         const { missing, remaining } = data;
@@ -534,13 +485,12 @@ export default abstract class Command {
      * @param result - Result from obtaining the arguments from the collector
      * (if applicable - see {@link Command#run})
      */
-    public onError(
+    public async onError(
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         err: Error, instances: CommandInstances, args: Record<string, unknown> | string[] | string,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         fromPattern?: boolean, result?: ArgumentCollectorResult | null
     ): Promise<Message | Message[] | null> {
-        // @ts-expect-error: null not assignable to return type
         return null;
     }
 
@@ -594,11 +544,9 @@ export default abstract class Command {
     public isEnabledIn(guild: CommandoGuild | GuildResolvable | null, bypassGroup?: boolean): boolean {
         const { client, group } = this;
         if (this.guarded) return true;
-        // @ts-expect-error: _globalEnabled should not be used outside of CommandGroup
-        if (!guild) return group!._globalEnabled && this._globalEnabled;
-        // @ts-expect-error: CommandoGuild is not assignable to Guild
+        if (!guild) return group.isEnabledIn(null) && this._globalEnabled;
         const commandoGuild = client.guilds.resolve(guild)!;
-        return (bypassGroup || commandoGuild.isGroupEnabled(group!)) && commandoGuild.isCommandEnabled(this);
+        return (bypassGroup || commandoGuild.isGroupEnabled(group)) && commandoGuild.isCommandEnabled(this);
     }
 
     /**
@@ -631,7 +579,7 @@ export default abstract class Command {
         const { client, groupId, memberName } = this;
         const { registry } = client;
 
-        let cmdPath: string;
+        let cmdPath = '';
         let cached: NodeModule | undefined;
         let newCmd: this;
         try {
@@ -640,7 +588,6 @@ export default abstract class Command {
             delete require.cache[cmdPath];
             newCmd = require(cmdPath);
         } catch (err) {
-            // @ts-expect-error: cmdPath is actually declared
             if (cached) require.cache[cmdPath] = cached;
             try {
                 cmdPath = path.join(__dirname, groupId, `${memberName}.js`);
@@ -648,7 +595,6 @@ export default abstract class Command {
                 delete require.cache[cmdPath];
                 newCmd = require(cmdPath);
             } catch (err2) {
-                // @ts-expect-error: cmdPath is actually declared
                 if (cached) require.cache[cmdPath] = cached;
                 if ((err2 as Error).message.includes('Cannot find module')) {
                     throw err;
@@ -776,82 +722,185 @@ export default abstract class Command {
         if (!!info.deprecated && info.replacing !== info.replacing!.toLowerCase()) {
             throw new TypeError('Command replacing must be lowercase.');
         }
-        if ('slash' in info && (typeof info.slash !== 'object' && typeof info.slash !== 'boolean')) {
-            throw new TypeError('Command slash must be object or boolean.');
-        }
-        if (info.slash === true) {
-            info.slash = {
-                name: info.name,
-                description: info.description,
-            };
-        }
-        if (typeof info.slash === 'object') {
-            if (Object.keys(info.slash).length === 0) throw new TypeError('Command slash must not be an empty object.');
-            for (const prop in info) {
-                if (['slash', 'test'].includes(prop)) continue;
-                // @ts-expect-error: no string index
-                if (typeof info.slash[prop] !== 'undefined' && info.slash[prop] !== null) continue;
-                // @ts-expect-error: no string index
-                info.slash[prop] = info[prop];
-            }
-            if ('name' in info.slash && typeof info.slash.name === 'string') {
-                if (info.slash.name !== info.slash.name.toLowerCase()) {
-                    throw new TypeError('Command slash name must be lowercase.');
-                }
-                if (info.slash.name.replace(/ +/g, '') !== info.slash.name) {
-                    throw new TypeError('Command slash name must not include spaces.');
-                }
-            }
-            if ('description' in info.slash) {
-                if (typeof info.slash.description !== 'string') {
-                    throw new TypeError('Command slash description must be a string.');
-                }
-                if (info.slash.description.length > 100) {
-                    throw new TypeError('Command slash description length must be at most 100 characters long.');
-                }
-            }
-            if ('options' in info.slash && (
-                !Array.isArray(info.slash.options) || info.slash.options.some(op => typeof op !== 'object')
-            )) throw new TypeError('Command slash options must be an Array of objects.');
-        }
     }
 
     /**
-     * Parses the slash command information, so it's usable by the API
-     * @param info - Info to parse
+     * Validates the slash command information
+     * @param info - Info to validate
+     * @param slashInfo - Slash info to validate
      */
-    protected static parseSlash(info: SlashCommandInfo | SlashCommandOptionInfo[]): RestAPIApplicationCommand {
-        if (!Array.isArray(info) && info.name) {
-            for (const prop in info) {
-                if (['name', 'description', 'options'].includes(prop)) continue;
-                // @ts-expect-error: no string index
-                delete info[prop];
-            }
-            // @ts-expect-error: type is set as string in SlashCommandInfo, but as number in RestAPIApplicationCommand
-            info.type = 1;
+    protected static validateSlashInfo(info: CommandInfo, slashInfo: ApplicationCommandData): void {
+        const { name, defaultMemberPermissions, dmPermission, nameLocalizations, type: cmdType } = slashInfo;
+
+        if (name !== info.name) {
+            throw new RangeError(`Slash command name "${name}" is not the same as message command name "${info.name}".`);
         }
-        (Array.isArray(info) ? info : info.options)?.forEach(option => {
-            // @ts-expect-error: type is set as string in SlashCommandInfo, but as number in RestAPIApplicationCommand
-            if (typeof option.type === 'string') option.type = parseOptionType(option.type);
-            for (const prop in option) {
-                if (prop.toLowerCase() === prop) continue;
-                const toApply = prop.replace(/[A-Z]/g, '_$&').toLowerCase();
-                // @ts-expect-error: no string index
-                option[toApply] = option[prop];
-                // @ts-expect-error: no string index
-                delete option[prop];
-                if (toApply === 'channel_types') {
-                    // @ts-expect-error: no string index
-                    for (let i = 0; i < option[toApply].length; i++) {
-                        // @ts-expect-error: no string index
-                        option[toApply][i] = parseChannelType(option[toApply][i]);
-                    }
+
+        if (cmdType && cmdType !== ApplicationCommandType.ChatInput) {
+            const ctxMenu = new ContextMenuCommandBuilder()
+                .setType(cmdType)
+                .setName(name)
+                .setNameLocalizations(nameLocalizations ?? null)
+                .setDMPermission(dmPermission)
+                .setDefaultMemberPermissions(
+                    PermissionsBitField.resolve(defaultMemberPermissions ?? undefined)
+                );
+
+            // Validate data
+            ctxMenu.toJSON();
+            return;
+        }
+
+        const { description, descriptionLocalizations, options } = slashInfo;
+
+        const slash = new SlashCommandBuilder()
+            .setName(name)
+            .setNameLocalizations(nameLocalizations ?? null)
+            .setDescription(description)
+            .setDescriptionLocalizations(descriptionLocalizations ?? null)
+            .setDMPermission(dmPermission)
+            .setDefaultMemberPermissions(
+                PermissionsBitField.resolve(defaultMemberPermissions ?? undefined)
+            );
+
+        if (options) {
+            addBasicOptions(slash, options);
+
+            for (const option of options) {
+                const { type: optionType } = option;
+
+                if (optionType === ApplicationCommandOptionType.Subcommand) {
+                    slash.addSubcommand(builder => {
+                        createBaseSlashOption(option)(builder);
+                        if (option.options) addBasicOptions(builder, option.options);
+                        return builder;
+                    });
+                }
+                if (optionType === ApplicationCommandOptionType.SubcommandGroup) {
+                    slash.addSubcommandGroup(builder => {
+                        createBaseSlashOption(option)(builder);
+                        if (!option.options) return builder;
+                        for (const subCommand of option.options) {
+                            builder.addSubcommand(subBuilder => {
+                                createBaseSlashOption(subCommand)(subBuilder);
+                                if (subCommand.options) addBasicOptions(subBuilder, subCommand.options);
+                                return subBuilder;
+                            });
+                        }
+                        return builder;
+                    });
                 }
             }
-            if (option.options) this.parseSlash(option.options);
-        });
-        return info as RestAPIApplicationCommand;
+        }
+
+        // Validate data
+        slash.toJSON();
     }
+}
+
+type SlashCommandOptionBase = ApplicationCommandOptionBase | SharedNameAndDescription;
+
+function createBaseSlashOption(option: ApplicationCommandOptionData): <T extends SlashCommandOptionBase>(builder: T) => T {
+    return <T extends SlashCommandOptionBase>(builder: T): T => {
+        builder.setName(option.name)
+            .setNameLocalizations(option.nameLocalizations ?? null)
+            .setDescription(option.description)
+            .setDescriptionLocalizations(option.descriptionLocalizations ?? null);
+        if (
+            option.type !== ApplicationCommandOptionType.Subcommand
+            && option.type !== ApplicationCommandOptionType.SubcommandGroup
+            && builder instanceof ApplicationCommandOptionBase
+        ) builder.setRequired(option.required ?? false);
+        return builder;
+    };
+}
+
+function addBasicOptions<T extends SharedSlashCommandOptions<boolean>>(
+    builder: T, options: ApplicationCommandOptionData[]
+): T {
+    for (const option of options) {
+        const { type: optionType } = option;
+
+        if (optionType === ApplicationCommandOptionType.Attachment) {
+            builder.addAttachmentOption(createBaseSlashOption(option));
+        }
+        if (optionType === ApplicationCommandOptionType.Boolean) {
+            builder.addBooleanOption(createBaseSlashOption(option));
+        }
+        if (optionType === ApplicationCommandOptionType.Channel) {
+            builder.addChannelOption(optBuilder => {
+                createBaseSlashOption(option)(optBuilder);
+                const channelTypes = option.channelTypes ?? option.channel_types;
+                if (channelTypes) optBuilder.addChannelTypes(...channelTypes.map(t => t.valueOf()));
+                return optBuilder;
+            });
+        }
+        if (optionType === ApplicationCommandOptionType.Integer) {
+            builder.addIntegerOption(optBuilder => {
+                createBaseSlashOption(option)(optBuilder)
+                    .setAutocomplete(option.autocomplete ?? false);
+
+                if (!option.autocomplete && option.choices) {
+                    optBuilder.addChoices(...option.choices as Array<APIApplicationCommandOptionChoice<number>>);
+                }
+
+                if ('minValue' in option) {
+                    const maxValue = option.maxValue ?? option.max_value;
+                    if (!Util.isNullish(maxValue)) optBuilder.setMaxValue(maxValue);
+                    const minValue = option.minValue ?? option.min_value;
+                    if (!Util.isNullish(minValue)) optBuilder.setMinValue(minValue);
+                }
+                return optBuilder;
+            });
+        }
+        if (optionType === ApplicationCommandOptionType.Mentionable) {
+            builder.addMentionableOption(createBaseSlashOption(option));
+        }
+        if (optionType === ApplicationCommandOptionType.Number) {
+            builder.addNumberOption(optBuilder => {
+                createBaseSlashOption(option)(optBuilder)
+                    .setAutocomplete(option.autocomplete ?? false);
+
+                if (!option.autocomplete && option.choices) {
+                    optBuilder.addChoices(...option.choices as Array<APIApplicationCommandOptionChoice<number>>);
+                }
+
+                if ('minValue' in option) {
+                    const maxValue = option.maxValue ?? option.max_value;
+                    if (!Util.isNullish(maxValue)) optBuilder.setMaxValue(maxValue);
+                    const minValue = option.minValue ?? option.min_value;
+                    if (!Util.isNullish(minValue)) optBuilder.setMinValue(minValue);
+                }
+                return optBuilder;
+            });
+        }
+        if (optionType === ApplicationCommandOptionType.Role) {
+            builder.addRoleOption(createBaseSlashOption(option));
+        }
+        if (optionType === ApplicationCommandOptionType.String) {
+            builder.addStringOption(optBuilder => {
+                createBaseSlashOption(option)(optBuilder)
+                    .setAutocomplete(option.autocomplete ?? false);
+
+                if (!option.autocomplete && option.choices) {
+                    optBuilder.addChoices(...option.choices as Array<APIApplicationCommandOptionChoice<string>>);
+                }
+
+                if ('minLength' in option) {
+                    const maxLength = option.maxLength ?? option.max_length;
+                    if (!Util.isNullish(maxLength)) optBuilder.setMaxLength(maxLength);
+                    const minLength = option.minLength ?? option.min_length;
+                    if (!Util.isNullish(minLength)) optBuilder.setMinLength(minLength);
+                }
+                return optBuilder;
+            });
+        }
+        if (optionType === ApplicationCommandOptionType.User) {
+            builder.addUserOption(createBaseSlashOption(option));
+        }
+    }
+
+    return builder;
 }
 
 /**
@@ -868,55 +917,17 @@ function embed(name: string, value?: string): EmbedBuilder {
     return embed;
 }
 
-/**
- * Parses the type of the slash command option type into a valid value for the API.
- * @param type - The type to parse.
- */
-function parseOptionType(type: SlashCommandOptionType): number {
-    switch (type) {
-        case 'subcommand': return 1;
-        case 'subcommand-group': return 2;
-        case 'string': return 3;
-        case 'integer': return 4;
-        case 'boolean': return 5;
-        case 'user': return 6;
-        case 'channel': return 7;
-        case 'role': return 8;
-        case 'mentionable': return 9;
-        case 'number': return 10;
-        default: throw new TypeError('Unable to parse SlashCommandOptionType.');
-    }
-}
-
-/**
- * Parses the type of the slash command channel type into a valid value for the API.
- * @param type - The type to parse.
- */
-function parseChannelType(type: SlashCommandChannelType): number {
-    switch (type) {
-        case 'guild-text': return 0;
-        case 'guild-voice': return 2;
-        case 'guild-category': return 4;
-        case 'guild-news': return 5;
-        case 'guild-news-thread': return 10;
-        case 'guild-public-thread': return 11;
-        case 'guild-private-thread': return 12;
-        case 'guild-stage-voice': return 13;
-        default: throw new TypeError('Unable to parse SlashCommandChannelType.');
-    }
-}
-
 async function replyAll(
     { message, interaction }: CommandInstances, options: EmbedBuilder | MessageOptions | string
-): Promise<APIMessage | Message | null> {
+): Promise<Message | null> {
     if (options instanceof EmbedBuilder) options = { embeds: [options] };
     if (typeof options === 'string') options = { content: options };
     if (interaction) {
         if (interaction.deferred || interaction.replied) {
             return await interaction.editReply(options).catch(() => null);
         }
-        // @ts-expect-error: MessageOptions "not compatible" (tested and works regardless)
-        return await interaction.reply(options).catch(() => null);
+        await interaction.reply(options as InteractionReplyOptions).catch(() => null);
+        return null;
     }
     if (message) {
         return await message.reply({ ...options, ...Util.noReplyPingInDMs(message) }).catch(() => null);

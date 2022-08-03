@@ -58,5 +58,5 @@ export default class CommandoGuild extends Guild {
      * @param command - A command + arg string
      * @param user - User to use for the mention command format
      */
-    commandUsage(command: string, user?: User): string;
+    commandUsage(command: string, user?: User | null): string;
 }
