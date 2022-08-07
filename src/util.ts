@@ -1,5 +1,7 @@
-import { ChannelType, Message, MessageOptions, PermissionsString } from 'discord.js';
+import { Collection, Message, MessageOptions, PermissionsString } from 'discord.js';
 import { capitalize } from 'lodash';
+import { CommandInstances } from './commands/base';
+import CommandoInteraction from './extensions/interaction';
 import CommandoMessage from './extensions/message';
 
 /** Options for splitting a message */
@@ -101,7 +103,7 @@ export default class Util extends null {
      * @returns A {@link MessageOptions} object.
      */
     static noReplyPingInDMs(msg: CommandoMessage | Message): MessageOptions {
-        const options: MessageOptions = msg.channel.type === ChannelType.DM ? {
+        const options: MessageOptions = msg.channel.isDMBased() ? {
             allowedMentions: { repliedUser: false },
         } : {};
 
@@ -146,12 +148,13 @@ export default class Util extends null {
         let splitText = [text];
         if (Array.isArray(char)) {
             while (char.length > 0 && splitText.some(elem => elem.length > maxLength)) {
-                const currentChar = char.shift()!;
+                const currentChar = char.shift();
                 if (currentChar instanceof RegExp) {
-                    splitText = Util.removeNullishItems(
+                    splitText = Util.filterNullishItems(
                         splitText.flatMap(chunk => chunk.match(currentChar))
                     );
-                } else {
+                }
+                if (typeof currentChar === 'string') {
                     splitText = splitText.flatMap(chunk => chunk.split(currentChar));
                 }
             }
@@ -183,22 +186,37 @@ export default class Util extends null {
     static mutateObjectInstance<T extends object>(obj: object, newObj: T): T {
         Object.assign(obj, newObj);
         const { prototype } = newObj.constructor;
-        for (const prop of Object.getOwnPropertyNames(prototype)) {
-            if (prop === 'constructor') continue;
-            const propData = Object.getOwnPropertyDescriptor(prototype, prop)!;
+        const properties = Object.getOwnPropertyNames(prototype)
+            .filter(prop => prop !== 'constructor');
+
+        for (const prop of properties) {
+            const propData = Object.getOwnPropertyDescriptor(prototype, prop);
+            if (!propData) continue;
             Object.defineProperty(obj, prop, propData);
         }
         Object.setPrototypeOf(obj, prototype);
+
         return obj as T;
     }
 
     /**
-     * Removes all nullish (`undefined` | `null`) items from an array. Mostly useful for TS.
-     * @param array - Any array that could contain empty items.
+     * **For arrays.**
+     * Filters all nullish (`undefined` | `null`) items from an array. Mostly useful for TS.
+     * @param array - Any array that could contain nullish items.
      * @returns An array with all non-nullish items.
      */
-    static removeNullishItems<T>(array: Array<T | null | undefined>): T[] {
+    static filterNullishItems<T>(array: Array<T | null | undefined>): T[] {
         return array.filter((item): item is T => !Util.isNullish(item));
+    }
+
+    /**
+     * **For {@link Collection Collections}.**
+     * Filters all nullish (`undefined` | `null`) items from a collection. Mostly useful for TS.
+     * @param collection - Any collection that could contain nullish values.
+     * @returns An array with all non-nullish values.
+     */
+    static filterNullishValues<K, V>(collection: Collection<K, V | null | undefined>): Collection<K, V> {
+        return collection.filter((item): item is V => !Util.isNullish(item));
     }
 
     /**
@@ -208,6 +226,23 @@ export default class Util extends null {
      */
     static isNullish(val: unknown): val is null | undefined {
         return typeof val === 'undefined' || val === null;
+    }
+
+    /**
+     * Get the current instance of a command. Useful if you need to get the same properties from both instances.
+     * @param instances - The instances object.
+     * @returns The instance of the command.
+     */
+    static getInstanceFrom(instances: CommandInstances): CommandoInteraction | CommandoMessage {
+        if ('message' in instances) return instances.message;
+        return instances.interaction;
+    }
+
+    static equals<T extends number | string>(value: number | string, ...values: T[]): value is T {
+        for (const value of values) {
+            if (value === value) return true;
+        }
+        return false;
     }
 
     /**

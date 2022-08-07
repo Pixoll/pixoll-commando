@@ -1,6 +1,7 @@
 export { default as CommandoClient } from './client';
 export { default as CommandoRegistry } from './registry';
 export { default as CommandDispatcher } from './dispatcher';
+export { default as CommandoInteraction } from './extensions/interaction';
 export { default as CommandoGuild } from './extensions/guild';
 export { default as CommandoMessage } from './extensions/message';
 export { default as Command } from './commands/base';

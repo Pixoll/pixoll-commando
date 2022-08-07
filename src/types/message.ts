@@ -4,17 +4,22 @@ import CommandoMessage from '../extensions/message';
 import ArgumentType from './base';
 
 export default class MessageArgumentType extends ArgumentType {
+    protected msgRegex: RegExp;
+
     public constructor(client: CommandoClient) {
         super(client, 'message');
+        // Match id or message URL
+        this.msgRegex = /^(\d+)$|discord\.com\/channels\/\d+\/\d+\/(\d+)$/;
     }
 
-    public async validate(val: string, msg: CommandoMessage): Promise<boolean> {
-        if (!/^\d+$/.test(val)) return false;
-        const message = await msg.channel.messages.fetch(val).catch(() => null);
+    public async validate(val: string, msg: CommandoMessage): Promise<boolean | string> {
+        const matches = val.match(this.msgRegex);
+        if (!matches) return 'Please enter a valid message id or URL.';
+        const message = await msg.channel.messages.fetch(matches[1] ?? matches[2]).catch(() => null);
         return !!message;
     }
 
     public parse(val: string, msg: CommandoMessage): Message | null {
-        return msg.channel.messages.cache.get(val) ?? null;
+        return msg.channel.messages.resolve(val);
     }
 }

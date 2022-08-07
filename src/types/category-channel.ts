@@ -14,7 +14,7 @@ export default class CategoryChannelArgumentType extends ArgumentType {
         const { client, guild } = msg;
         const { oneOf } = arg;
 
-        const matches = val.match(/^(?:<#)?([0-9]+)>?$/);
+        const matches = val.match(/^(?:<#)?(\d+)>?$/);
         if (matches) {
             try {
                 const channel = client.channels.resolve(matches[1]);
@@ -30,15 +30,17 @@ export default class CategoryChannelArgumentType extends ArgumentType {
 
         const search = val.toLowerCase();
         let channels = guild.channels.cache.filter(channelFilterInexact(search));
-        if (channels.size === 0) return false;
+        const first = channels.first();
+        if (!first) return false;
         if (channels.size === 1) {
-            if (!oneOf?.includes(channels.first()!.id)) return false;
+            if (arg.oneOf && !arg.oneOf.includes(first.id)) return false;
             return true;
         }
 
         const exactChannels = channels.filter(channelFilterExact(search));
-        if (exactChannels.size === 1) {
-            if (!oneOf?.includes(exactChannels.first()!.id)) return false;
+        const exact = exactChannels.first();
+        if (exactChannels.size === 1 && exact) {
+            if (arg.oneOf && !arg.oneOf.includes(exact.id)) return false;
             return true;
         }
         if (exactChannels.size > 0) channels = exactChannels;
@@ -49,29 +51,29 @@ export default class CategoryChannelArgumentType extends ArgumentType {
     }
 
     public parse(val: string, msg: CommandoMessage): CategoryChannel | null {
-        const matches = val.match(/^(?:<#)?([0-9]+)>?$/);
-        if (matches) return msg.client.channels.resolve(matches[1]) as CategoryChannel ?? null;
+        const matches = val.match(/^(?:<#)?(\d+)>?$/);
+        if (matches) return msg.client.channels.resolve(matches[1]) as CategoryChannel;
 
         if (!msg.guild) return null;
 
         const search = val.toLowerCase();
         const channels = msg.guild.channels.cache.filter(channelFilterInexact(search));
         if (channels.size === 0) return null;
-        if (channels.size === 1) return channels.first() as CategoryChannel;
+        if (channels.size === 1) return channels.first() ?? null;
 
         const exactChannels = channels.filter(channelFilterExact(search));
-        if (exactChannels.size === 1) return exactChannels.first() as CategoryChannel;
+        if (exactChannels.size === 1) return exactChannels.first() ?? null;
 
         return null;
     }
 }
 
 function channelFilterExact(search: string) {
-    return (chan: GuildBasedChannel): boolean =>
+    return (chan: GuildBasedChannel): chan is CategoryChannel =>
         chan.type === ChannelType.GuildCategory && chan.name.toLowerCase() === search;
 }
 
 function channelFilterInexact(search: string) {
-    return (chan: GuildBasedChannel): boolean =>
+    return (chan: GuildBasedChannel): chan is CategoryChannel =>
         chan.type === ChannelType.GuildCategory && chan.name.toLowerCase().includes(search);
 }

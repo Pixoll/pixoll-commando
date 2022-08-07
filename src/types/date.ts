@@ -1,4 +1,4 @@
-import ms from 'ms';
+import { ms } from 'better-ms';
 import CommandoClient from '../client';
 import Argument from '../commands/argument';
 import CommandoMessage from '../extensions/message';
@@ -6,12 +6,12 @@ import Util from '../util';
 import ArgumentType from './base';
 
 export default class DateArgumentType extends ArgumentType {
-    protected regex: RegExp;
+    protected dateRegex: RegExp;
 
     public constructor(client: CommandoClient) {
         super(client, 'date');
 
-        this.regex = new RegExp(
+        this.dateRegex = new RegExp(
             '^(?<date>[1-3]?\\d[\\/\\-\\.,][01]?\\d(?:[\\/\\-\\.,]\\d{2})?(?:\\d{2})?)?\\s*' // date
             + '(?<time>[0-2]?\\d(?::[0-5]?\\d)?)?\\s*' // time/hour
             + '(?<ampm>[aApP]\\.?[mM]\\.?)?\\s*' // am pm
@@ -20,7 +20,7 @@ export default class DateArgumentType extends ArgumentType {
     }
 
     public validate(val: string, _: CommandoMessage, arg: Argument): boolean | string {
-        const date = this._parseDate(val.match(this.regex), val);
+        const date = this._parseDate(val.match(this.dateRegex), val);
         if (!date) {
             return 'Please enter a valid date format. Use the `help` command for more information.';
         }
@@ -37,8 +37,8 @@ export default class DateArgumentType extends ArgumentType {
         return true;
     }
 
-    public parse(val: string): Date {
-        return this._parseDate(val.match(this.regex), val)!;
+    public parse(val: string): Date | null {
+        return this._parseDate(val.match(this.dateRegex), val);
     }
 
     /**
@@ -52,37 +52,41 @@ export default class DateArgumentType extends ArgumentType {
 
         const { date: matchDate, time, ampm: matchAmPm, tz } = matches.groups;
         const defaultDate = new Date();
+        const tzOffset = defaultDate.getTimezoneOffset() / 60;
+        const offset = tzOffset + parseInt(tz ?? 0);
 
-        const dateNumbers = matchDate?.split(/[/\-.,]/g).map((s, i) => {
-            const parsed = parseInt(s);
-            if (i === 0) return parsed;
-            if (i === 1) return parsed - 1;
-            return (s.length === 2 ? parsed + 2000 : parsed);
-        }) || [defaultDate.getUTCDate(), defaultDate.getUTCMonth(), defaultDate.getUTCFullYear()];
+        const hourFormat = matchAmPm?.toLowerCase().replace(/\./g, '') as 'am' | 'pm' | undefined;
+        const formatter = hourFormat ? (hourFormat === 'am' ? 0 : 12) : 0;
+
+        const defaultYear = defaultDate.getUTCFullYear();
+
+        const dateNumbers = matchDate?.split(/[/\-.,]/g)
+            .map((n, i) => {
+                const parsed = parseInt(n);
+                if (i === 0) return parsed;
+                if (i === 1) return parsed - 1;
+                return (n.length === 2 ? parsed + 2000 : parsed);
+            })
+            || [defaultDate.getUTCDate(), defaultDate.getUTCMonth(), defaultYear];
 
         if (dateNumbers.length === 2) {
-            dateNumbers.push(defaultDate.getUTCFullYear());
+            dateNumbers.push(defaultYear);
         }
         dateNumbers.reverse();
 
-        const timeNumbers = time?.split(':').map((s, i) => {
-            const parsed = parseInt(s);
-            if (i !== 0) return parsed;
+        const timeNumbers = time?.split(':')
+            .map((n, i) => {
+                const parsed = parseInt(n);
+                if (i !== 0) return parsed;
+                if (formatter === 12 && parsed === 12) return parsed - offset;
+                return parsed + formatter - offset;
+            })
+            || [defaultDate.getUTCHours(), defaultDate.getUTCMinutes()];
 
-            const tzOffset = new Date().getTimezoneOffset() / 60;
-            const offset = tzOffset + parseInt(tz ?? 0);
+        const arr = dateNumbers.concat(timeNumbers)
+            .filter(n => !Util.isNullish(n)) as [number, number, number, number, number];
 
-            const ampm = matchAmPm?.toLowerCase().replace(/\./g, '');
-            const formatter = ampm ? (ampm === 'am' ? 0 : 12) : 0;
-
-            if (formatter === 12 && parsed === 12) {
-                return parsed - offset;
-            }
-            return parsed + formatter - offset;
-        }) || [defaultDate.getUTCHours(), defaultDate.getUTCMinutes()];
-
-        const arr = [...dateNumbers, ...timeNumbers].filter(n => !Util.isNullish(n));
-        const date = new Date(...(arr as [number, number, number, number, number]));
+        const date = new Date(...arr);
         return date;
     }
 }

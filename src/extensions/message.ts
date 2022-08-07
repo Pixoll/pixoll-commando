@@ -6,7 +6,6 @@ import {
     TextBasedChannel,
     MessageEditOptions,
     escapeMarkdown,
-    ChannelType,
     Colors,
 } from 'discord.js';
 import { oneLine, stripIndent } from 'common-tags';
@@ -18,9 +17,16 @@ import CommandoClient from '../client';
 import CommandoGuild from './guild';
 
 /** Type of the response */
-type ResponseType = 'code' | 'direct' | 'plain' | 'reply';
+type ResponseType =
+    | 'code'
+    | 'direct'
+    | 'plain'
+    | 'reply';
 
-type StringResolvable = MessageOptions | string[] | string;
+type StringResolvable =
+    | MessageOptions
+    | string[]
+    | string;
 
 interface ResponseOptions {
     /** Type of the response */
@@ -35,7 +41,11 @@ interface ResponseOptions {
     fromEdit?: boolean;
 }
 
-export type CommandoMessageResponse = CommandoMessage | Message | Message[] | null;
+export type CommandoMessageResponse =
+    | CommandoMessage
+    | Message
+    | Message[]
+    | null;
 
 /**
  * An extension of the base Discord.js Message class to add command-related functionality.
@@ -105,7 +115,8 @@ export default class CommandoMessage extends Message {
     public usage(argString?: string, prefix?: string | null, user: User | null = this.client.user): string {
         const { guild, client, command } = this;
         prefix ??= guild?.prefix ?? client.prefix;
-        return command!.usage(argString, prefix, user);
+        if (!command) throw new TypeError('Command cannot be null or undefined');
+        return command.usage(argString, prefix, user);
     }
 
     /**
@@ -127,14 +138,16 @@ export default class CommandoMessage extends Message {
      */
     public parseArgs(): string[] | string {
         const { command, argString } = this;
-        const { argsType, argsSingleQuotes, argsCount } = command!;
+        if (!command) throw new TypeError('Command cannot be null or undefined');
+
+        const { argsType, argsSingleQuotes, argsCount } = command;
         switch (argsType) {
             case 'single':
-                return argString!.trim().replace(
+                return (argString ?? '').trim().replace(
                     argsSingleQuotes ? /^("|')([^]*)\1$/g : /^(")([^]*)"$/g, '$2'
                 );
             case 'multiple':
-                return CommandoMessage.parseArgs(argString!, argsCount, argsSingleQuotes);
+                return CommandoMessage.parseArgs(argString ?? '', argsCount, argsSingleQuotes);
             default:
                 throw new RangeError(`Unknown argsType "${argsType}".`);
         }
@@ -148,16 +161,14 @@ export default class CommandoMessage extends Message {
         const { groupId, memberName } = command;
         const { user: clientUser } = client;
 
-        if (guild && channel.type !== ChannelType.DM) {
+        if (guild && !channel.isDMBased()) {
             const { members } = guild;
 
             // Obtain the member for the ClientUser if it doesn't already exist
-            if (!members.cache.has(clientUser.id)) {
-                await members.fetch(clientUser.id);
-            }
+            const me = members.me ?? await members.fetch(clientUser.id);
 
             // Checks if the client has permission to send messages
-            const clientPerms = members.me!.permissionsIn(channel).serialize();
+            const clientPerms = me.permissionsIn(channel).serialize();
             if (clientPerms && clientPerms.ViewChannel && !clientPerms.SendMessages) {
                 return await this.direct(stripIndent`
                     It seems like I cannot **Send Messages** in this channel: ${channel.toString()}
@@ -186,7 +197,7 @@ export default class CommandoMessage extends Message {
 
         // Ensure the user has permission to use the command
         const hasPermission = command.hasPermission({ message: this });
-        if (channel.type !== ChannelType.DM && hasPermission !== true) {
+        if (!channel.isDMBased() && hasPermission !== true) {
             if (typeof hasPermission === 'string') {
                 client.emit('commandBlock', { message: this }, hasPermission);
                 return await command.onBlock({ message: this }, hasPermission);
@@ -197,7 +208,7 @@ export default class CommandoMessage extends Message {
         }
 
         // Ensure the client user has the required permissions
-        if (channel.type !== ChannelType.DM && command.clientPermissions) {
+        if (!channel.isDMBased() && command.clientPermissions) {
             const missing = channel.permissionsFor(clientUser)?.missing(command.clientPermissions) || [];
             if (missing.length > 0) {
                 const data = { missing };
@@ -209,8 +220,8 @@ export default class CommandoMessage extends Message {
         // Throttle the command
         // @ts-expect-error: method throttle is protected 
         const throttle = command.throttle(author.id);
-        if (throttle && throttle.usages + 1 > command.throttling!.usages) {
-            const remaining = (throttle.start + (command.throttling!.duration * 1000) - Date.now()) / 1000;
+        if (throttle && command.throttling && throttle.usages + 1 > command.throttling.usages) {
+            const remaining = (throttle.start + (command.throttling.duration * 1000) - Date.now()) / 1000;
             const data = { throttle, remaining };
             client.emit('commandBlock', { message: this }, 'throttling', data);
             return await command.onBlock({ message: this }, 'throttling', data);
@@ -233,7 +244,7 @@ export default class CommandoMessage extends Message {
         if (!args && command.argsCollector) {
             const collArgs = command.argsCollector.args;
             const count = collArgs[collArgs.length - 1].infinite ? Infinity : collArgs.length;
-            const provided = CommandoMessage.parseArgs(argString!.trim(), count, command.argsSingleQuotes);
+            const provided = CommandoMessage.parseArgs((argString ?? '').trim(), count, command.argsSingleQuotes);
 
             collResult = await command.argsCollector.obtain(this, provided);
             if (collResult.cancelled) {
@@ -294,9 +305,9 @@ export default class CommandoMessage extends Message {
         const { responses, channel, guild, client, author } = this;
         const shouldEdit = responses && !fromEdit;
 
-        if (type === 'reply' && channel.type === ChannelType.DM) type = 'plain';
+        if (type === 'reply' && channel.isDMBased()) type = 'plain';
         if (type !== 'direct') {
-            if (guild && channel.type !== ChannelType.DM && !channel.permissionsFor(client.user)?.has('SendMessages')) {
+            if (guild && !channel.isDMBased() && !channel.permissionsFor(client.user)?.has('SendMessages')) {
                 type = 'direct';
             }
         }
@@ -358,7 +369,6 @@ export default class CommandoMessage extends Message {
             return response[0].edit(msgOptions as MessageEditOptions);
         }
         return response.edit(msgOptions as MessageEditOptions);
-
     }
 
     /**
@@ -369,11 +379,12 @@ export default class CommandoMessage extends Message {
     protected editCurrentResponse(id: string, options?: ResponseOptions): Promise<CommandoMessageResponse> {
         const { responses, responsePositions } = this;
         if (typeof responses.get(id) === 'undefined') responses.set(id, []);
-        if (typeof responsePositions.get(id) === 'undefined') responsePositions.set(id, -1);
-        let pos = this.responsePositions.get(id)!;
+        const responsePos = responsePositions.get(id);
+        if (typeof responsePos === 'undefined') responsePositions.set(id, -1);
+        let pos = responsePos ?? -1;
         this.responsePositions.set(id, ++pos);
-        const response = this.responses.get(id)!;
-        return this.editResponse(response[pos], options);
+        const response = this.responses.get(id);
+        return this.editResponse(response?.[pos], options);
     }
 
     /**
@@ -474,13 +485,17 @@ export default class CommandoMessage extends Message {
 
         if (Array.isArray(responses)) {
             for (const response of responses) {
-                const channel = (Array.isArray(response) ? response[0] : response!).channel;
+                const firstResponse = Array.isArray(response) ? response[0] : response;
+                if (!firstResponse) continue;
+                const { channel } = firstResponse;
                 const id = channelIdOrDM(channel);
-                if (!_responses.get(id)) {
-                    _responses.set(id, []);
+                let res = _responses.get(id);
+                if (!res) {
+                    res = [];
+                    _responses.set(id, res);
                     responsePositions.set(id, -1);
                 }
-                _responses.get(id)!.push(response);
+                res.push(response);
             }
             return;
         }
@@ -494,7 +509,9 @@ export default class CommandoMessage extends Message {
     protected deleteRemainingResponses(): void {
         const { responses: _responses, responsePositions } = this;
         for (const [id, responses] of _responses) {
-            for (let i = responsePositions.get(id)! + 1; i < responses.length; i++) {
+            const pos = responsePositions.get(id);
+            if (!pos) continue;
+            for (let i = pos + 1; i < responses.length; i++) {
                 const response = responses[i];
                 if (Array.isArray(response)) {
                     for (const resp of response) resp?.delete();
@@ -544,7 +561,7 @@ function removeSmartQuotes(argString: string, allowSingleQuote = true): string {
 }
 
 function channelIdOrDM(channel: TextBasedChannel): string {
-    if (channel.type !== ChannelType.DM) return channel.id;
+    if (channel.isDMBased()) return channel.id;
     return 'DM';
 }
 

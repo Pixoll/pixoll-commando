@@ -39,7 +39,7 @@ export default class CommandDispatcher {
     /** Functions that can block commands from running */
     public inhibitors: Set<Inhibitor>;
     /** Map of {@link RegExp}s that match command messages, mapped by string prefix */
-    protected _commandPatterns: Map<string, RegExp>;
+    protected _commandPatterns: Map<string | undefined, RegExp>;
     /** Old command message results, mapped by original message ID */
     protected _results: Map<string, CommandoMessage>;
     /** Tuples in string form of user ID and channel ID that are currently awaiting messages from a user in a channel */
@@ -126,19 +126,13 @@ export default class CommandDispatcher {
                     break commandResponses;
                 }
 
-                if (!cmdMsg.command) {
+                if (!cmdMsg.command || cmdMsg.command.unknown) {
                     client.emit('unknownCommand', cmdMsg);
                     responses = null;
                     break commandResponses;
                 }
 
                 if (!cmdMsg.command.isEnabledIn(message.guild)) {
-                    if (cmdMsg.command.unknown) {
-                        client.emit('unknownCommand', cmdMsg);
-                        responses = null;
-                        break commandResponses;
-                    }
-
                     const responseEmbed = new EmbedBuilder()
                         .setColor(Colors.Red)
                         .setDescription(`The \`${cmdMsg.command.name}\` command is disabled.`);
@@ -278,14 +272,14 @@ export default class CommandDispatcher {
         const { commandEditableDuration, nonCommandEditable } = client.options;
         const { id } = message;
 
-        if (commandEditableDuration! <= 0) return;
+        if (!commandEditableDuration || commandEditableDuration <= 0) return;
         if (!cmdMsg && !nonCommandEditable) return;
         if (responses !== null && cmdMsg) {
             _results.set(id, cmdMsg);
             if (!oldMessage) {
                 setTimeout(() => {
                     _results.delete(id);
-                }, commandEditableDuration! * 1000);
+                }, commandEditableDuration * 1000);
             }
             return;
         }
@@ -311,9 +305,9 @@ export default class CommandDispatcher {
         }
 
         // Find the command to run with default command handling
-        const prefix = (guild?.prefix || client.prefix)!;
-        if (!_commandPatterns.get(prefix)) this.buildCommandPattern(prefix);
-        let cmdMsg = this.matchDefault(message, _commandPatterns.get(prefix)!, 2);
+        const prefix = guild?.prefix || client.prefix;
+        const pattern = _commandPatterns.get(prefix) ?? this.buildCommandPattern(prefix);
+        let cmdMsg = this.matchDefault(message, pattern, 2);
         if (!cmdMsg && !guild) cmdMsg = this.matchDefault(message, /^([^\s]+)/i, 1, true);
         return cmdMsg;
     }
@@ -360,7 +354,7 @@ export default class CommandDispatcher {
         } else {
             pattern = new RegExp(`(^<@!?${id}>\\s+)([^\\s]+)`, 'i');
         }
-        _commandPatterns.set(prefix!, pattern);
+        _commandPatterns.set(prefix, pattern);
         client.emit('debug', `Built command pattern for prefix "${prefix}": ${pattern}`);
         return pattern;
     }

@@ -52,7 +52,8 @@ export default class CommandGroup {
             client.emit('groupStatusChange', null, this, enabled);
             return;
         }
-        const commandoGuild = client.guilds.resolve(guild)!;
+        const commandoGuild = client.guilds.resolve(guild);
+        if (!commandoGuild) throw new Error(`Couldn't resolve guild ${guild}`);
         commandoGuild.setGroupEnabled(this, enabled);
     }
 
@@ -65,7 +66,8 @@ export default class CommandGroup {
         const { client, _globalEnabled, guarded } = this;
         if (guarded) return true;
         if (!guild) return _globalEnabled;
-        const commandoGuild = client.guilds.resolve(guild)!;
+        const commandoGuild = client.guilds.resolve(guild);
+        if (!commandoGuild) throw new Error(`Couldn't resolve guild ${guild}`);
         return commandoGuild.isGroupEnabled(this);
     }
 

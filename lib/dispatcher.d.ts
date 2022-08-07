@@ -27,7 +27,7 @@ export default class CommandDispatcher {
     /** Functions that can block commands from running */
     inhibitors: Set<Inhibitor>;
     /** Map of {@link RegExp}s that match command messages, mapped by string prefix */
-    protected _commandPatterns: Map<string, RegExp>;
+    protected _commandPatterns: Map<string | undefined, RegExp>;
     /** Old command message results, mapped by original message ID */
     protected _results: Map<string, CommandoMessage>;
     /** Tuples in string form of user ID and channel ID that are currently awaiting messages from a user in a channel */

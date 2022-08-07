@@ -100,7 +100,10 @@ export interface ArgumentInfo {
     wait?: number;
 }
 
-export type ArgumentResponse = CommandoMessage | Message | null;
+export type ArgumentResponse =
+    | CommandoMessage
+    | Message
+    | null;
 
 /** Result object from obtaining a single {@link Argument}'s value(s) */
 export interface ArgumentResult {
@@ -224,7 +227,7 @@ export default class Argument {
         const wait = this.wait > 0 && this.wait !== Infinity ? this.wait * 1000 : null;
         const prompts: ArgumentResponse[] = [];
         const answers: ArgumentResponse[] = [];
-        let valid = !empty ? await this.validate(val!, msg) : false;
+        let valid = !empty ? await this.validate(val, msg) : false;
 
         /* eslint-disable no-await-in-loop */
         while (!valid || typeof valid === 'string') {
@@ -265,8 +268,9 @@ export default class Argument {
                 time: wait ?? undefined,
             });
 
+            const response = responses.first() as CommandoMessage | undefined;
             // Make sure they actually answered
-            if (responses?.size !== 1) {
+            if (!response) {
                 return {
                     value: null,
                     cancelled: 'time',
@@ -275,8 +279,8 @@ export default class Argument {
                 };
             }
 
-            answers.push(responses.first()!);
-            val = answers[answers.length - 1]!.content;
+            answers.push(response);
+            val = response.content;
 
             // See if they want to cancel
             if (val.toLowerCase() === 'cancel') {
@@ -288,14 +292,13 @@ export default class Argument {
                 };
             }
 
-            const first = responses.first() as CommandoMessage;
-            empty = this.isEmpty(val!, msg, first);
-            valid = await this.validate(val!, msg, first);
+            empty = this.isEmpty(val, msg, response);
+            valid = await this.validate(val, msg, response);
         }
         /* eslint-enable no-await-in-loop */
 
         return {
-            value: await this.parse(val!, msg, (answers[answers.length - 1] as CommandoMessage) ?? msg),
+            value: await this.parse(val, msg, answers[answers.length - 1] as CommandoMessage ?? msg),
             cancelled: null,
             prompts,
             answers,
@@ -380,8 +383,9 @@ export default class Argument {
                     time: wait ?? undefined,
                 });
 
+                const response = responses.first() as CommandoMessage | undefined;
                 // Make sure they actually answered
-                if (responses?.size !== 1) {
+                if (!response) {
                     return {
                         value: null,
                         cancelled: 'time',
@@ -390,8 +394,8 @@ export default class Argument {
                     };
                 }
 
-                answers.push(responses.first()!);
-                val = answers[answers.length - 1]!.content;
+                answers.push(response);
+                val = response.content;
 
                 // See if they want to finish or cancel
                 const lc = val.toLowerCase();
@@ -412,11 +416,11 @@ export default class Argument {
                     };
                 }
 
-                valid = await this.validate(val!, msg, responses.first() as CommandoMessage);
+                valid = await this.validate(val, msg, response);
             }
-
+ 
             results.push(await this.parse(
-                val!, msg, (answers[answers.length - 1] as CommandoMessage) ?? msg
+                val as string, msg, answers[answers.length - 1] as CommandoMessage ?? msg
             ) as ArgumentResponse);
 
             if (vals) {
@@ -443,9 +447,11 @@ export default class Argument {
     public validate(
         val: string, originalMsg: CommandoMessage, currentMsg: CommandoMessage = originalMsg
     ): Promise<boolean | string> | boolean | string {
-        const valid = this.validator ?
-            this.validator(val, originalMsg, this, currentMsg) :
-            this.type!.validate(val, originalMsg, this, currentMsg);
+        let valid = this.validator?.(val, originalMsg, this, currentMsg);
+        if (!this.type) {
+            throw new Error('Argument must have both validate and parse since it doesn\'t have a type.');
+        }
+        valid = this.type.validate(val, originalMsg, this, currentMsg);
 
         if (!valid || typeof valid === 'string') return this.error || valid;
         if (Util.isPromise(valid)) {
@@ -453,7 +459,7 @@ export default class Argument {
                 const arr = typeof vld === 'string' ? vld.split('\n') : null;
                 if (arr) {
                     if (arr.length === 1) return arr[0];
-                    if (arr.length > 1) return arr.pop()!;
+                    if (arr.length > 1) return arr[arr.length - 1];
                 }
                 return !vld || typeof vld === 'string' ? this.error || vld : vld;
             });
@@ -469,7 +475,10 @@ export default class Argument {
      */
     public parse(val: string, originalMsg: CommandoMessage, currentMsg: CommandoMessage = originalMsg): unknown {
         if (this.parser) return this.parser(val, originalMsg, this, currentMsg);
-        return this.type!.parse(val, originalMsg, this, currentMsg);
+        if (!this.type) {
+            throw new Error('Argument must have both validate and parse since it doesn\'t have a type.');
+        }
+        return this.type.parse(val, originalMsg, this, currentMsg);
     }
 
     /**
@@ -531,7 +540,7 @@ export default class Argument {
     protected static determineType(client: CommandoClient, id?: string[] | string): ArgumentType | null {
         if (!id) return null;
         if (Array.isArray(id)) id = id.join('|');
-        if (!id.includes('|')) return client.registry.types.get(id)!;
+        if (!id.includes('|')) return client.registry.types.get(id) ?? null;
 
         let type = client.registry.types.get(id);
         if (type) return type;

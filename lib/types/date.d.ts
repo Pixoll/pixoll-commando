@@ -3,10 +3,10 @@ import Argument from '../commands/argument';
 import CommandoMessage from '../extensions/message';
 import ArgumentType from './base';
 export default class DateArgumentType extends ArgumentType {
-    protected regex: RegExp;
+    protected dateRegex: RegExp;
     constructor(client: CommandoClient);
     validate(val: string, _: CommandoMessage, arg: Argument): boolean | string;
-    parse(val: string): Date;
+    parse(val: string): Date | null;
     /**
      * Parses the string value into a valid Date object, if possible.
      * @param matches - Matches given by the regex.

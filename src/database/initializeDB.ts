@@ -23,12 +23,12 @@ export default async function initializeDB(client: CommandoClient): Promise<void
  * @param client - The client this handlers is for.
  */
 async function connectDB(client: CommandoClient): Promise<boolean> {
-    const { options } = client;
-    const { mongoDbURI } = options;
+    const { mongoDbURI } = client.options;
     const { MONGO_DB_URI } = process.env;
+    const uri = mongoDbURI ?? MONGO_DB_URI;
 
-    if (!MONGO_DB_URI && !mongoDbURI) return false;
-    await connect(mongoDbURI ?? MONGO_DB_URI!, { keepAlive: true });
+    if (!uri) return false;
+    await connect(uri, { keepAlive: true });
     client.emit('debug', 'Established database connection');
     return true;
 }

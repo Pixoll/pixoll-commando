@@ -144,14 +144,19 @@ interface DefaultTypesOptions {
  * - A command name
  * - A {@link CommandoMessage}
  */
-export type CommandResolvable = Command | CommandoMessage | string;
+export type CommandResolvable =
+    | Command
+    | CommandoMessage
+    | string;
 
 /**
  * A CommandGroupResolvable can be:
  * - A {@link CommandGroup}
  * - A group ID
  */
-export type CommandGroupResolvable = CommandGroup | string;
+export type CommandGroupResolvable =
+    | CommandGroup
+    | string;
 
 /** Handles registration and searching of commands and groups */
 export default class CommandoRegistry {
@@ -186,52 +191,62 @@ export default class CommandoRegistry {
         const { commands, client } = this;
         const { application, options, guilds }: CommandoClient<true> = client;
 
-        const testCommands = commands.filter(cmd => cmd.testEnv && !!cmd.slashInfo)
-            .mapValues(cmd => cmd.slashInfo as ApplicationCommandData);
+        const testCommands = Util.filterNullishValues(
+            commands
+                .filter(cmd => cmd.testEnv)
+                .mapValues(cmd => cmd.slashInfo)
+        );
+
         if (testCommands.size !== 0) {
             if (typeof options.testGuild !== 'string') throw new TypeError('Client testGuild must be a string.');
 
             const guild = guilds.resolve(options.testGuild);
             if (!guild) throw new TypeError('Client testGuild must be a valid Guild ID.');
 
-            const current = await guild.commands.fetch();
+            const manager = guild.commands;
+            const current = await manager.fetch();
             const { created, updated, removed } = getUpdatedSlashCommands(current.toJSON(), testCommands);
             const promises: Array<Promise<ApplicationCommand | null>> = [];
 
             for (const command of created) {
-                promises.push(guild.commands.create(command));
+                promises.push(manager.create(command));
             }
             for (const [id, command] of updated) {
-                promises.push(guild.commands.edit(id, command));
+                promises.push(manager.edit(id, command));
             }
             for (const command of removed) {
-                promises.push(guild.commands.delete(command));
+                promises.push(manager.delete(command));
             }
 
             await Promise.all(promises);
             client.emit('debug', `Loaded ${testCommands.size} guild slash commands`);
         }
 
-        const slashCommands = commands.filter(cmd => !cmd.testEnv && !!cmd.slashInfo)
-            .mapValues(cmd => cmd.slashInfo as ApplicationCommandData);
-        if (slashCommands.size === 0) return;
+        const globalCommands = Util.filterNullishValues(
+            commands
+                .filter(cmd => !cmd.testEnv)
+                .mapValues(cmd => cmd.slashInfo)
+        );
 
-        const current = await application.commands.fetch();
-        const { created, updated, removed } = getUpdatedSlashCommands(current.toJSON(), slashCommands);
+        if (globalCommands.size === 0) return;
+
+        const manager = application.commands;
+        const current = await manager.fetch();
+        const { created, updated, removed } = getUpdatedSlashCommands(current.toJSON(), globalCommands);
         const promises: Array<Promise<ApplicationCommand | null>> = [];
 
         for (const command of created) {
-            promises.push(application.commands.create(command));
+            promises.push(manager.create(command));
         }
         for (const [id, command] of updated) {
-            promises.push(application.commands.edit(id, command));
+            promises.push(manager.edit(id, command));
         }
         for (const command of removed) {
-            promises.push(application.commands.delete(command));
+            promises.push(manager.delete(command));
         }
 
         await Promise.all(promises);
-        client.emit('debug', `Loaded ${slashCommands.size} public slash commands`);
+        client.emit('debug', `Loaded ${globalCommands.size} global slash commands`);
     }
 
     /**
@@ -546,12 +561,11 @@ export default class CommandoRegistry {
      * @param instances - The instances to check usability against
      * @return All commands that are found
      */
-    public findCommands(searchString: string | null = null, exact = false, instances: CommandInstances = {}): Command[] {
+    public findCommands(searchString: string | null = null, exact = false, instances?: CommandInstances): Command[] {
         const { commands } = this;
-        const { message, interaction } = instances;
         if (!searchString) {
-            return message ?? interaction ?
-                commands.filter(cmd => cmd.isUsable({ message, interaction })).toJSON() :
+            return instances && Util.getInstanceFrom(instances) ?
+                commands.filter(cmd => cmd.isUsable(instances)).toJSON() :
                 commands.toJSON();
         }
 
@@ -594,7 +608,9 @@ export default class CommandoRegistry {
      * @return Fully-resolved path to the corresponding command file
      */
     public resolveCommandPath(group: string, memberName: string): string {
-        return path.join(this.commandsPath!, group, `${memberName}.js`);
+        const { commandsPath } = this;
+        if (!commandsPath) throw new TypeError('Commands path cannot be null or undefined.');
+        return path.join(commandsPath, group, `${memberName}.js`);
     }
 }
 

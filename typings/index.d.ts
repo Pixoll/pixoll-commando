@@ -1,7 +1,6 @@
 /* eslint-disable no-use-before-define */
 
 import {
-    APIMessage,
     CachedManager,
     Client,
     ClientEvents,
@@ -19,7 +18,6 @@ import {
     EmbedBuilder,
     MessageOptions,
     PermissionsString,
-    RESTPostAPIChatInputApplicationCommandsJSONBody as RestAPIApplicationCommand,
     Snowflake,
     TextBasedChannel,
     User,
@@ -28,7 +26,9 @@ import {
     OAuth2Guild,
     ChatInputApplicationCommandData,
     ApplicationCommandData,
-    CommandInteractionOption
+    CommandInteractionOption,
+    MessageApplicationCommandData,
+    UserApplicationCommandData,
 } from 'discord.js';
 import { FilterQuery, Model, Types, UpdateAggregationStage, UpdateQuery, UpdateWriteOpResult } from 'mongoose';
 
@@ -239,7 +239,7 @@ export abstract class Command {
      * @param info - The command information
      * @param slashInfo - The slash command information
      */
-    constructor(client: CommandoClient, info: CommandInfo, slashInfo?: ApplicationCommandData | SlashCommandInfo);
+    constructor(client: CommandoClient, info: CommandInfo, slashInfo?: AppCommandData);
 
     /** Whether the command is enabled globally */
     protected _globalEnabled: boolean;
@@ -322,14 +322,12 @@ export abstract class Command {
     unknown: boolean;
     /** Whether the command is marked as deprecated */
     deprecated: boolean;
-    /**
-     * The name or alias of the command that is replacing the deprecated command. Required if `deprecated` is `true`.
-     */
+    /** The name or alias of the command that is replacing the deprecated command. Required if `deprecated` is `true`. */
     replacing: string | null;
     /** Whether this command will be registered in the test guild only or not */
     testEnv: boolean;
     /** The data for the slash command */
-    slashInfo?: ApplicationCommandData | SlashCommandInfo;
+    slashInfo?: AppCommandData;
 
     /**
      * Checks whether the user has permission to use the command
@@ -362,8 +360,8 @@ export abstract class Command {
      * @param data - Additional data associated with the block. Built-in reason data properties:
      * - guildOnly: none
      * - nsfw: none
-     * - throttling: `throttle` ({@link Object}), `remaining` ({@link number}) time in seconds
-     * - userPermissions & clientPermissions: `missing` ({@link Array}<{@link string}>) permission names
+     * - throttling: `throttle` ({@link Throttle}), `remaining` (number) time in seconds
+     * - userPermissions & clientPermissions: `missing` (Array<string>) permission names
      */
     onBlock(instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData): Promise<Message | null>;
     /**
@@ -428,7 +426,7 @@ export class CommandDispatcher {
     constructor(client: CommandoClient, registry: CommandoRegistry);
 
     /** Map of {@link RegExp}s that match command messages, mapped by string prefix */
-    protected _commandPatterns: Map<string, RegExp>;
+    protected _commandPatterns: Map<string | undefined, RegExp>;
     /** Old command message results, mapped by original message ID */
     protected _results: Map<string, CommandoMessage>;
     /** Tuples in string form of user ID and channel ID that are currently awaiting messages from a user in a channel */
@@ -699,7 +697,7 @@ export class CommandoGuild extends Guild {
  * An extension of the base Discord.js CommandInteraction class to add command-related functionality.
  * @augments CommandInteraction
  */
-export default class CommandoInteraction extends CommandInteraction {
+export class CommandoInteraction extends CommandInteraction {
     /**
      * @param client - The client the interaction is for
      * @param data - The interaction data
@@ -707,7 +705,7 @@ export default class CommandoInteraction extends CommandInteraction {
     constructor(client: CommandoClient, data: CommandInteraction);
 
     /** Command that the interaction triggers */
-    protected _command: Command | null;
+    protected _command: Command;
 
     get author(): User;
     get channel(): TextBasedChannel;
@@ -1060,17 +1058,32 @@ export class Util extends null {
      */
     static mutateObjectInstance<T extends object>(obj: object, newObj: T): T;
     /**
-     * Removes all nullish (`undefined` | `null`) items from an array. Mostly useful for TS.
-     * @param array - Any array that could contain empty items.
+     * **For arrays.**
+     * Filters all nullish (`undefined` | `null`) items from an array. Mostly useful for TS.
+     * @param array - Any array that could contain nullish items.
      * @returns An array with all non-nullish items.
      */
-    static removeNullishItems<T>(array: Array<T | null | undefined>): T[];
+    static filterNullishItems<T>(array: Array<T | null | undefined>): T[];
+    /**
+     * **For {@link Collection Collections}.**
+     * Filters all nullish (`undefined` | `null`) items from a collection. Mostly useful for TS.
+     * @param collection - Any collection that could contain nullish values.
+     * @returns An array with all non-nullish values.
+     */
+    static filterNullishValues<K, V>(collection: Collection<K, V | null | undefined>): Collection<K, V>;
     /**
      * Checks if a value is undefined.
      * @param val - The value to check.
      * @returns Whether the value is nullish.
      */
     static isNullish(val: unknown): val is null | undefined;
+    /**
+     * Get the current instance of a command. Useful if you need to get the same properties from both instances.
+     * @param instances - The instances object.
+     * @returns The instance of the command.
+     */
+    static getInstanceFrom(instances: CommandInstances): CommandoInteraction | CommandoMessage;
+    static equals<T extends number | string>(value: number | string, ...values: T[]): value is T;
     /**
      * Verifies the provided data is a string, otherwise throws provided error.
      * @param data - The string resolvable to resolve
@@ -1207,9 +1220,11 @@ declare class CommandoGuildManager extends CachedManager<Snowflake, CommandoGuil
     fetch(options?: FetchGuildsOptions): Promise<Collection<Snowflake, OAuth2Guild>>;
 }
 
-export declare class CommandoMember extends GuildMember {
+export class CommandoMember extends GuildMember {
     guild: CommandoGuild;
 }
+
+export type AppCommandData = MessageApplicationCommandData | SlashCommandInfo | UserApplicationCommandData;
 
 type ArgumentCheckerParams = [
     val: string[] | string,
@@ -1284,7 +1299,7 @@ export type CommandResolvable = Command | CommandoMessage | string;
  * - A single string identifying the reason the command is blocked
  * - An Inhibition object
  */
-declare type Inhibitor = (msg: CommandoMessage) => Inhibition | string;
+type Inhibitor = (msg: CommandoMessage) => Inhibition | string;
 
 /** Type of the response */
 export type ResponseType = 'code' | 'direct' | 'plain' | 'reply';
@@ -1534,12 +1549,13 @@ export interface CommandInfo {
 }
 
 /** The instances the command is being run for */
-export interface CommandInstances {
-    /** The message the command is being run for */
-    message?: CommandoMessage;
+export type CommandInstances = {
     /** The interaction the command is being run for */
-    interaction?: CommandoInteraction;
-}
+    interaction: CommandoInteraction;
+} | {
+    /** The message the command is being run for */
+    message: CommandoMessage;
+};
 
 interface CommandoClientEvents extends ClientEvents {
     commandBlock: [instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData];
@@ -1845,11 +1861,15 @@ export interface SimplifiedSchemas {
     WelcomeModel: SimplifiedModel<WelcomeSchema>;
 }
 
-type DocumentFrom<T extends BaseSchema = BaseSchema, IncludeId extends boolean = false> = Omit<T, IncludeId extends true ? Exclude<keyof BaseSchema, '_id'> : keyof BaseSchema>;
+type DocumentFrom<T extends BaseSchema = BaseSchema, IncludeId extends boolean = false> = Omit<
+    T, IncludeId extends true ? Exclude<keyof BaseSchema, '_id'> : keyof BaseSchema
+>;
 
 type ModelFrom<T extends BaseSchema = BaseSchema, IncludeId extends boolean = false> = Model<DocumentFrom<T, IncludeId>>;
 
-declare type TimeBasedModerationType = 'mute' | 'temp-ban' | 'time-out';
+type TimeBasedModerationType = 'mute' | 'temp-ban' | 'time-out';
+
+type ModerationType = TimeBasedModerationType | 'ban' | 'kick' | 'soft-ban' | 'warn';
 
 interface BaseSchema {
     readonly _id: Types.ObjectId;
@@ -1893,7 +1913,7 @@ export interface FaqSchema extends BaseSchema {
 }
 
 export interface ModerationSchema extends BaseSchema {
-    type: TimeBasedModerationType | 'ban' | 'kick' | 'soft-ban' | 'warn';
+    type: ModerationType;
     guild: Snowflake;
     userId: Snowflake;
     userTag: string;
@@ -1934,7 +1954,7 @@ export interface ModuleSchema extends BaseSchema {
     };
 }
 
-export type Module = 'audit-logs' | 'sticky-roles' | 'welcome'
+export type Module = 'audit-logs' | 'sticky-roles' | 'welcome';
 
 export type AuditLog = keyof ModuleSchema['auditLogs'];
 

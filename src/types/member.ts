@@ -13,7 +13,7 @@ export default class MemberArgumentType extends ArgumentType {
     public async validate(val: string, msg: CommandoMessage, arg: Argument): Promise<boolean | string> {
         if (!msg.guild) return false;
 
-        const matches = val.match(/^(?:<@!?)?([0-9]+)>?$/);
+        const matches = val.match(/^(?:<@!?)?(\d+)>?$/);
         if (matches) {
             try {
                 const member = await msg.guild.members.fetch(matches[1]);
@@ -27,15 +27,17 @@ export default class MemberArgumentType extends ArgumentType {
 
         const search = val.toLowerCase();
         let members = msg.guild.members.cache.filter(memberFilterInexact(search));
-        if (members.size === 0) return false;
+        const first = members.first();
+        if (!first) return false;
         if (members.size === 1) {
-            if (arg.oneOf && !arg.oneOf.includes(members.first()!.id)) return false;
+            if (arg.oneOf && !arg.oneOf.includes(first.id)) return false;
             return true;
         }
 
         const exactMembers = members.filter(memberFilterExact(search));
-        if (exactMembers.size === 1) {
-            if (arg.oneOf && !arg.oneOf.includes(exactMembers.first()!.id)) return false;
+        const exact = exactMembers.first();
+        if (exactMembers.size === 1 && exact) {
+            if (arg.oneOf && !arg.oneOf.includes(exact.id)) return false;
             return true;
         }
         if (exactMembers.size > 0) members = exactMembers;
@@ -48,16 +50,16 @@ export default class MemberArgumentType extends ArgumentType {
     public parse(val: string, msg: CommandoMessage): GuildMember | null {
         if (!msg.guild) return null;
 
-        const matches = val.match(/^(?:<@!?)?([0-9]+)>?$/);
-        if (matches) return msg.guild.members.resolve(matches[1]) ?? null;
+        const matches = val.match(/^(?:<@!?)?(\d+)>?$/);
+        if (matches) return msg.guild.members.resolve(matches[1]);
 
         const search = val.toLowerCase();
         const members = msg.guild.members.cache.filter(memberFilterInexact(search));
         if (members.size === 0) return null;
-        if (members.size === 1) return members.first()!;
+        if (members.size === 1) return members.first() ?? null;
 
         const exactMembers = members.filter(memberFilterExact(search));
-        if (exactMembers.size === 1) return exactMembers.first()!;
+        if (exactMembers.size === 1) return exactMembers.first() ?? null;
 
         return null;
     }

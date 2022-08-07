@@ -4,25 +4,25 @@ import ArgumentType from './base';
 
 export default class InviteArgumentType extends ArgumentType {
     /** The fetched invite */
-    protected fetched: Invite | null;
+    protected fetchedInvite: Invite | null;
 
     public constructor(client: CommandoClient) {
         super(client, 'invite');
 
-        this.fetched = null;
+        this.fetchedInvite = null;
     }
 
     public async validate(val: string): Promise<boolean> {
         const invite = await this.client.fetchInvite(val).catch(() => null);
-        this.fetched = invite;
+        this.fetchedInvite = invite;
         return !!invite;
     }
 
     public async parse(val: string): Promise<Invite> {
-        if (this.fetched) {
-            const { fetched } = this;
-            this.fetched = null;
-            return fetched;
+        const { fetchedInvite } = this;
+        if (fetchedInvite) {
+            this.fetchedInvite = null;
+            return fetchedInvite;
         }
         return await this.client.fetchInvite(val);
     }

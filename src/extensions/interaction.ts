@@ -2,13 +2,11 @@ import { stripIndent } from 'common-tags';
 import {
     ApplicationCommandOptionType,
     ApplicationCommandType,
-    ChannelType,
     Colors,
     CommandInteraction,
     CommandInteractionOption,
     EmbedBuilder,
     GuildMember,
-    InteractionType,
     TextBasedChannel,
     User,
 } from 'discord.js';
@@ -32,7 +30,7 @@ export default class CommandoInteraction extends CommandInteraction {
     declare public readonly client: CommandoClient<true>;
     declare public member: CommandoMember | null;
     /** Command that the interaction triggers */
-    protected _command: Command | null;
+    protected _command: Command;
 
     /**
      * @param client - The client the interaction is for
@@ -47,9 +45,7 @@ export default class CommandoInteraction extends CommandInteraction {
         super(client, { id: data.id });
         Object.assign(this, data);
 
-        this._command = data.type === InteractionType.ApplicationCommand ?
-            client.registry.resolveCommand(data.commandName) :
-            null;
+        this._command = client.registry.resolveCommand(data.commandName);
     }
 
     get author(): User {
@@ -63,7 +59,7 @@ export default class CommandoInteraction extends CommandInteraction {
     /** Command that the interaction triggers */
     // @ts-expect-error: This is meant to override CommandInteraction's command getter.
     get command(): Command {
-        return this._command as Command;
+        return this._command;
     }
 
     /** The guild this message is for */
@@ -77,6 +73,13 @@ export default class CommandoInteraction extends CommandInteraction {
      */
     public parseArgs(options: CommandInteractionOption[]): Record<string, unknown> {
         const args: Record<string, unknown> = {};
+        const { client, guild } = this;
+        const { channels } = client;
+        let members = null, roles = null;
+        if (guild) {
+            members = guild.members;
+            roles = guild.roles;
+        }
 
         for (const option of options) {
             const { name, value, type, channel, member, user, role, attachment } = option;
@@ -98,17 +101,23 @@ export default class CommandoInteraction extends CommandInteraction {
                     args[optionName] = value ?? null;
                     break;
                 case ApplicationCommandOptionType.Channel:
-                    args[optionName] = channel ?? null;
+                    args[optionName] = channel ? channels.resolve(channel.id) : null;
                     break;
-                case ApplicationCommandOptionType.Mentionable:
-                    args[optionName] = member ?? user ?? channel ?? role ?? null;
+                case ApplicationCommandOptionType.Mentionable: {
+                    const resolvedMember = member instanceof GuildMember && members ? members.resolve(member) : null;
+                    const resolvedChannel = channel ? channels.resolve(channel.id) : null;
+                    const resolvedRole = role && roles ? roles.resolve(role.id) : null;
+                    args[optionName] = resolvedMember ?? user ?? resolvedChannel ?? resolvedRole ?? null;
                     break;
+                }
                 case ApplicationCommandOptionType.Role:
-                    args[optionName] = role ?? null;
+                    args[optionName] = role && roles ? roles.resolve(role.id) : null;
                     break;
-                case ApplicationCommandOptionType.User:
-                    args[optionName] = member ?? user ?? null;
+                case ApplicationCommandOptionType.User: {
+                    const resolvedMember = member instanceof GuildMember && members ? members.resolve(member) : null;
+                    args[optionName] = resolvedMember ?? user ?? null;
                     break;
+                }
                 case ApplicationCommandOptionType.Attachment:
                     args[optionName] = attachment ?? null;
                     break;
@@ -126,15 +135,13 @@ export default class CommandoInteraction extends CommandInteraction {
         const { groupId, memberName } = command;
         const { user: clientUser } = client;
 
-        if (guild && channel.type !== ChannelType.DM) {
+        if (guild && !channel.isDMBased()) {
             const { members } = guild;
 
             // Obtain the member for the ClientUser if it doesn't already exist
-            if (!members.cache.has(clientUser.id)) {
-                await guild.members.fetch(clientUser.id);
-            }
+            const me = members.me ?? await members.fetch(clientUser.id);
 
-            const clientPerms = members.me!.permissionsIn(channel).serialize();
+            const clientPerms = me.permissionsIn(channel).serialize();
             if (clientPerms.ViewChannel && !clientPerms.SendMessages) {
                 await author.send(stripIndent`
                     It seems like I cannot **Send Messages** in this channel: ${channel.toString()}
@@ -188,7 +195,7 @@ export default class CommandoInteraction extends CommandInteraction {
         }
 
         // Ensure the client user has the required permissions
-        if (channel.type !== ChannelType.DM && command.clientPermissions) {
+        if (!channel.isDMBased() && command.clientPermissions) {
             const missing = channel.permissionsFor(clientUser)?.missing(command.clientPermissions) || [];
             if (missing.length > 0) {
                 const data = { missing };
@@ -217,7 +224,7 @@ export default class CommandoInteraction extends CommandInteraction {
             const location = guildId ? `${guildId}:${channelId}` : `DM:${author.id}`;
             client.emit('debug', `Running slash command "${groupId}:${memberName}" at "${location}".`);
             if (command.slashInfo && 'deferEphemeral' in command.slashInfo) {
-                await this.deferReply({ ephemeral: !!command.slashInfo.deferEphemeral }).catch(() => null);
+                await this.deferReply({ ephemeral: command.slashInfo.deferEphemeral }).catch(() => null);
             }
             const promise = command.run({ interaction: this }, args);
 

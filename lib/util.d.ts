@@ -1,4 +1,6 @@
-import { Message, MessageOptions, PermissionsString } from 'discord.js';
+import { Collection, Message, MessageOptions, PermissionsString } from 'discord.js';
+import { CommandInstances } from './commands/base';
+import CommandoInteraction from './extensions/interaction';
 import CommandoMessage from './extensions/message';
 /** Options for splitting a message */
 export interface SplitOptions {
@@ -69,17 +71,32 @@ export default class Util extends null {
      */
     static mutateObjectInstance<T extends object>(obj: object, newObj: T): T;
     /**
-     * Removes all nullish (`undefined` | `null`) items from an array. Mostly useful for TS.
-     * @param array - Any array that could contain empty items.
+     * **For arrays.**
+     * Filters all nullish (`undefined` | `null`) items from an array. Mostly useful for TS.
+     * @param array - Any array that could contain nullish items.
      * @returns An array with all non-nullish items.
      */
-    static removeNullishItems<T>(array: Array<T | null | undefined>): T[];
+    static filterNullishItems<T>(array: Array<T | null | undefined>): T[];
+    /**
+     * **For {@link Collection Collections}.**
+     * Filters all nullish (`undefined` | `null`) items from a collection. Mostly useful for TS.
+     * @param collection - Any collection that could contain nullish values.
+     * @returns An array with all non-nullish values.
+     */
+    static filterNullishValues<K, V>(collection: Collection<K, V | null | undefined>): Collection<K, V>;
     /**
      * Checks if a value is undefined.
      * @param val - The value to check.
      * @returns Whether the value is nullish.
      */
     static isNullish(val: unknown): val is null | undefined;
+    /**
+     * Get the current instance of a command. Useful if you need to get the same properties from both instances.
+     * @param instances - The instances object.
+     * @returns The instance of the command.
+     */
+    static getInstanceFrom(instances: CommandInstances): CommandoInteraction | CommandoMessage;
+    static equals<T extends number | string>(value: number | string, ...values: T[]): value is T;
     /**
      * Verifies the provided data is a string, otherwise throws provided error.
      * @param data - The string resolvable to resolve

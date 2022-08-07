@@ -11,7 +11,7 @@ export default class UserArgumentType extends ArgumentType {
     }
 
     public async validate(val: string, msg: CommandoMessage, arg: Argument): Promise<boolean | string> {
-        const matches = val.match(/^(?:<@!?)?([0-9]+)>?$/);
+        const matches = val.match(/^(?:<@!?)?(\d+)>?$/);
         if (matches) {
             try {
                 const user = await msg.client.users.fetch(matches[1]);
@@ -27,15 +27,17 @@ export default class UserArgumentType extends ArgumentType {
 
         const search = val.toLowerCase();
         let members = msg.guild.members.cache.filter(memberFilterInexact(search));
-        if (members.size === 0) return false;
+        const first = members.first();
+        if (!first) return false;
         if (members.size === 1) {
-            if (arg.oneOf && !arg.oneOf.includes(members.first()!.id)) return false;
+            if (arg.oneOf && !arg.oneOf.includes(first.id)) return false;
             return true;
         }
 
         const exactMembers = members.filter(memberFilterExact(search));
-        if (exactMembers.size === 1) {
-            if (arg.oneOf && !arg.oneOf.includes(exactMembers.first()!.id)) return false;
+        const exact = exactMembers.first();
+        if (exactMembers.size === 1 && exact) {
+            if (arg.oneOf && !arg.oneOf.includes(exact.id)) return false;
             return true;
         }
         if (exactMembers.size > 0) members = exactMembers;
@@ -46,18 +48,20 @@ export default class UserArgumentType extends ArgumentType {
     }
 
     public parse(val: string, msg: CommandoMessage): User | null {
-        const matches = val.match(/^(?:<@!?)?([0-9]+)>?$/);
-        if (matches) return msg.client.users.cache.get(matches[1]) ?? null;
+        const matches = val.match(/^(?:<@!?)?(\d+)>?$/);
+        if (matches) return msg.client.users.resolve(matches[1]);
 
         if (!msg.guild) return null;
 
         const search = val.toLowerCase();
         const members = msg.guild.members.cache.filter(memberFilterInexact(search));
-        if (members.size === 0) return null;
-        if (members.size === 1) return members.first()!.user;
+        const first = members.first();
+        if (!first) return null;
+        if (members.size === 1) return first.user;
 
         const exactMembers = members.filter(memberFilterExact(search));
-        if (exactMembers.size === 1) return exactMembers.first()!.user;
+        const exact = exactMembers.first();
+        if (exactMembers.size === 1 && exact) return exact.user;
 
         return null;
     }

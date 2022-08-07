@@ -16,7 +16,7 @@ import {
     Message,
     OAuth2Guild,
     FetchGuildsOptions,
-    CommandInteraction,
+    InteractionType,
 } from 'discord.js';
 import CommandoRegistry from './registry';
 import CommandDispatcher from './dispatcher';
@@ -216,14 +216,13 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
      */
     public get owners(): User[] | null {
         const { options, users } = this;
-        const { cache } = users;
         const { owner } = options;
 
         if (!owner) return null;
-        if (typeof owner === 'string') return Util.removeNullishItems([cache.get(owner)]);
+        if (typeof owner === 'string') return Util.filterNullishItems([users.resolve(owner)]);
         const owners = [];
-        for (const user of owner) owners.push(cache.get(user));
-        return Util.removeNullishItems(owners);
+        for (const user of owner) owners.push(users.resolve(user));
+        return Util.filterNullishItems(owners);
     }
 
     /**
@@ -262,7 +261,8 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
             await this.dispatcher.handleMessage(commando).catch(catchErr);
         });
         this.on('messageUpdate', async (oldMessage, newMessage) => {
-            const commando = new CommandoMessage(this, newMessage as Message);
+            if (oldMessage.partial || newMessage.partial) return;
+            const commando = new CommandoMessage(this, newMessage);
             // @ts-expect-error: handleMessage is protected in CommandDispatcher
             await this.dispatcher.handleMessage(commando, oldMessage).catch(catchErr);
         });
@@ -273,7 +273,8 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
             this.registry.registerSlashCommands()
         );
         this.on('interactionCreate', interaction => {
-            const commando = new CommandoInteraction(this, interaction as CommandInteraction);
+            if (interaction.type !== InteractionType.ApplicationCommand) return;
+            const commando = new CommandoInteraction(this, interaction);
             // @ts-expect-error: handleSlash is protected in CommandDispatcher
             this.dispatcher.handleSlash(commando).catch(catchErr);
         });

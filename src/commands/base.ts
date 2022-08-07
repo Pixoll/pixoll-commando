@@ -6,10 +6,8 @@ import {
     MessageOptions,
     PermissionsString,
     User,
-    ChannelType,
     Colors,
     ApplicationCommandType,
-    ApplicationCommandData,
     SlashCommandBuilder,
     PermissionsBitField,
     ApplicationCommandOptionType,
@@ -21,6 +19,9 @@ import {
     InteractionReplyOptions,
     ChatInputApplicationCommandData,
     ContextMenuCommandBuilder,
+    UserApplicationCommandData,
+    MessageApplicationCommandData,
+    ApplicationCommandData,
 } from 'discord.js';
 import path from 'path';
 import ArgumentCollector, { ArgumentCollectorResult } from './collector';
@@ -180,12 +181,23 @@ interface Throttle {
 }
 
 /** The instances the command is being run for */
-export interface CommandInstances {
-    /** The message the command is being run for */
-    message?: CommandoMessage;
-    /** The interaction the command is being run for */
-    interaction?: CommandoInteraction;
-}
+export type CommandInstances =
+    | {
+        /** The interaction the command is being run for */
+        interaction: CommandoInteraction;
+    }
+    | {
+        /** The message the command is being run for */
+        message: CommandoMessage;
+    };
+
+// /** The instances the command is being run for */
+// export interface CommandInstances {
+//     /** The message the command is being run for */
+//     message?: CommandoMessage;
+//     /** The interaction the command is being run for */
+//     interaction?: CommandoInteraction;
+// }
 
 /** The reason of {@link Command#onBlock} */
 export type CommandBlockReason =
@@ -222,6 +234,11 @@ interface SlashCommandInfo extends ChatInputApplicationCommandData {
     /** Whether the deferred reply should be ephemeral or not */
     deferEphemeral?: boolean;
 }
+
+export type AppCommandData =
+    | MessageApplicationCommandData
+    | SlashCommandInfo
+    | UserApplicationCommandData;
 
 /** A command that can be run in a client */
 export default abstract class Command {
@@ -283,14 +300,12 @@ export default abstract class Command {
     public unknown: boolean;
     /** Whether the command is marked as deprecated */
     public deprecated: boolean;
-    /**
-     * The name or alias of the command that is replacing the deprecated command. Required if `deprecated` is `true`.
-     */
+    /** The name or alias of the command that is replacing the deprecated command. Required if `deprecated` is `true`. */
     public replacing: string | null;
     /** Whether this command will be registered in the test guild only or not */
     public testEnv: boolean;
     /** The data for the slash command */
-    public slashInfo?: ApplicationCommandData | SlashCommandInfo;
+    public slashInfo?: AppCommandData;
     /** Whether the command is enabled globally */
     protected _globalEnabled: boolean;
     /** Current throttle objects for the command, mapped by user ID */
@@ -301,7 +316,7 @@ export default abstract class Command {
      * @param info - The command information
      * @param slashInfo - The slash command information
      */
-    public constructor(client: CommandoClient, info: CommandInfo, slashInfo?: ApplicationCommandData | SlashCommandInfo) {
+    public constructor(client: CommandoClient, info: CommandInfo, slashInfo?: AppCommandData) {
         Command.validateInfo(client, info);
         if (slashInfo) Command.validateSlashInfo(info, slashInfo);
 
@@ -368,9 +383,8 @@ export default abstract class Command {
         instances: CommandInstances, ownerOverride = true
     ): CommandBlockReason | PermissionsString[] | true {
         const { guildOwnerOnly, ownerOnly, userPermissions, modPermissions, client } = this;
-        const { message, interaction } = instances;
-        const { channel, guild, member } = (message || interaction)!;
-        const author = message?.author || interaction!.user;
+        const instance = Util.getInstanceFrom(instances);
+        const { channel, guild, member, author } = instance;
 
         if (!guildOwnerOnly && !ownerOnly && !userPermissions && !modPermissions) return true;
         if (ownerOverride && client.isOwner(author)) return true;
@@ -383,7 +397,7 @@ export default abstract class Command {
             return 'guildOwnerOnly';
         }
 
-        if (channel.type !== ChannelType.DM) {
+        if (!channel.isDMBased()) {
             if (modPermissions && !isMod(member as GuildMember)) {
                 return 'modPermissions';
             }
@@ -423,56 +437,58 @@ export default abstract class Command {
      * @param data - Additional data associated with the block. Built-in reason data properties:
      * - guildOnly: none
      * - nsfw: none
-     * - throttling: `throttle` ({@link Object}), `remaining` ({@link number}) time in seconds
-     * - userPermissions & clientPermissions: `missing` ({@link Array}<{@link string}>) permission names
+     * - throttling: `throttle` ({@link Throttle}), `remaining` (number) time in seconds
+     * - userPermissions & clientPermissions: `missing` (Array<string>) permission names
      */
     public onBlock(
         instances: CommandInstances, reason: CommandBlockReason, data: CommandBlockData = {}
     ): Promise<Message | null> {
         const { name } = this;
-        const { message, interaction } = instances;
         const { missing, remaining } = data;
+        const useCommandOnlyIf = (location: string): string => `The \`${name}\` command can only be used ${location}.`;
 
         switch (reason) {
             case 'dmOnly':
-                return replyAll({ message, interaction }, embed(
-                    `The \`${name}\` command can only be used in direct messages.`
-                ));
+                return replyAll(instances, embed(useCommandOnlyIf('in direct messages')));
             case 'guildOnly':
-                return replyAll({ message, interaction }, embed(
-                    `The \`${name}\` command can only be used in a server channel.`
-                ));
+                return replyAll(instances, embed(useCommandOnlyIf('in a server channel')));
             case 'guildOwnerOnly':
-                return replyAll({ message, interaction }, embed(
-                    `The \`${name}\` command can only be used by the server's owner.`
-                ));
+                return replyAll(instances, embed(useCommandOnlyIf('by the server\'s owner')));
             case 'nsfw':
-                return replyAll({ message, interaction }, embed(
-                    `The \`${name}\` command can only be used in a NSFW channel.`
-                ));
+                return replyAll(instances, embed(useCommandOnlyIf('in a NSFW channel')));
             case 'ownerOnly':
-                return replyAll({ message, interaction }, embed(
-                    `The \`${name}\` command can only be used by the bot's owner.`
-                ));
-            case 'userPermissions':
-                return replyAll({ message, interaction }, embed(
+                return replyAll(instances, embed(useCommandOnlyIf('by the bot\'s owner')));
+            case 'userPermissions': {
+                if (!missing) {
+                    throw new Error('Missing permissions object must be specified for "userPermissions" case');
+                }
+                return replyAll(instances, embed(
                     'You are missing the following permissions:',
-                    missing!.map(perm => `\`${Util.permissions[perm]}\``).join(', ')
+                    missing.map(perm => `\`${Util.permissions[perm]}\``).join(', ')
                 ));
+            }
             case 'modPermissions':
-                return replyAll({ message, interaction }, embed(
-                    `The \`${name}\` command can only be used by "moderators".`,
+                return replyAll(instances, embed(
+                    useCommandOnlyIf('by "moderators"'),
                     'For more information visit the `page 3` of the `help` command.'
                 ));
-            case 'clientPermissions':
-                return replyAll({ message, interaction }, embed(
+            case 'clientPermissions': {
+                if (!missing) {
+                    throw new Error('Missing permissions object must be specified for "clientPermissions" case');
+                }
+                return replyAll(instances, embed(
                     'The bot is missing the following permissions:',
-                    missing!.map(perm => `\`${Util.permissions[perm]}\``).join(', ')
+                    missing.map(perm => `\`${Util.permissions[perm]}\``).join(', ')
                 ));
-            case 'throttling':
-                return replyAll({ message, interaction }, embed(
-                    `Please wait **${remaining!.toFixed(1)} seconds** before using the \`${name}\` command again.`
+            }
+            case 'throttling': {
+                if (!remaining) {
+                    throw new Error('Remaining time value must be specified for "throttling" case');
+                }
+                return replyAll(instances, embed(
+                    `Please wait **${remaining.toFixed(1)} seconds** before using the \`${name}\` command again.`
                 ));
+            }
         }
     }
 
@@ -532,7 +548,7 @@ export default abstract class Command {
             client.emit('commandStatusChange', null, this, enabled);
             return;
         }
-        const commandoGuild = client.guilds.resolve(guild)!;
+        const commandoGuild = client.guilds.resolve(guild) as CommandoGuild;
         commandoGuild.setCommandEnabled(this, enabled);
     }
 
@@ -545,7 +561,7 @@ export default abstract class Command {
         const { client, group } = this;
         if (this.guarded) return true;
         if (!guild) return group.isEnabledIn(null) && this._globalEnabled;
-        const commandoGuild = client.guilds.resolve(guild)!;
+        const commandoGuild = client.guilds.resolve(guild) as CommandoGuild;
         return (bypassGroup || commandoGuild.isGroupEnabled(group)) && commandoGuild.isCommandEnabled(this);
     }
 
@@ -553,12 +569,12 @@ export default abstract class Command {
      * Checks if the command is usable for a message
      * @param instances - The instances
      */
-    public isUsable(instances: CommandInstances = {}): boolean {
-        const { message, interaction } = instances;
-        if (!message && !interaction) return this._globalEnabled;
-        const { guild } = (message || interaction)!;
+    public isUsable(instances?: CommandInstances): boolean {
+        if (!instances) return this._globalEnabled;
+        const instance = Util.getInstanceFrom(instances);
+        const { guild } = instance;
         if (this.guildOnly && !guild) return false;
-        const hasPermission = this.hasPermission({ message, interaction });
+        const hasPermission = this.hasPermission(instances);
         return this.isEnabledIn(guild) && hasPermission === true;
     }
 
@@ -647,7 +663,7 @@ export default abstract class Command {
      */
     protected static validateInfo(client: CommandoClient, info: CommandInfo): void {
         if (!client) throw new Error('A client must be specified.');
-        if (typeof info !== 'object') throw new TypeError('Command info must be an Object.');
+        if (typeof info !== 'object') throw new TypeError('Command info must be an object.');
         if (typeof info.name !== 'string') throw new TypeError('Command name must be a string.');
         if (info.name !== info.name.toLowerCase()) throw new Error('Command name must be lowercase.');
         if (info.name.replace(/ +/g, '') !== info.name) throw new Error('Command name must not include spaces.');
@@ -690,7 +706,7 @@ export default abstract class Command {
             }
         }
         if ('throttling' in info) {
-            if (typeof info.throttling !== 'object') throw new TypeError('Command throttling must be an Object.');
+            if (typeof info.throttling !== 'object') throw new TypeError('Command throttling must be an object.');
             if (typeof info.throttling.usages !== 'number' || isNaN(info.throttling.usages)) {
                 throw new TypeError('Command throttling usages must be a number.');
             }
@@ -704,10 +720,10 @@ export default abstract class Command {
         if ('argsPromptLimit' in info && typeof info.argsPromptLimit !== 'number') {
             throw new TypeError('Command argsPromptLimit must be a number.');
         }
-        if ('argsPromptLimit' in info && info.argsPromptLimit! < 0) {
+        if ('argsPromptLimit' in info && info.argsPromptLimit && info.argsPromptLimit < 0) {
             throw new RangeError('Command argsPromptLimit must be at least 0.');
         }
-        if ('argsType' in info && !['single', 'multiple'].includes(info.argsType!)) {
+        if ('argsType' in info && info.argsType && !Util.equals(info.argsType, 'single', 'multiple')) {
             throw new RangeError('Command argsType must be one of "single" or "multiple".');
         }
         if (info.argsType === 'multiple' && info.argsCount && info.argsCount < 2) {
@@ -716,11 +732,13 @@ export default abstract class Command {
         if ('patterns' in info && (!Array.isArray(info.patterns) || info.patterns.some(pat => !(pat instanceof RegExp)))) {
             throw new TypeError('Command patterns must be an Array of regular expressions.');
         }
-        if (!!info.deprecated && typeof info.replacing !== 'string') {
-            throw new TypeError('Command replacing must be a string.');
-        }
-        if (!!info.deprecated && info.replacing !== info.replacing!.toLowerCase()) {
-            throw new TypeError('Command replacing must be lowercase.');
+        if (info.deprecated) {
+            if (typeof info.replacing !== 'string') {
+                throw new TypeError('Command replacing must be a string.');
+            }
+            if (info.replacing !== info.replacing.toLowerCase()) {
+                throw new TypeError('Command replacing must be lowercase.');
+            }
         }
     }
 
@@ -798,7 +816,9 @@ export default abstract class Command {
     }
 }
 
-type SlashCommandOptionBase = ApplicationCommandOptionBase | SharedNameAndDescription;
+type SlashCommandOptionBase =
+    | ApplicationCommandOptionBase
+    | SharedNameAndDescription;
 
 function createBaseSlashOption(option: ApplicationCommandOptionData): <T extends SlashCommandOptionBase>(builder: T) => T {
     return <T extends SlashCommandOptionBase>(builder: T): T => {
@@ -918,19 +938,22 @@ function embed(name: string, value?: string): EmbedBuilder {
 }
 
 async function replyAll(
-    { message, interaction }: CommandInstances, options: EmbedBuilder | MessageOptions | string
+    instances: CommandInstances, options: EmbedBuilder | MessageOptions | string
 ): Promise<Message | null> {
     if (options instanceof EmbedBuilder) options = { embeds: [options] };
     if (typeof options === 'string') options = { content: options };
-    if (interaction) {
+    if ('interaction' in instances) {
+        const { interaction } = instances;
         if (interaction.deferred || interaction.replied) {
             return await interaction.editReply(options).catch(() => null);
         }
         await interaction.reply(options as InteractionReplyOptions).catch(() => null);
         return null;
     }
-    if (message) {
-        return await message.reply({ ...options, ...Util.noReplyPingInDMs(message) }).catch(() => null);
+    if ('message' in instances) {
+        const { message } = instances;
+        Object.assign(options, Util.noReplyPingInDMs(message));
+        return await message.reply(options).catch(() => null);
     }
     return null;
 }

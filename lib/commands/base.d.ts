@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { GuildResolvable, Message, PermissionsString, User, ApplicationCommandData, ChatInputApplicationCommandData } from 'discord.js';
+import { GuildResolvable, Message, PermissionsString, User, ChatInputApplicationCommandData, UserApplicationCommandData, MessageApplicationCommandData, ApplicationCommandData } from 'discord.js';
 import ArgumentCollector, { ArgumentCollectorResult } from './collector';
 import CommandoClient from '../client';
 import CommandGroup from './group';
@@ -152,12 +152,13 @@ interface Throttle {
     timeout: NodeJS.Timeout;
 }
 /** The instances the command is being run for */
-export interface CommandInstances {
-    /** The message the command is being run for */
-    message?: CommandoMessage;
+export declare type CommandInstances = {
     /** The interaction the command is being run for */
-    interaction?: CommandoInteraction;
-}
+    interaction: CommandoInteraction;
+} | {
+    /** The message the command is being run for */
+    message: CommandoMessage;
+};
 /** The reason of {@link Command#onBlock} */
 export declare type CommandBlockReason = 'clientPermissions' | 'dmOnly' | 'guildOnly' | 'guildOwnerOnly' | 'modPermissions' | 'nsfw' | 'ownerOnly' | 'throttling' | 'userPermissions';
 /** Additional data associated with the block */
@@ -182,6 +183,7 @@ interface SlashCommandInfo extends ChatInputApplicationCommandData {
     /** Whether the deferred reply should be ephemeral or not */
     deferEphemeral?: boolean;
 }
+export declare type AppCommandData = MessageApplicationCommandData | SlashCommandInfo | UserApplicationCommandData;
 /** A command that can be run in a client */
 export default abstract class Command {
     /** Client that this command is for */
@@ -242,14 +244,12 @@ export default abstract class Command {
     unknown: boolean;
     /** Whether the command is marked as deprecated */
     deprecated: boolean;
-    /**
-     * The name or alias of the command that is replacing the deprecated command. Required if `deprecated` is `true`.
-     */
+    /** The name or alias of the command that is replacing the deprecated command. Required if `deprecated` is `true`. */
     replacing: string | null;
     /** Whether this command will be registered in the test guild only or not */
     testEnv: boolean;
     /** The data for the slash command */
-    slashInfo?: ApplicationCommandData | SlashCommandInfo;
+    slashInfo?: AppCommandData;
     /** Whether the command is enabled globally */
     protected _globalEnabled: boolean;
     /** Current throttle objects for the command, mapped by user ID */
@@ -259,7 +259,7 @@ export default abstract class Command {
      * @param info - The command information
      * @param slashInfo - The slash command information
      */
-    constructor(client: CommandoClient, info: CommandInfo, slashInfo?: ApplicationCommandData | SlashCommandInfo);
+    constructor(client: CommandoClient, info: CommandInfo, slashInfo?: AppCommandData);
     /**
      * Checks whether the user has permission to use the command
      * @param instances - The triggering command instances
@@ -286,8 +286,8 @@ export default abstract class Command {
      * @param data - Additional data associated with the block. Built-in reason data properties:
      * - guildOnly: none
      * - nsfw: none
-     * - throttling: `throttle` ({@link Object}), `remaining` ({@link number}) time in seconds
-     * - userPermissions & clientPermissions: `missing` ({@link Array}<{@link string}>) permission names
+     * - throttling: `throttle` ({@link Throttle}), `remaining` (number) time in seconds
+     * - userPermissions & clientPermissions: `missing` (Array<string>) permission names
      */
     onBlock(instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData): Promise<Message | null>;
     /**

@@ -1,10 +1,20 @@
 import { model, Schema } from 'mongoose';
 import { BaseSchema, DocumentFrom } from './base';
 
-export type TimeBasedModerationType = 'mute' | 'temp-ban' | 'time-out';
+export type TimeBasedModerationType =
+    | 'mute'
+    | 'temp-ban'
+    | 'time-out';
+
+type ModerationType =
+    | TimeBasedModerationType
+    | 'ban'
+    | 'kick'
+    | 'soft-ban'
+    | 'warn';
 
 export interface ModerationSchema extends BaseSchema {
-    type: TimeBasedModerationType | 'ban' | 'kick' | 'soft-ban' | 'warn';
+    type: ModerationType;
     guild: string;
     userId: string;
     userTag: string;

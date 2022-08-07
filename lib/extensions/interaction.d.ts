@@ -14,7 +14,7 @@ export default class CommandoInteraction extends CommandInteraction {
     readonly client: CommandoClient<true>;
     member: CommandoMember | null;
     /** Command that the interaction triggers */
-    protected _command: Command | null;
+    protected _command: Command;
     /**
      * @param client - The client the interaction is for
      * @param data - The interaction data
