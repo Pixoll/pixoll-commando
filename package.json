@@ -1,6 +1,6 @@
 {
 	"name": "pixoll-commando",
-	"version": "1.0.0-dev.5",
+	"version": "1.0.0-dev.6",
 	"description": "Original work is not mine. You can find the original repository here: https://github.com/discordjs/Commando.",
 	"license": "Apache-2.0",
 	"author": "Pixoll",
@@ -27,21 +27,21 @@
 	"dependencies": {
 		"better-ms": "^1.1.7",
 		"common-tags": "^1.8.2",
-		"discord.js": "^14.1.2",
-		"emoji-regex": "^10.1.0",
+		"discord.js": "^14.7.1",
+		"emoji-regex": "^10.2.1",
 		"lodash": "^4.17.21",
 		"mongoose": "^6.5.0",
 		"require-all": "^3.0.0"
 	},
 	"devDependencies": {
 		"@types/common-tags": "^1.8.1",
-		"@types/lodash": "^4.14.182",
+		"@types/lodash": "^4.14.191",
 		"@types/node": "16.9.0",
 		"@types/require-all": "^3.0.3",
-		"@typescript-eslint/eslint-plugin": "^5.32.0",
-		"@typescript-eslint/parser": "^5.32.0",
-		"eslint": "^8.21.0",
-		"typescript": "^4.7.4"
+		"@typescript-eslint/eslint-plugin": "^5.45.0",
+		"@typescript-eslint/parser": "^5.45.0",
+		"eslint": "^8.29.0",
+		"typescript": "^4.9.3"
 	},
 	"engines": {
 		"node": ">=16.9.0"

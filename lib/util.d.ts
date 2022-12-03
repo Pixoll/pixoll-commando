@@ -1,4 +1,4 @@
-import { Collection, Message, MessageOptions, PermissionsString } from 'discord.js';
+import { Collection, Message, MessageCreateOptions, PermissionsString } from 'discord.js';
 import { CommandInstances } from './commands/base';
 import CommandoInteraction from './extensions/interaction';
 import CommandoMessage from './extensions/message';
@@ -41,9 +41,9 @@ export default class Util extends null {
     /**
      * Removes the reply ping from a message if its sent in DMs.
      * @param msg - The message instance.
-     * @returns A {@link MessageOptions} object.
+     * @returns A {@link MessageCreateOptions} object.
      */
-    static noReplyPingInDMs(msg: CommandoMessage | Message): MessageOptions;
+    static noReplyPingInDMs(msg: CommandoMessage | Message): MessageCreateOptions;
     /**
      * Disambiguate items from an array into a list.
      * @param items - An array of strings or objects.
@@ -96,7 +96,7 @@ export default class Util extends null {
      * @returns The instance of the command.
      */
     static getInstanceFrom(instances: CommandInstances): CommandoInteraction | CommandoMessage;
-    static equals<T extends number | string>(value: number | string, ...values: T[]): value is T;
+    static equals<T extends number | string, V extends T>(value: T, values: V[]): value is V;
     /**
      * Verifies the provided data is a string, otherwise throws provided error.
      * @param data - The string resolvable to resolve

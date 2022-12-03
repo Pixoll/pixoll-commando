@@ -1,17 +1,17 @@
-import { Message, EmbedBuilder, User, MessageOptions } from 'discord.js';
+import { Message, EmbedBuilder, User, MessageCreateOptions, MessageReplyOptions } from 'discord.js';
 import Command from '../commands/base';
 import CommandoClient from '../client';
 import CommandoGuild from './guild';
 /** Type of the response */
 declare type ResponseType = 'code' | 'direct' | 'plain' | 'reply';
-declare type StringResolvable = MessageOptions | string[] | string;
+declare type StringResolvable = MessageCreateOptions | string[] | string;
 interface ResponseOptions {
     /** Type of the response */
     type?: ResponseType;
     /** Content of the response */
-    content?: MessageOptions | StringResolvable | null;
+    content?: MessageCreateOptions | StringResolvable | null;
     /** Options of the response */
-    options?: MessageOptions;
+    options?: MessageCreateOptions;
     /** Language of the response, if its type is `code` */
     lang?: string;
     /** If the response is from an edited message */
@@ -97,34 +97,34 @@ export default class CommandoMessage extends Message {
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    say(content: StringResolvable, options?: MessageOptions): Promise<CommandoMessageResponse>;
+    say(content: StringResolvable, options?: MessageCreateOptions): Promise<CommandoMessageResponse>;
     /**
      * Responds with a direct message
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    direct(content: StringResolvable, options?: MessageOptions): Promise<CommandoMessageResponse>;
+    direct(content: StringResolvable, options?: MessageCreateOptions): Promise<CommandoMessageResponse>;
     /**
      * Responds with a code message
      * @param lang - Language for the code block
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    code(lang: string, content: StringResolvable, options?: MessageOptions): Promise<CommandoMessageResponse>;
+    code(lang: string, content: StringResolvable, options?: MessageCreateOptions): Promise<CommandoMessageResponse>;
     /**
      * Responds with an embed
      * @param embed - Embed to send
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    embed(embed: EmbedBuilder | EmbedBuilder[], content?: StringResolvable, options?: MessageOptions): Promise<CommandoMessageResponse>;
+    embed(embed: EmbedBuilder | EmbedBuilder[], content?: StringResolvable, options?: MessageCreateOptions): Promise<CommandoMessageResponse>;
     /**
      * Responds with a reply + embed
      * @param embed - Embed to send
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    replyEmbed(embed: EmbedBuilder | EmbedBuilder[], content?: StringResolvable, options?: MessageOptions): Promise<CommandoMessageResponse>;
+    replyEmbed(embed: EmbedBuilder | EmbedBuilder[], content?: StringResolvable, options?: MessageReplyOptions): Promise<CommandoMessageResponse>;
     /**
      * Finalizes the command message by setting the responses and deleting any remaining prior ones
      * @param responses - Responses to the message

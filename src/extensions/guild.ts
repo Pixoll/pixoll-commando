@@ -11,7 +11,7 @@ import { CommandGroupResolvable, CommandResolvable } from '../registry';
 // @ts-expect-error: Guild's constructor is private
 export default class CommandoGuild extends Guild {
     /** The client the guild is for */
-    declare public readonly client: CommandoClient;
+    declare public readonly client: CommandoClient<true>;
     /** The database manager for the guild */
     public database: GuildDatabaseManager;
     /** The queued logs for this guild */

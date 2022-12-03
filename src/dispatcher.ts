@@ -120,22 +120,23 @@ export default class CommandDispatcher {
         let responses: ArgumentResponse | Message[] | null = null;
         if (cmdMsg) {
             commandResponses: {
+                const { command, author } = cmdMsg;
                 const inhibited = this.inhibit(cmdMsg);
                 if (inhibited) {
                     responses = await inhibited.response ?? null;
                     break commandResponses;
                 }
 
-                if (!cmdMsg.command || cmdMsg.command.unknown) {
+                if (!command || command.unknown) {
                     client.emit('unknownCommand', cmdMsg);
                     responses = null;
                     break commandResponses;
                 }
 
-                if (!cmdMsg.command.isEnabledIn(message.guild)) {
+                if (!command.isEnabledIn(message.guild) && (!command.hidden || this.client.isOwner(author))) {
                     const responseEmbed = new EmbedBuilder()
                         .setColor(Colors.Red)
-                        .setDescription(`The \`${cmdMsg.command.name}\` command is disabled.`);
+                        .setDescription(`The \`${command.name}\` command is disabled.`);
 
                     responses = await cmdMsg.replyEmbed(responseEmbed);
                     break commandResponses;

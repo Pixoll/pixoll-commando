@@ -1,14 +1,9 @@
-import { Client, Collection, ClientOptions, InviteGenerationOptions, CachedManager, Snowflake, GuildResolvable, GuildCreateOptions, FetchGuildOptions, UserResolvable, Guild, User, ClientEvents, Message, OAuth2Guild, FetchGuildsOptions } from 'discord.js';
+import { Client, Collection, ClientOptions, InviteGenerationOptions, CachedManager, Snowflake, GuildResolvable, GuildCreateOptions, FetchGuildOptions, UserResolvable, Guild, User, OAuth2Guild, FetchGuildsOptions, IntentsBitField } from 'discord.js';
 import CommandoRegistry from './registry';
 import CommandDispatcher from './dispatcher';
-import CommandoMessage from './extensions/message';
 import CommandoGuild from './extensions/guild';
 import ClientDatabaseManager from './database/ClientDatabaseManager';
 import { SimplifiedSchemas } from './database/Schemas';
-import { ArgumentCollectorResult } from './commands/collector';
-import Command, { CommandBlockData, CommandBlockReason, CommandInstances } from './commands/base';
-import CommandGroup from './commands/group';
-import ArgumentType from './types/base';
 import GuildDatabaseManager from './database/GuildDatabaseManager';
 interface CommandoClientOptions extends ClientOptions {
     /**
@@ -41,50 +36,10 @@ interface CommandoClientOptions extends ClientOptions {
     /** The names of the modules to exclude */
     excludeModules?: string[];
 }
-declare class CommandoGuildManager extends CachedManager<Snowflake, CommandoGuild, GuildResolvable> {
+declare class CommandoGuildManager extends CachedManager<Snowflake, CommandoGuild, CommandoGuild | GuildResolvable> {
     create(options: GuildCreateOptions): Promise<CommandoGuild>;
     fetch(options: FetchGuildOptions | Snowflake): Promise<CommandoGuild>;
     fetch(options?: FetchGuildsOptions): Promise<Collection<Snowflake, OAuth2Guild>>;
-}
-interface CommandoClientEvents extends ClientEvents {
-    commandBlock: [instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData];
-    commandCancel: [command: Command, reason: string, message: CommandoMessage, result?: ArgumentCollectorResult];
-    commandError: [
-        command: Command,
-        error: Error,
-        instances: CommandInstances,
-        args: Record<string, unknown> | string[] | string,
-        fromPattern?: boolean,
-        result?: ArgumentCollectorResult
-    ];
-    commandoGuildCreate: [guild: CommandoGuild];
-    commandoMessageCreate: [message: CommandoMessage];
-    commandoMessageUpdate: [oldMessage: Message, newMessage: CommandoMessage];
-    commandPrefixChange: [guild?: CommandoGuild | null, prefix?: string | null];
-    commandRegister: [command: Command, registry: CommandoRegistry];
-    commandReregister: [newCommand: Command, oldCommand: Command];
-    commandRun: [
-        command: Command,
-        promise: Promise<unknown>,
-        instances: CommandInstances,
-        args: Record<string, unknown> | string[] | string,
-        fromPattern?: boolean,
-        result?: ArgumentCollectorResult | null
-    ];
-    commandStatusChange: [guild: CommandoGuild | null, command: Command, enabled: boolean];
-    commandUnregister: [command: Command];
-    databaseReady: [client: CommandoClient<true>];
-    groupRegister: [group: CommandGroup, registry: CommandoRegistry];
-    groupStatusChange: [guild: CommandoGuild | null, group: CommandGroup, enabled: boolean];
-    guildsReady: [client: CommandoClient<true>];
-    modulesReady: [client: CommandoClient<true>];
-    typeRegister: [type: ArgumentType, registry: CommandoRegistry];
-    unknownCommand: [message: CommandoMessage];
-}
-export declare interface CommandoClient {
-    on<K extends keyof CommandoClientEvents>(event: K, listener: (...args: CommandoClientEvents[K]) => void): this;
-    once<K extends keyof CommandoClientEvents>(event: K, listener: (...args: CommandoClientEvents[K]) => void): this;
-    emit<K extends keyof CommandoClientEvents>(event: K, ...args: CommandoClientEvents[K]): boolean;
 }
 /**
  * Discord.js Client with a command framework
@@ -105,7 +60,9 @@ export declare class CommandoClient<Ready extends boolean = boolean> extends Cli
     dispatcher: CommandDispatcher;
     guilds: CommandoGuildManager;
     /** Options for the client */
-    options: CommandoClientOptions;
+    options: Omit<CommandoClientOptions, 'intents'> & {
+        intents: IntentsBitField;
+    };
     /** The client's command registry */
     registry: CommandoRegistry;
     /**

@@ -1,4 +1,4 @@
-import { Collection, Message, MessageOptions, PermissionsString } from 'discord.js';
+import { Collection, Message, MessageCreateOptions, PermissionsString } from 'discord.js';
 import { capitalize } from 'lodash';
 import { CommandInstances } from './commands/base';
 import CommandoInteraction from './extensions/interaction';
@@ -100,10 +100,10 @@ export default class Util extends null {
     /**
      * Removes the reply ping from a message if its sent in DMs.
      * @param msg - The message instance.
-     * @returns A {@link MessageOptions} object.
+     * @returns A {@link MessageCreateOptions} object.
      */
-    static noReplyPingInDMs(msg: CommandoMessage | Message): MessageOptions {
-        const options: MessageOptions = msg.channel.isDMBased() ? {
+    static noReplyPingInDMs(msg: CommandoMessage | Message): MessageCreateOptions {
+        const options: MessageCreateOptions = msg.channel.isDMBased() ? {
             allowedMentions: { repliedUser: false },
         } : {};
 
@@ -238,9 +238,9 @@ export default class Util extends null {
         return instances.interaction;
     }
 
-    static equals<T extends number | string>(value: number | string, ...values: T[]): value is T {
-        for (const value of values) {
-            if (value === value) return true;
+    static equals<T extends number | string, V extends T>(value: T, values: V[]): value is V {
+        for (const val of values) {
+            if (val === value) return true;
         }
         return false;
     }

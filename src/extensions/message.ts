@@ -2,11 +2,12 @@ import {
     Message,
     EmbedBuilder,
     User,
-    MessageOptions,
+    MessageCreateOptions,
     TextBasedChannel,
     MessageEditOptions,
     escapeMarkdown,
     Colors,
+    MessageReplyOptions,
 } from 'discord.js';
 import { oneLine, stripIndent } from 'common-tags';
 import Command from '../commands/base';
@@ -24,7 +25,7 @@ type ResponseType =
     | 'reply';
 
 type StringResolvable =
-    | MessageOptions
+    | MessageCreateOptions
     | string[]
     | string;
 
@@ -32,9 +33,9 @@ interface ResponseOptions {
     /** Type of the response */
     type?: ResponseType;
     /** Content of the response */
-    content?: MessageOptions | StringResolvable | null;
+    content?: MessageCreateOptions | StringResolvable | null;
     /** Options of the response */
-    options?: MessageOptions;
+    options?: MessageCreateOptions;
     /** Language of the response, if its type is `code` */
     lang?: string;
     /** If the response is from an edited message */
@@ -392,7 +393,7 @@ export default class CommandoMessage extends Message {
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    public say(content: StringResolvable, options?: MessageOptions): Promise<CommandoMessageResponse> {
+    public say(content: StringResolvable, options?: MessageCreateOptions): Promise<CommandoMessageResponse> {
         let msgContent: StringResolvable | null = content;
         if (!options && typeof content === 'object' && !Array.isArray(content)) {
             options = content;
@@ -407,7 +408,7 @@ export default class CommandoMessage extends Message {
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    public direct(content: StringResolvable, options?: MessageOptions): Promise<CommandoMessageResponse> {
+    public direct(content: StringResolvable, options?: MessageCreateOptions): Promise<CommandoMessageResponse> {
         let msgContent: StringResolvable | null = content;
         if (!options && typeof content === 'object' && !Array.isArray(content)) {
             options = content;
@@ -423,7 +424,7 @@ export default class CommandoMessage extends Message {
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    public code(lang: string, content: StringResolvable, options?: MessageOptions): Promise<CommandoMessageResponse> {
+    public code(lang: string, content: StringResolvable, options?: MessageCreateOptions): Promise<CommandoMessageResponse> {
         let msgContent: StringResolvable | null = content;
         if (!options && typeof content === 'object' && !Array.isArray(content)) {
             options = content;
@@ -440,7 +441,7 @@ export default class CommandoMessage extends Message {
      * @param options - Options for the message
      */
     public embed(
-        embed: EmbedBuilder | EmbedBuilder[], content: StringResolvable = '', options?: MessageOptions
+        embed: EmbedBuilder | EmbedBuilder[], content: StringResolvable = '', options?: MessageCreateOptions
     ): Promise<CommandoMessageResponse> {
         let msgContent: StringResolvable | null = content;
         if (!options && typeof content === 'object' && !Array.isArray(content)) {
@@ -459,7 +460,7 @@ export default class CommandoMessage extends Message {
      * @param options - Options for the message
      */
     public replyEmbed(
-        embed: EmbedBuilder | EmbedBuilder[], content: StringResolvable = '', options?: MessageOptions
+        embed: EmbedBuilder | EmbedBuilder[], content: StringResolvable = '', options?: MessageReplyOptions
     ): Promise<CommandoMessageResponse> {
         let msgContent: StringResolvable | null = content;
         if (!options && typeof content === 'object' && !Array.isArray(content)) {

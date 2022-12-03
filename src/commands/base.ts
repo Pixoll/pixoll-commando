@@ -3,7 +3,6 @@ import {
     GuildResolvable,
     Message,
     EmbedBuilder,
-    MessageOptions,
     PermissionsString,
     User,
     Colors,
@@ -16,12 +15,14 @@ import {
     APIApplicationCommandOptionChoice,
     SharedNameAndDescription,
     SharedSlashCommandOptions,
-    InteractionReplyOptions,
     ChatInputApplicationCommandData,
     ContextMenuCommandBuilder,
     UserApplicationCommandData,
     MessageApplicationCommandData,
     ApplicationCommandData,
+    MessagePayloadOption,
+    MessagePayload,
+    ChatInputCommandInteraction,
 } from 'discord.js';
 import path from 'path';
 import ArgumentCollector, { ArgumentCollectorResult } from './collector';
@@ -398,7 +399,7 @@ export default abstract class Command {
         }
 
         if (!channel.isDMBased()) {
-            if (modPermissions && !isMod(member as GuildMember)) {
+            if (modPermissions && !isModerator(member as GuildMember)) {
                 return 'modPermissions';
             }
             if (userPermissions) {
@@ -449,26 +450,26 @@ export default abstract class Command {
 
         switch (reason) {
             case 'dmOnly':
-                return replyAll(instances, embed(useCommandOnlyIf('in direct messages')));
+                return replyInteraction(instances, embed(useCommandOnlyIf('in direct messages')));
             case 'guildOnly':
-                return replyAll(instances, embed(useCommandOnlyIf('in a server channel')));
+                return replyInteraction(instances, embed(useCommandOnlyIf('in a server channel')));
             case 'guildOwnerOnly':
-                return replyAll(instances, embed(useCommandOnlyIf('by the server\'s owner')));
+                return replyInteraction(instances, embed(useCommandOnlyIf('by the server\'s owner')));
             case 'nsfw':
-                return replyAll(instances, embed(useCommandOnlyIf('in a NSFW channel')));
+                return replyInteraction(instances, embed(useCommandOnlyIf('in a NSFW channel')));
             case 'ownerOnly':
-                return replyAll(instances, embed(useCommandOnlyIf('by the bot\'s owner')));
+                return replyInteraction(instances, embed(useCommandOnlyIf('by the bot\'s owner')));
             case 'userPermissions': {
                 if (!missing) {
                     throw new Error('Missing permissions object must be specified for "userPermissions" case');
                 }
-                return replyAll(instances, embed(
+                return replyInteraction(instances, embed(
                     'You are missing the following permissions:',
                     missing.map(perm => `\`${Util.permissions[perm]}\``).join(', ')
                 ));
             }
             case 'modPermissions':
-                return replyAll(instances, embed(
+                return replyInteraction(instances, embed(
                     useCommandOnlyIf('by "moderators"'),
                     'For more information visit the `page 3` of the `help` command.'
                 ));
@@ -476,7 +477,7 @@ export default abstract class Command {
                 if (!missing) {
                     throw new Error('Missing permissions object must be specified for "clientPermissions" case');
                 }
-                return replyAll(instances, embed(
+                return replyInteraction(instances, embed(
                     'The bot is missing the following permissions:',
                     missing.map(perm => `\`${Util.permissions[perm]}\``).join(', ')
                 ));
@@ -485,7 +486,7 @@ export default abstract class Command {
                 if (!remaining) {
                     throw new Error('Remaining time value must be specified for "throttling" case');
                 }
-                return replyAll(instances, embed(
+                return replyInteraction(instances, embed(
                     `Please wait **${remaining.toFixed(1)} seconds** before using the \`${name}\` command again.`
                 ));
             }
@@ -723,7 +724,7 @@ export default abstract class Command {
         if ('argsPromptLimit' in info && info.argsPromptLimit && info.argsPromptLimit < 0) {
             throw new RangeError('Command argsPromptLimit must be at least 0.');
         }
-        if ('argsType' in info && info.argsType && !Util.equals(info.argsType, 'single', 'multiple')) {
+        if ('argsType' in info && info.argsType && !Util.equals(info.argsType, ['single', 'multiple'])) {
             throw new RangeError('Command argsType must be one of "single" or "multiple".');
         }
         if (info.argsType === 'multiple' && info.argsCount && info.argsCount < 2) {
@@ -937,23 +938,25 @@ function embed(name: string, value?: string): EmbedBuilder {
     return embed;
 }
 
-async function replyAll(
-    instances: CommandInstances, options: EmbedBuilder | MessageOptions | string
+async function replyInteraction(
+    instances: CommandInstances, options: EmbedBuilder | MessagePayloadOption | string
 ): Promise<Message | null> {
     if (options instanceof EmbedBuilder) options = { embeds: [options] };
     if (typeof options === 'string') options = { content: options };
     if ('interaction' in instances) {
         const { interaction } = instances;
-        if (interaction.deferred || interaction.replied) {
-            return await interaction.editReply(options).catch(() => null);
+        const payload = new MessagePayload(interaction as unknown as ChatInputCommandInteraction, options);
+        if (interaction.isEditable()) {
+            return await interaction.editReply(payload).catch(() => null);
         }
-        await interaction.reply(options as InteractionReplyOptions).catch(() => null);
+        await interaction.reply(payload).catch(() => null);
         return null;
     }
     if ('message' in instances) {
         const { message } = instances;
+        const payload = new MessagePayload(message as Message, options);
         Object.assign(options, Util.noReplyPingInDMs(message));
-        return await message.reply(options).catch(() => null);
+        return await message.reply(payload).catch(() => null);
     }
     return null;
 }
@@ -974,9 +977,9 @@ const isModConditions: PermissionsString[] = [
     'MuteMembers',
 ];
 
-function isMod(roleOrMember: GuildMember): boolean {
-    if (!roleOrMember) return false;
-    const { permissions } = roleOrMember;
+function isModerator(member: GuildMember): boolean {
+    if (!member) return false;
+    const { permissions } = member;
     if (permissions.has('Administrator')) return true;
 
     const values = [];

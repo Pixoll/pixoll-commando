@@ -1,4 +1,5 @@
 import CommandoClient from '../client';
+import { Tuple } from '../utilTypes';
 import Util from '../util';
 import ArgumentType from './base';
 
@@ -57,7 +58,7 @@ export default class TimeArgumentType extends ArgumentType {
             || [defaultDate.getUTCHours(), defaultDate.getUTCMinutes()];
 
         const arr = dateNumbers.concat(timeNumbers)
-            .filter(n => !Util.isNullish(n)) as [number, number, number, number, number];
+            .filter(n => !Util.isNullish(n)) as Tuple<number, 5>;
 
         const date = new Date(...arr);
         return date;

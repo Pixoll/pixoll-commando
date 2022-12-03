@@ -8,7 +8,7 @@ import { CommandGroupResolvable, CommandResolvable } from '../registry';
  */
 export default class CommandoGuild extends Guild {
     /** The client the guild is for */
-    readonly client: CommandoClient;
+    readonly client: CommandoClient<true>;
     /** The database manager for the guild */
     database: GuildDatabaseManager;
     /** The queued logs for this guild */

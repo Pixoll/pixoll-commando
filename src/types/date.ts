@@ -2,6 +2,7 @@ import { ms } from 'better-ms';
 import CommandoClient from '../client';
 import Argument from '../commands/argument';
 import CommandoMessage from '../extensions/message';
+import { Tuple } from '../utilTypes';
 import Util from '../util';
 import ArgumentType from './base';
 
@@ -84,7 +85,7 @@ export default class DateArgumentType extends ArgumentType {
             || [defaultDate.getUTCHours(), defaultDate.getUTCMinutes()];
 
         const arr = dateNumbers.concat(timeNumbers)
-            .filter(n => !Util.isNullish(n)) as [number, number, number, number, number];
+            .filter(n => !Util.isNullish(n)) as Tuple<number, 5>;
 
         const date = new Date(...arr);
         return date;

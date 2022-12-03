@@ -67,6 +67,11 @@ export default class CommandoInteraction extends CommandInteraction {
         return super.guild as CommandoGuild;
     }
 
+    /** Whether this interaction is able to been edited (has been previously deferred or replied to) */
+    public isEditable(): boolean {
+        return this.deferred || this.replied;
+    }
+
     /**
      * Parses the options data into usable arguments
      * @see Command#run

@@ -26,6 +26,8 @@ export default class CommandoInteraction extends CommandInteraction {
     get command(): Command;
     /** The guild this message is for */
     get guild(): CommandoGuild | null;
+    /** Whether this interaction is able to been edited (has been previously deferred or replied to) */
+    isEditable(): boolean;
     /**
      * Parses the options data into usable arguments
      * @see Command#run
