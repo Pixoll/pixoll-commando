@@ -7,7 +7,7 @@ declare module 'better-ms' {
     /**
      * Parse milliseconds into an object.
      * @example
-     * ```
+     * ```js
      * import { parseMs } from 'better-ms';
      * 
      * parseMs(1337000001);
@@ -28,7 +28,7 @@ declare module 'better-ms' {
      * Convert milliseconds to a human readable string: `1337000000` → `15d 11h 23m 20s`.
      * @param ms - Milliseconds to humanize.
      * @example
-     * ```
+     * ```js
      * import { prettyMs } from 'better-ms';
      * 
      * prettyMilliseconds(1337000000);
@@ -70,32 +70,32 @@ declare module 'better-ms' {
          * @since 0.5.0
          * @param pattern - The string to parse.
          */
-        constructor(pattern: string);
+        public constructor(pattern: string);
 
         /**
          * The offset.
          * @since 0.5.0
          */
-        offset: number;
+        public offset: number;
         /**
          * Get the date from now.
          * @since 0.5.0
          */
-        get fromNow(): Date;
+        public get fromNow(): Date;
 
         /**
          * Get the date from.
          * @since 0.5.0
          * @param date - The Date instance to get the date from.
          */
-        dateFrom(date: Date): Date;
+        public dateFrom(date: Date): Date;
         /**
          * Shows the user friendly duration of time between a period and now.
          * @since 0.5.0
          * @param earlier - The time to compare.
          * @param showIn - Whether the output should be prefixed.
          */
-        static toNow(earlier: Date | number | string, showIn?: boolean): string;
+        public static toNow(earlier: Date | number | string, showIn?: boolean): string;
     }
 
     export interface PrettyMsOptions {

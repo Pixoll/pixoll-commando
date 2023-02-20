@@ -8,6 +8,7 @@ import {
     escapeMarkdown,
     Colors,
     MessageReplyOptions,
+    If,
 } from 'discord.js';
 import { oneLine, stripIndent } from 'common-tags';
 import Command from '../commands/base';
@@ -33,7 +34,7 @@ interface ResponseOptions {
     /** Type of the response */
     type?: ResponseType;
     /** Content of the response */
-    content?: MessageCreateOptions | StringResolvable | null;
+    content?: StringResolvable | null;
     /** Options of the response */
     options?: MessageCreateOptions;
     /** Language of the response, if its type is `code` */
@@ -42,10 +43,10 @@ interface ResponseOptions {
     fromEdit?: boolean;
 }
 
-export type CommandoMessageResponse =
-    | CommandoMessage
-    | Message
-    | Message[]
+export type CommandoMessageResponse<InGuild extends boolean = boolean> =
+    | Array<Message<InGuild>>
+    | CommandoMessage<InGuild>
+    | Message<InGuild>
     | null;
 
 /**
@@ -53,7 +54,7 @@ export type CommandoMessageResponse =
  * @augments Message
  */
 // @ts-expect-error: Message's constructor is private
-export default class CommandoMessage extends Message {
+export default class CommandoMessage<InGuild extends boolean = boolean> extends Message<InGuild> {
     /** The client the message is for */
     declare public readonly client: CommandoClient<true>;
     /** Whether the message contains a command (even an unknown one) */
@@ -87,8 +88,8 @@ export default class CommandoMessage extends Message {
     }
 
     /** The guild this message is for */
-    get guild(): CommandoGuild | null {
-        return super.guild as CommandoGuild;
+    public get guild(): If<InGuild, CommandoGuild> {
+        return super.guild as If<InGuild, CommandoGuild>;
     }
 
     /**

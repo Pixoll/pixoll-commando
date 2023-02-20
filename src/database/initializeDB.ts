@@ -11,7 +11,7 @@ type Module = (client: CommandoClient) => Promise<unknown>;
  * Connects to MongoDB, caches the database and loads all client modules.
  * @param client - The client the database is for.
  */
-export default async function initializeDB(client: CommandoClient): Promise<void> {
+export default async function initializeDB(client: CommandoClient<true>): Promise<void> {
     const connected = await connectDB(client);
     if (!connected) return;
     await cacheDB(client);
@@ -22,7 +22,7 @@ export default async function initializeDB(client: CommandoClient): Promise<void
  * Connects the client to the database.
  * @param client - The client this handlers is for.
  */
-async function connectDB(client: CommandoClient): Promise<boolean> {
+async function connectDB(client: CommandoClient<true>): Promise<boolean> {
     const { mongoDbURI } = client.options;
     const { MONGO_DB_URI } = process.env;
     const uri = mongoDbURI ?? MONGO_DB_URI;
@@ -37,7 +37,7 @@ async function connectDB(client: CommandoClient): Promise<boolean> {
  * Caches all the DB data.
  * @param client - The client this handlers is for.
  */
-async function cacheDB(client: CommandoClient): Promise<void> {
+async function cacheDB(client: CommandoClient<true>): Promise<void> {
     const { database, databases, guilds } = client;
 
     const schemas = Object.values(Schemas) as Array<ModelFrom<AnySchema, true>>;
@@ -74,7 +74,7 @@ async function cacheDB(client: CommandoClient): Promise<void> {
  * Loads all the client's modules.
  * @param client - The client this handlers is for.
  */
-async function loadModules(client: CommandoClient): Promise<void> {
+async function loadModules(client: CommandoClient<true>): Promise<void> {
     const { options } = client;
     const { modulesDir, excludeModules } = options;
 

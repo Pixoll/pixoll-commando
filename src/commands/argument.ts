@@ -368,9 +368,9 @@ export default class Argument {
                             Respond with \`cancel\` to cancel the command, or \`finish\` to finish entry.`,
                         }])
                         .setFooter({
-                            text: wait ?
-                                `The command will automatically be cancelled in ${this.wait} seconds, unless you respond.` :
-                                '',
+                            text: wait
+                                ?  `The command will automatically be cancelled in ${this.wait} seconds, unless you respond.`
+                                : '',
                         });
 
                     prompts.push(await msg.replyEmbed(prompt) as ArgumentResponse);

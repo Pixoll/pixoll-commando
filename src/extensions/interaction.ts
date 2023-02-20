@@ -48,22 +48,22 @@ export default class CommandoInteraction extends CommandInteraction {
         this._command = client.registry.resolveCommand(data.commandName);
     }
 
-    get author(): User {
+    public get author(): User {
         return this.user;
     }
 
-    get channel(): TextBasedChannel {
+    public get channel(): TextBasedChannel {
         return super.channel as TextBasedChannel;
     }
 
     /** Command that the interaction triggers */
     // @ts-expect-error: This is meant to override CommandInteraction's command getter.
-    get command(): Command {
+    public get command(): Command {
         return this._command;
     }
 
     /** The guild this message is for */
-    get guild(): CommandoGuild | null {
+    public get guild(): CommandoGuild | null {
         return super.guild as CommandoGuild;
     }
 

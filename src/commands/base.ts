@@ -348,9 +348,9 @@ export default abstract class Command {
         this.nsfw = !!info.nsfw;
         this.defaultHandling = info.defaultHandling ?? true;
         this.throttling = info.throttling ?? null;
-        this.argsCollector = info.args?.length ?
-            new ArgumentCollector(client, info.args, info.argsPromptLimit) :
-            null;
+        this.argsCollector = info.args?.length
+            ? new ArgumentCollector(client, info.args, info.argsPromptLimit)
+            : null;
         if (this.argsCollector && !info.format) {
             this.format = this.argsCollector.args.reduce((prev, arg) => {
                 const wrapL = arg.required ? '[' : '<';

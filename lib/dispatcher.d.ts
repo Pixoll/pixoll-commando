@@ -17,7 +17,7 @@ interface Inhibition {
  * - A single string identifying the reason the command is blocked
  * - An Inhibition object
  */
-declare type Inhibitor = (msg: CommandoMessage) => Inhibition | string;
+type Inhibitor = (msg: CommandoMessage) => Inhibition | string;
 /** Handles parsing messages and running commands from them */
 export default class CommandDispatcher {
     /** Client this dispatcher handles messages for */

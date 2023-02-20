@@ -1,9 +1,8 @@
-/* eslint-disable no-use-before-define */
+/* eslint-disable @typescript-eslint/explicit-member-accessibility */
 
 import {
     CachedManager,
     Client,
-    ClientEvents,
     ClientOptions,
     Collection,
     CommandInteraction,
@@ -16,7 +15,6 @@ import {
     InviteGenerationOptions,
     Message,
     EmbedBuilder,
-    MessageOptions,
     PermissionsString,
     Snowflake,
     TextBasedChannel,
@@ -29,8 +27,20 @@ import {
     CommandInteractionOption,
     MessageApplicationCommandData,
     UserApplicationCommandData,
+    MessageCreateOptions,
+    MessageReplyOptions,
+    If,
 } from 'discord.js';
 import { FilterQuery, Model, Types, UpdateAggregationStage, UpdateQuery, UpdateWriteOpResult } from 'mongoose';
+
+//#region Overrides
+
+declare module 'discord.js' {
+    // eslint-disable-next-line @typescript-eslint/no-empty-interface
+    interface ClientEvents extends CommandoClientEvents { }
+}
+
+//#endregion
 
 //#region Classes
 
@@ -730,7 +740,7 @@ export class CommandoInteraction extends CommandInteraction {
  * An extension of the base Discord.js Message class to add command-related functionality.
  * @augments Message
  */
-export class CommandoMessage extends Message {
+export class CommandoMessage<InGuild extends boolean = boolean> extends Message<InGuild> {
     /**
      * @param client - The client the message is for
      * @param data - The message data
@@ -774,7 +784,7 @@ export class CommandoMessage extends Message {
     /** The client the message is for */
     readonly client: CommandoClient<true>;
     /** The guild this message is for */
-    get guild(): CommandoGuild | null;
+    get guild(): If<InGuild, CommandoGuild>;
     /** Whether the message contains a command (even an unknown one) */
     isCommand: boolean;
     /** Command that the message triggers, if any */
@@ -816,27 +826,27 @@ export class CommandoMessage extends Message {
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    say(content: StringResolvable, options?: MessageOptions): Promise<CommandoMessageResponse>;
+    say(content: StringResolvable, options?: MessageCreateOptions): Promise<CommandoMessageResponse>;
     /**
      * Responds with a direct message
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    direct(content: StringResolvable, options?: MessageOptions): Promise<CommandoMessageResponse>;
+    direct(content: StringResolvable, options?: MessageCreateOptions): Promise<CommandoMessageResponse>;
     /**
      * Responds with a code message
      * @param lang - Language for the code block
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    code(lang: string, content: StringResolvable, options?: MessageOptions): Promise<CommandoMessageResponse>;
+    code(lang: string, content: StringResolvable, options?: MessageCreateOptions): Promise<CommandoMessageResponse>;
     /**
      * Responds with an embed
      * @param embed - Embed to send
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    embed(embed: EmbedBuilder | EmbedBuilder[], content?: StringResolvable, options?: MessageOptions):
+    embed(embed: EmbedBuilder | EmbedBuilder[], content?: StringResolvable, options?: MessageCreateOptions):
         Promise<CommandoMessageResponse>;
     /**
      * Responds with a reply + embed
@@ -844,7 +854,7 @@ export class CommandoMessage extends Message {
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    replyEmbed(embed: EmbedBuilder | EmbedBuilder[], content?: StringResolvable, options?: MessageOptions):
+    replyEmbed(embed: EmbedBuilder | EmbedBuilder[], content?: StringResolvable, options?: MessageReplyOptions):
         Promise<CommandoMessageResponse>;
     /**
      * Parses an argument string into an array of arguments
@@ -1028,9 +1038,9 @@ export class Util extends null {
     /**
      * Removes the reply ping from a message if its sent in DMs.
      * @param msg - The message instance.
-     * @returns A {@link MessageOptions} object.
+     * @returns A {@link MessageCreateOptions} object.
      */
-    static noReplyPingInDMs(msg: CommandoMessage | Message): MessageOptions;
+    static noReplyPingInDMs(msg: CommandoMessage | Message): MessageCreateOptions;
     /**
      * Disambiguate items from an array into a list.
      * @param items - An array of strings or objects.
@@ -1281,7 +1291,11 @@ export type CommandBlockReason =
  */
 export type CommandGroupResolvable = CommandGroup | string;
 
-export type CommandoMessageResponse = CommandoMessage | Message | Message[] | null;
+export type CommandoMessageResponse<InGuild extends boolean = boolean> =
+    | Array<Message<InGuild>>
+    | CommandoMessage<InGuild>
+    | Message<InGuild>
+    | null;
 
 /**
  * A CommandResolvable can be:
@@ -1304,7 +1318,7 @@ type Inhibitor = (msg: CommandoMessage) => Inhibition | string;
 /** Type of the response */
 export type ResponseType = 'code' | 'direct' | 'plain' | 'reply';
 
-export type StringResolvable = MessageOptions | string[] | string;
+export type StringResolvable = MessageCreateOptions | string[] | string;
 
 /** Result object from obtaining argument values from an {@link ArgumentCollector} */
 export interface ArgumentCollectorResult<T = Record<string, unknown>> {
@@ -1557,7 +1571,7 @@ export type CommandInstances = {
     message: CommandoMessage;
 };
 
-interface CommandoClientEvents extends ClientEvents {
+export interface CommandoClientEvents {
     commandBlock: [instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData];
     commandCancel: [command: Command, reason: string, message: CommandoMessage, result?: ArgumentCollectorResult];
     commandError: [
@@ -1565,7 +1579,7 @@ interface CommandoClientEvents extends ClientEvents {
         error: Error,
         instances: CommandInstances,
         args: Record<string, unknown> | string[] | string,
-        fromPattern: boolean,
+        fromPattern?: boolean,
         result?: ArgumentCollectorResult
     ];
     commandoGuildCreate: [guild: CommandoGuild];
@@ -1766,9 +1780,9 @@ export interface ResponseOptions {
     /** Type of the response */
     type?: ResponseType;
     /** Content of the response */
-    content?: MessageOptions | StringResolvable | null;
+    content?: StringResolvable | null;
     /** Options of the response */
-    options?: MessageOptions;
+    options?: MessageCreateOptions;
     /** Language of the response, if its type is `code` */
     lang?: string;
     /** If the response is from an edited message */

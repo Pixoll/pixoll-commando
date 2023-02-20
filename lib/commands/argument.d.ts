@@ -2,15 +2,15 @@ import { Message } from 'discord.js';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 import ArgumentType from '../types/base';
-declare type ArgumentCheckerParams = [
+type ArgumentCheckerParams = [
     val: string[] | string,
     originalMsg: CommandoMessage,
     arg: Argument,
     currentMsg?: CommandoMessage
 ];
-declare type ArgumentTypes = 'boolean' | 'category-channel' | 'channel' | 'command' | 'custom-emoji' | 'date' | 'default-emoji' | 'duration' | 'float' | 'group' | 'integer' | 'invite' | 'member' | 'message' | 'role' | 'stage-channel' | 'string' | 'text-channel' | 'thread-channel' | 'time' | 'user' | 'voice-channel';
+type ArgumentTypes = 'boolean' | 'category-channel' | 'channel' | 'command' | 'custom-emoji' | 'date' | 'default-emoji' | 'duration' | 'float' | 'group' | 'integer' | 'invite' | 'member' | 'message' | 'role' | 'stage-channel' | 'string' | 'text-channel' | 'thread-channel' | 'time' | 'user' | 'voice-channel';
 /** Either a value or a function that returns a value. The function is passed the CommandoMessage and the Argument. */
-declare type ArgumentDefault = (msg: CommandoMessage, arg: Argument) => Promise<unknown>;
+type ArgumentDefault = (msg: CommandoMessage, arg: Argument) => Promise<unknown>;
 /** Information for the command argument */
 export interface ArgumentInfo {
     /** Key for the argument */
@@ -70,7 +70,7 @@ export interface ArgumentInfo {
      */
     wait?: number;
 }
-export declare type ArgumentResponse = CommandoMessage | Message | null;
+export type ArgumentResponse = CommandoMessage | Message | null;
 /** Result object from obtaining a single {@link Argument}'s value(s) */
 export interface ArgumentResult {
     /** Final value(s) for the argument */

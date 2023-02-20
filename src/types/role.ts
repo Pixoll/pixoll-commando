@@ -33,9 +33,9 @@ export default class RoleArgumentType extends ArgumentType {
         }
         if (exactRoles.size > 0) roles = exactRoles;
 
-        return roles.size <= 15 ?
-            `${Util.disambiguation(roles.map(role => `${escapeMarkdown(role.name)}`), 'roles')}\n` :
-            'Multiple roles found. Please be more specific.';
+        return roles.size <= 15
+            ? `${Util.disambiguation(roles.map(role => `${escapeMarkdown(role.name)}`), 'roles')}\n`
+            : 'Multiple roles found. Please be more specific.';
     }
 
     public parse(val: string, msg: CommandoMessage): Role | null {

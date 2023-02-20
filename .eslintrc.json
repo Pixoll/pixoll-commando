@@ -8,9 +8,6 @@
     "parserOptions": {
         "ecmaVersion": "latest"
     },
-    "ignorePatterns": [
-        "*.d.ts"
-    ],
     "rules": {
         "comma-dangle": [
             "error",
@@ -49,13 +46,7 @@
         ],
         "operator-linebreak": [
             "error",
-            "before",
-            {
-                "overrides": {
-                    "?": "after",
-                    ":": "after"
-                }
-            }
+            "before"
         ],
         "semi": [
             "error"
@@ -143,7 +134,8 @@
                 "semi": [
                     "off"
                 ],
-                "@typescript-eslint/semi": "error"
+                "@typescript-eslint/semi": "error",
+                "@typescript-eslint/explicit-member-accessibility": "error"
             }
         }
     ]

@@ -42,9 +42,9 @@ export default class MemberArgumentType extends ArgumentType {
         }
         if (exactMembers.size > 0) members = exactMembers;
 
-        return members.size <= 15 ?
-            `${Util.disambiguation(members.map(mem => escapeMarkdown(mem.user.tag)), 'members')}\n` :
-            'Multiple members found. Please be more specific.';
+        return members.size <= 15
+            ? `${Util.disambiguation(members.map(mem => escapeMarkdown(mem.user.tag)), 'members')}\n`
+            : 'Multiple members found. Please be more specific.';
     }
 
     public parse(val: string, msg: CommandoMessage): GuildMember | null {

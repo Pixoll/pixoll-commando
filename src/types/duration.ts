@@ -11,8 +11,8 @@ export default class DurationArgumentType extends ArgumentType {
     }
 
     public validate(val: string, _: CommandoMessage, arg: Argument): boolean | string {
-        const int = typeof val === 'number' ? val :
-            /^\d+$/.test(val) ? parseInt(val) : ms(val);
+        const int = typeof val === 'number' ? val
+            : /^\d+$/.test(val) ? parseInt(val) : ms(val);
 
         if (!int || int < 1000) {
             return 'Please enter a valid duration format. Use the `help` command for more information.';

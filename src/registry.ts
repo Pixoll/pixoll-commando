@@ -564,9 +564,9 @@ export default class CommandoRegistry {
     public findCommands(searchString: string | null = null, exact = false, instances?: CommandInstances): Command[] {
         const { commands } = this;
         if (!searchString) {
-            return instances && Util.getInstanceFrom(instances) ?
-                commands.filter(cmd => cmd.isUsable(instances)).toJSON() :
-                commands.toJSON();
+            return instances && Util.getInstanceFrom(instances)
+                ? commands.filter(cmd => cmd.isUsable(instances)).toJSON()
+                : commands.toJSON();
         }
 
         // Find all matches

@@ -13,9 +13,9 @@ export default class CommandArgumentType extends ArgumentType {
         const commands = this.client.registry.findCommands(val);
         if (commands.length === 1) return true;
         if (commands.length === 0) return false;
-        return commands.length <= 15 ?
-            `${Util.disambiguation(commands.map(cmd => escapeMarkdown(cmd.name)), 'commands')}\n` :
-            'Multiple commands found. Please be more specific.';
+        return commands.length <= 15
+            ? `${Util.disambiguation(commands.map(cmd => escapeMarkdown(cmd.name)), 'commands')}\n`
+            : 'Multiple commands found. Please be more specific.';
     }
 
     public parse(val: string): Command {

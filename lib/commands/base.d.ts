@@ -152,7 +152,7 @@ interface Throttle {
     timeout: NodeJS.Timeout;
 }
 /** The instances the command is being run for */
-export declare type CommandInstances = {
+export type CommandInstances = {
     /** The interaction the command is being run for */
     interaction: CommandoInteraction;
 } | {
@@ -160,7 +160,7 @@ export declare type CommandInstances = {
     message: CommandoMessage;
 };
 /** The reason of {@link Command#onBlock} */
-export declare type CommandBlockReason = 'clientPermissions' | 'dmOnly' | 'guildOnly' | 'guildOwnerOnly' | 'modPermissions' | 'nsfw' | 'ownerOnly' | 'throttling' | 'userPermissions';
+export type CommandBlockReason = 'clientPermissions' | 'dmOnly' | 'guildOnly' | 'guildOwnerOnly' | 'modPermissions' | 'nsfw' | 'ownerOnly' | 'throttling' | 'userPermissions';
 /** Additional data associated with the block */
 export interface CommandBlockData {
     /**
@@ -183,7 +183,7 @@ interface SlashCommandInfo extends ChatInputApplicationCommandData {
     /** Whether the deferred reply should be ephemeral or not */
     deferEphemeral?: boolean;
 }
-export declare type AppCommandData = MessageApplicationCommandData | SlashCommandInfo | UserApplicationCommandData;
+export type AppCommandData = MessageApplicationCommandData | SlashCommandInfo | UserApplicationCommandData;
 /** A command that can be run in a client */
 export default abstract class Command {
     /** Client that this command is for */

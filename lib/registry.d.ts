@@ -131,13 +131,13 @@ interface DefaultTypesOptions {
  * - A command name
  * - A {@link CommandoMessage}
  */
-export declare type CommandResolvable = Command | CommandoMessage | string;
+export type CommandResolvable = Command | CommandoMessage | string;
 /**
  * A CommandGroupResolvable can be:
  * - A {@link CommandGroup}
  * - A group ID
  */
-export declare type CommandGroupResolvable = CommandGroup | string;
+export type CommandGroupResolvable = CommandGroup | string;
 /** Handles registration and searching of commands and groups */
 export default class CommandoRegistry {
     /** The client this registry is for */

@@ -25,7 +25,7 @@ export interface SplitOptions {
 /** Contains various general-purpose utility methods and constants. */
 export default class Util extends null {
     /** Object that maps every PermissionString to its representation inside the Discord client. */
-    static get permissions(): Readonly<Record<PermissionsString, string>> {
+    public static get permissions(): Readonly<Record<PermissionsString, string>> {
         return {
             CreateInstantInvite: 'Create instant invite',
             KickMembers: 'Kick members',
@@ -75,7 +75,7 @@ export default class Util extends null {
      * Escapes the following characters from a string: `|\{}()[]^$+*?.`.
      * @param str - The string to escape.
      */
-    static escapeRegex(str: string): string {
+    public static escapeRegex(str: string): string {
         return str.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&');
     }
 
@@ -83,7 +83,7 @@ export default class Util extends null {
      * Basic probability function.
      * @param n - The probability percentage, from 0 to 100.
      */
-    static probability(n: number): boolean {
+    public static probability(n: number): boolean {
         n /= 100;
         return !!n && Math.random() <= n;
     }
@@ -92,7 +92,7 @@ export default class Util extends null {
      * Checks if the argument is a promise.
      * @param obj - The object of function to check.
      */
-    static isPromise<T, S>(obj: PromiseLike<T> | S): obj is PromiseLike<T> {
+    public static isPromise<T, S>(obj: PromiseLike<T> | S): obj is PromiseLike<T> {
         // @ts-expect-error: 'then' does not exist in type S
         return !!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function';
     }
@@ -102,7 +102,7 @@ export default class Util extends null {
      * @param msg - The message instance.
      * @returns A {@link MessageCreateOptions} object.
      */
-    static noReplyPingInDMs(msg: CommandoMessage | Message): MessageCreateOptions {
+    public static noReplyPingInDMs(msg: CommandoMessage | Message): MessageCreateOptions {
         const options: MessageCreateOptions = msg.channel.isDMBased() ? {
             allowedMentions: { repliedUser: false },
         } : {};
@@ -117,7 +117,7 @@ export default class Util extends null {
      * @param property - The property to read from the objects (only usable if `items` is an array of objects).
      * @returns A string with the disambiguated items.
      */
-    static disambiguation(items: Array<Record<string, string> | string>, label: string, property = 'name'): string {
+    public static disambiguation(items: Array<Record<string, string> | string>, label: string, property = 'name'): string {
         const itemList = items.map(item =>
             `"${(typeof item !== 'string' ? item[property] : item).replace(/ /g, '\xa0')}"`
         ).join(',   ');
@@ -128,7 +128,7 @@ export default class Util extends null {
      * Removes the dashes from a string and capitalizes the characters in front of them.
      * @param str - The string to parse.
      */
-    static removeDashes(str: string): string {
+    public static removeDashes(str: string): string {
         const arr = str.split('-');
         const first = arr.shift();
         const rest = arr.map(capitalize).join('');
@@ -140,7 +140,7 @@ export default class Util extends null {
      * @param text - Content to split
      * @param options - Options controlling the behavior of the split
      */
-    static splitMessage(text: string, options: SplitOptions = {}): string[] {
+    public static splitMessage(text: string, options: SplitOptions = {}): string[] {
         const { maxLength = 2_000, char = '\n', prepend = '', append = '' } = options;
         text = Util.verifyString(text);
         if (text.length <= maxLength) return [text];
@@ -183,7 +183,7 @@ export default class Util extends null {
      * @param obj - The object to mutate.
      * @param newObj - The data to assign.
      */
-    static mutateObjectInstance<T extends object>(obj: object, newObj: T): T {
+    public static mutateObjectInstance<T extends object>(obj: object, newObj: T): T {
         Object.assign(obj, newObj);
         const { prototype } = newObj.constructor;
         const properties = Object.getOwnPropertyNames(prototype)
@@ -205,7 +205,7 @@ export default class Util extends null {
      * @param array - Any array that could contain nullish items.
      * @returns An array with all non-nullish items.
      */
-    static filterNullishItems<T>(array: Array<T | null | undefined>): T[] {
+    public static filterNullishItems<T>(array: Array<T | null | undefined>): T[] {
         return array.filter((item): item is T => !Util.isNullish(item));
     }
 
@@ -215,7 +215,7 @@ export default class Util extends null {
      * @param collection - Any collection that could contain nullish values.
      * @returns An array with all non-nullish values.
      */
-    static filterNullishValues<K, V>(collection: Collection<K, V | null | undefined>): Collection<K, V> {
+    public static filterNullishValues<K, V>(collection: Collection<K, V | null | undefined>): Collection<K, V> {
         return collection.filter((item): item is V => !Util.isNullish(item));
     }
 
@@ -224,7 +224,7 @@ export default class Util extends null {
      * @param val - The value to check.
      * @returns Whether the value is nullish.
      */
-    static isNullish(val: unknown): val is null | undefined {
+    public static isNullish(val: unknown): val is null | undefined {
         return typeof val === 'undefined' || val === null;
     }
 
@@ -233,12 +233,12 @@ export default class Util extends null {
      * @param instances - The instances object.
      * @returns The instance of the command.
      */
-    static getInstanceFrom(instances: CommandInstances): CommandoInteraction | CommandoMessage {
+    public static getInstanceFrom(instances: CommandInstances): CommandoInteraction | CommandoMessage {
         if ('message' in instances) return instances.message;
         return instances.interaction;
     }
 
-    static equals<T extends number | string, V extends T>(value: T, values: V[]): value is V {
+    public static equals<T extends number | string, V extends T>(value: T, values: V[]): value is V {
         for (const val of values) {
             if (val === value) return true;
         }

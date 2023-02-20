@@ -45,9 +45,9 @@ export default class CategoryChannelArgumentType extends ArgumentType {
         }
         if (exactChannels.size > 0) channels = exactChannels;
 
-        return channels.size <= 15 ?
-            `${Util.disambiguation(channels.map(chan => escapeMarkdown(chan.name)), 'categories')}\n` :
-            'Multiple categories found. Please be more specific.';
+        return channels.size <= 15
+            ? `${Util.disambiguation(channels.map(chan => escapeMarkdown(chan.name)), 'categories')}\n`
+            : 'Multiple categories found. Please be more specific.';
     }
 
     public parse(val: string, msg: CommandoMessage): CategoryChannel | null {

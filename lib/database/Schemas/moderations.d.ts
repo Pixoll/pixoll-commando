@@ -24,8 +24,8 @@
 /// <reference types="mongoose" />
 /// <reference types="mongoose/types/inferschematype" />
 import { BaseSchema, DocumentFrom } from './base';
-export declare type TimeBasedModerationType = 'mute' | 'temp-ban' | 'time-out';
-declare type ModerationType = TimeBasedModerationType | 'ban' | 'kick' | 'soft-ban' | 'warn';
+export type TimeBasedModerationType = 'mute' | 'temp-ban' | 'time-out';
+type ModerationType = TimeBasedModerationType | 'ban' | 'kick' | 'soft-ban' | 'warn';
 export interface ModerationSchema extends BaseSchema {
     type: ModerationType;
     guild: string;

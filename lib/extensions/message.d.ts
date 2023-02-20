@@ -1,15 +1,15 @@
-import { Message, EmbedBuilder, User, MessageCreateOptions, MessageReplyOptions } from 'discord.js';
+import { Message, EmbedBuilder, User, MessageCreateOptions, MessageReplyOptions, If } from 'discord.js';
 import Command from '../commands/base';
 import CommandoClient from '../client';
 import CommandoGuild from './guild';
 /** Type of the response */
-declare type ResponseType = 'code' | 'direct' | 'plain' | 'reply';
-declare type StringResolvable = MessageCreateOptions | string[] | string;
+type ResponseType = 'code' | 'direct' | 'plain' | 'reply';
+type StringResolvable = MessageCreateOptions | string[] | string;
 interface ResponseOptions {
     /** Type of the response */
     type?: ResponseType;
     /** Content of the response */
-    content?: MessageCreateOptions | StringResolvable | null;
+    content?: StringResolvable | null;
     /** Options of the response */
     options?: MessageCreateOptions;
     /** Language of the response, if its type is `code` */
@@ -17,12 +17,12 @@ interface ResponseOptions {
     /** If the response is from an edited message */
     fromEdit?: boolean;
 }
-export declare type CommandoMessageResponse = CommandoMessage | Message | Message[] | null;
+export type CommandoMessageResponse<InGuild extends boolean = boolean> = Array<Message<InGuild>> | CommandoMessage<InGuild> | Message<InGuild> | null;
 /**
  * An extension of the base Discord.js Message class to add command-related functionality.
  * @augments Message
  */
-export default class CommandoMessage extends Message {
+export default class CommandoMessage<InGuild extends boolean = boolean> extends Message<InGuild> {
     /** The client the message is for */
     readonly client: CommandoClient<true>;
     /** Whether the message contains a command (even an unknown one) */
@@ -43,7 +43,7 @@ export default class CommandoMessage extends Message {
      */
     constructor(client: CommandoClient, data: Message);
     /** The guild this message is for */
-    get guild(): CommandoGuild | null;
+    get guild(): If<InGuild, CommandoGuild>;
     /**
      * Initializes the message for a command
      * @param command - Command the message triggers

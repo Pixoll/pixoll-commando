@@ -1,10 +1,15 @@
-import { Client, Collection, ClientOptions, InviteGenerationOptions, CachedManager, Snowflake, GuildResolvable, GuildCreateOptions, FetchGuildOptions, UserResolvable, Guild, User, OAuth2Guild, FetchGuildsOptions, IntentsBitField } from 'discord.js';
+import { Client, Collection, ClientOptions, InviteGenerationOptions, CachedManager, Snowflake, GuildResolvable, GuildCreateOptions, FetchGuildOptions, UserResolvable, Guild, User, OAuth2Guild, FetchGuildsOptions, IntentsBitField, Message } from 'discord.js';
 import CommandoRegistry from './registry';
 import CommandDispatcher from './dispatcher';
+import CommandoMessage from './extensions/message';
 import CommandoGuild from './extensions/guild';
 import ClientDatabaseManager from './database/ClientDatabaseManager';
 import { SimplifiedSchemas } from './database/Schemas';
 import GuildDatabaseManager from './database/GuildDatabaseManager';
+import { ArgumentCollectorResult } from './commands/collector';
+import Command, { CommandBlockData, CommandBlockReason, CommandInstances } from './commands/base';
+import CommandGroup from './commands/group';
+import ArgumentType from './types/base';
 interface CommandoClientOptions extends ClientOptions {
     /**
      * Default command prefix
@@ -35,6 +40,45 @@ interface CommandoClientOptions extends ClientOptions {
     modulesDir?: string;
     /** The names of the modules to exclude */
     excludeModules?: string[];
+}
+export interface CommandoClientEvents {
+    commandBlock: [instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData];
+    commandCancel: [command: Command, reason: string, message: CommandoMessage, result?: ArgumentCollectorResult];
+    commandError: [
+        command: Command,
+        error: Error,
+        instances: CommandInstances,
+        args: Record<string, unknown> | string[] | string,
+        fromPattern?: boolean,
+        result?: ArgumentCollectorResult
+    ];
+    commandoGuildCreate: [guild: CommandoGuild];
+    commandoMessageCreate: [message: CommandoMessage];
+    commandoMessageUpdate: [oldMessage: Message, newMessage: CommandoMessage];
+    commandPrefixChange: [guild?: CommandoGuild | null, prefix?: string | null];
+    commandRegister: [command: Command, registry: CommandoRegistry];
+    commandReregister: [newCommand: Command, oldCommand: Command];
+    commandRun: [
+        command: Command,
+        promise: Promise<unknown>,
+        instances: CommandInstances,
+        args: Record<string, unknown> | string[] | string,
+        fromPattern?: boolean,
+        result?: ArgumentCollectorResult | null
+    ];
+    commandStatusChange: [guild: CommandoGuild | null, command: Command, enabled: boolean];
+    commandUnregister: [command: Command];
+    databaseReady: [client: CommandoClient<true>];
+    groupRegister: [group: CommandGroup, registry: CommandoRegistry];
+    groupStatusChange: [guild: CommandoGuild | null, group: CommandGroup, enabled: boolean];
+    guildsReady: [client: CommandoClient<true>];
+    modulesReady: [client: CommandoClient<true>];
+    typeRegister: [type: ArgumentType, registry: CommandoRegistry];
+    unknownCommand: [message: CommandoMessage];
+}
+declare module 'discord.js' {
+    interface ClientEvents extends CommandoClientEvents {
+    }
 }
 declare class CommandoGuildManager extends CachedManager<Snowflake, CommandoGuild, CommandoGuild | GuildResolvable> {
     create(options: GuildCreateOptions): Promise<CommandoGuild>;

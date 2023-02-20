@@ -24,9 +24,9 @@ export default class CustomEmojiArgumentType extends ArgumentType {
         if (exactEmojis.size === 1) return true;
         if (exactEmojis.size > 0) emojis = exactEmojis;
 
-        return emojis.size <= 15 ?
-            `${Util.disambiguation(emojis.map(emoji => escapeMarkdown(emoji.name as string)), 'emojis')}\n` :
-            'Multiple emojis found. Please be more specific.';
+        return emojis.size <= 15
+            ? `${Util.disambiguation(emojis.map(emoji => escapeMarkdown(emoji.name as string)), 'emojis')}\n`
+            : 'Multiple emojis found. Please be more specific.';
     }
 
     public parse(value: string, msg: CommandoMessage): GuildEmoji | null {

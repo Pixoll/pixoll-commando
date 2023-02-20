@@ -33,9 +33,9 @@ export default class ChannelArgumentType extends ArgumentType {
         }
         if (exactChannels.size > 0) channels = exactChannels;
 
-        return channels.size <= 15 ?
-            `${Util.disambiguation(channels.map(chan => escapeMarkdown(chan.name)), 'channels')}\n` :
-            'Multiple channels found. Please be more specific.';
+        return channels.size <= 15
+            ? `${Util.disambiguation(channels.map(chan => escapeMarkdown(chan.name)), 'channels')}\n`
+            : 'Multiple channels found. Please be more specific.';
     }
 
     public parse(val: string, msg: CommandoMessage): GuildBasedChannel | null {

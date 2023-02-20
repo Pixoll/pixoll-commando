@@ -16,6 +16,7 @@ import {
     FetchGuildsOptions,
     InteractionType,
     IntentsBitField,
+    Message,
 } from 'discord.js';
 import CommandoRegistry from './registry';
 import CommandDispatcher from './dispatcher';
@@ -27,6 +28,10 @@ import GuildDatabaseManager from './database/GuildDatabaseManager';
 import Util from './util';
 import initializeDB from './database/initializeDB';
 import CommandoInteraction from './extensions/interaction';
+import { ArgumentCollectorResult } from './commands/collector';
+import Command, { CommandBlockData, CommandBlockReason, CommandInstances } from './commands/base';
+import CommandGroup from './commands/group';
+import ArgumentType from './types/base';
 
 interface CommandoClientOptions extends ClientOptions {
     /**
@@ -58,6 +63,47 @@ interface CommandoClientOptions extends ClientOptions {
     modulesDir?: string;
     /** The names of the modules to exclude */
     excludeModules?: string[];
+}
+
+export interface CommandoClientEvents {
+    commandBlock: [instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData];
+    commandCancel: [command: Command, reason: string, message: CommandoMessage, result?: ArgumentCollectorResult];
+    commandError: [
+        command: Command,
+        error: Error,
+        instances: CommandInstances,
+        args: Record<string, unknown> | string[] | string,
+        fromPattern?: boolean,
+        result?: ArgumentCollectorResult
+    ];
+    commandoGuildCreate: [guild: CommandoGuild];
+    commandoMessageCreate: [message: CommandoMessage];
+    commandoMessageUpdate: [oldMessage: Message, newMessage: CommandoMessage];
+    commandPrefixChange: [guild?: CommandoGuild | null, prefix?: string | null];
+    commandRegister: [command: Command, registry: CommandoRegistry];
+    commandReregister: [newCommand: Command, oldCommand: Command];
+    commandRun: [
+        command: Command,
+        promise: Promise<unknown>,
+        instances: CommandInstances,
+        args: Record<string, unknown> | string[] | string,
+        fromPattern?: boolean,
+        result?: ArgumentCollectorResult | null
+    ];
+    commandStatusChange: [guild: CommandoGuild | null, command: Command, enabled: boolean];
+    commandUnregister: [command: Command];
+    databaseReady: [client: CommandoClient<true>];
+    groupRegister: [group: CommandGroup, registry: CommandoRegistry];
+    groupStatusChange: [guild: CommandoGuild | null, group: CommandGroup, enabled: boolean];
+    guildsReady: [client: CommandoClient<true>];
+    modulesReady: [client: CommandoClient<true>];
+    typeRegister: [type: ArgumentType, registry: CommandoRegistry];
+    unknownCommand: [message: CommandoMessage];
+}
+
+declare module 'discord.js' {
+    // eslint-disable-next-line @typescript-eslint/no-empty-interface
+    interface ClientEvents extends CommandoClientEvents { }
 }
 
 declare class CommandoGuildManager extends CachedManager<Snowflake, CommandoGuild, CommandoGuild | GuildResolvable> {
@@ -233,7 +279,7 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
         });
 
         // Establishes MongoDB connection and loads all modules
-        this.once('guildsReady', () => initializeDB(this));
+        this.once('guildsReady', initializeDB);
     }
 
     /** Parses all {@link Guild} instances into {@link CommandoGuild}s. */
