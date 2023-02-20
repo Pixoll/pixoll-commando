@@ -637,10 +637,6 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
      * @param user - User to check for ownership
      */
     isOwner(user: UserResolvable): boolean;
-
-    on<K extends keyof CommandoClientEvents>(event: K, listener: (...args: CommandoClientEvents[K]) => void): this;
-    once<K extends keyof CommandoClientEvents>(event: K, listener: (...args: CommandoClientEvents[K]) => void): this;
-    emit<K extends keyof CommandoClientEvents>(event: K, ...args: CommandoClientEvents[K]): boolean;
 }
 
 /**
@@ -1598,11 +1594,11 @@ export interface CommandoClientEvents {
     ];
     commandStatusChange: [guild: CommandoGuild | null, command: Command, enabled: boolean];
     commandUnregister: [command: Command];
-    databaseReady: [client: CommandoClient];
+    databaseReady: [client: CommandoClient<true>];
     groupRegister: [group: CommandGroup, registry: CommandoRegistry];
     groupStatusChange: [guild: CommandoGuild | null, group: CommandGroup, enabled: boolean];
-    guildsReady: [client: CommandoClient];
-    modulesReady: [client: CommandoClient];
+    guildsReady: [client: CommandoClient<true>];
+    modulesReady: [client: CommandoClient<true>];
     typeRegister: [type: ArgumentType, registry: CommandoRegistry];
     unknownCommand: [message: CommandoMessage];
 }
