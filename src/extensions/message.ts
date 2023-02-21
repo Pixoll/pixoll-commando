@@ -4,11 +4,12 @@ import {
     User,
     MessageCreateOptions,
     TextBasedChannel,
-    MessageEditOptions,
     escapeMarkdown,
     Colors,
     MessageReplyOptions,
     If,
+    GuildTextBasedChannel,
+    StageChannel,
 } from 'discord.js';
 import { oneLine, stripIndent } from 'common-tags';
 import Command from '../commands/base';
@@ -27,7 +28,6 @@ type ResponseType =
 
 type StringResolvable =
     | MessageCreateOptions
-    | string[]
     | string;
 
 interface ResponseOptions {
@@ -49,10 +49,7 @@ export type CommandoMessageResponse<InGuild extends boolean = boolean> =
     | Message<InGuild>
     | null;
 
-/**
- * An extension of the base Discord.js Message class to add command-related functionality.
- * @augments Message
- */
+/** An extension of the base Discord.js Message class to add command-related functionality. */
 // @ts-expect-error: Message's constructor is private
 export default class CommandoMessage<InGuild extends boolean = boolean> extends Message<InGuild> {
     /** The client the message is for */
@@ -87,9 +84,14 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
         this.responsePositions = new Map();
     }
 
-    /** The guild this message is for */
+    /** The guild this message was sent in */
     public get guild(): If<InGuild, CommandoGuild> {
         return super.guild as If<InGuild, CommandoGuild>;
+    }
+
+    /** The channel this message was sent in */
+    public get channel(): Exclude<If<InGuild, GuildTextBasedChannel, TextBasedChannel>, StageChannel> {
+        return super.channel as Exclude<If<InGuild, GuildTextBasedChannel, TextBasedChannel>, StageChannel>;
     }
 
     /**
@@ -349,28 +351,11 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
         const { type, options: msgOptions = {} } = options;
         if (!response) return this.respond({ type, options: msgOptions, fromEdit: true });
 
-        const content = msgOptions.content as StringResolvable;
-        if (Array.isArray(content)) {
-            const promises = [];
-            if (Array.isArray(response)) {
-                for (let i = 0; i < content.length; i++) {
-                    if (response.length > i) promises.push(response[i].edit(`${content[i]}`/* , options */));
-                    else promises.push(response[0].channel.send(`${content[i]}`));
-                }
-            } else {
-                promises.push(response.edit(`${content[0]}`/* , options */));
-                for (let i = 1; i < content.length; i++) {
-                    promises.push(response.channel.send(`${content[i]}`));
-                }
-            }
-            return Promise.all(promises);
-        }
-
         if (Array.isArray(response)) {
             for (let i = response.length - 1; i > 0; i--) response[i]?.delete();
-            return response[0].edit(msgOptions as MessageEditOptions);
+            return response[0].edit(msgOptions);
         }
-        return response.edit(msgOptions as MessageEditOptions);
+        return response.edit(msgOptions);
     }
 
     /**

@@ -1,15 +1,12 @@
-import { CommandInteraction, CommandInteractionOption, GuildMember, TextBasedChannel, User } from 'discord.js';
+import { CommandInteraction, CommandInteractionOption, GuildMember, GuildTextBasedChannel, If, StageChannel, TextBasedChannel, User } from 'discord.js';
 import CommandoClient from '../client';
 import Command from '../commands/base';
 import CommandoGuild from './guild';
 declare class CommandoMember extends GuildMember {
     guild: CommandoGuild;
 }
-/**
- * An extension of the base Discord.js CommandInteraction class to add command-related functionality.
- * @augments CommandInteraction
- */
-export default class CommandoInteraction extends CommandInteraction {
+/** An extension of the base Discord.js CommandInteraction class to add command-related functionality. */
+export default class CommandoInteraction<InGuild extends boolean = boolean> extends CommandInteraction {
     /** The client the interaction is for */
     readonly client: CommandoClient<true>;
     member: CommandoMember | null;
@@ -21,11 +18,12 @@ export default class CommandoInteraction extends CommandInteraction {
      */
     constructor(client: CommandoClient, data: CommandInteraction);
     get author(): User;
-    get channel(): TextBasedChannel;
+    /** The channel this interaction was used in */
+    get channel(): Exclude<If<InGuild, GuildTextBasedChannel, TextBasedChannel>, StageChannel>;
     /** Command that the interaction triggers */
     get command(): Command;
-    /** The guild this message is for */
-    get guild(): CommandoGuild | null;
+    /** The guild this interaction was used in */
+    get guild(): If<InGuild, CommandoGuild>;
     /** Whether this interaction is able to been edited (has been previously deferred or replied to) */
     isEditable(): boolean;
     /**

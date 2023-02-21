@@ -200,6 +200,14 @@ export default class Util extends null {
     }
 
     /**
+     * Gets the last item of an array.
+     * @param array - An array.
+     */
+    public static lastFromArray<T>(array: T[]): T {
+        return array[array.length - 1];
+    }
+
+    /**
      * **For arrays.**
      * Filters all nullish (`undefined` | `null`) items from an array. Mostly useful for TS.
      * @param array - Any array that could contain nullish items.
@@ -233,7 +241,9 @@ export default class Util extends null {
      * @param instances - The instances object.
      * @returns The instance of the command.
      */
-    public static getInstanceFrom(instances: CommandInstances): CommandoInteraction | CommandoMessage {
+    public static getInstanceFrom<InGuild extends boolean = boolean>(
+        instances: CommandInstances<InGuild>
+    ): CommandoInteraction<InGuild> | CommandoMessage<InGuild> {
         if ('message' in instances) return instances.message;
         return instances.interaction;
     }

@@ -7,6 +7,9 @@ import {
     CommandInteractionOption,
     EmbedBuilder,
     GuildMember,
+    GuildTextBasedChannel,
+    If,
+    StageChannel,
     TextBasedChannel,
     User,
 } from 'discord.js';
@@ -21,11 +24,8 @@ declare class CommandoMember extends GuildMember {
     public guild: CommandoGuild;
 }
 
-/**
- * An extension of the base Discord.js CommandInteraction class to add command-related functionality.
- * @augments CommandInteraction
- */
-export default class CommandoInteraction extends CommandInteraction {
+/** An extension of the base Discord.js CommandInteraction class to add command-related functionality. */
+export default class CommandoInteraction<InGuild extends boolean = boolean> extends CommandInteraction {
     /** The client the interaction is for */
     declare public readonly client: CommandoClient<true>;
     declare public member: CommandoMember | null;
@@ -52,8 +52,9 @@ export default class CommandoInteraction extends CommandInteraction {
         return this.user;
     }
 
-    public get channel(): TextBasedChannel {
-        return super.channel as TextBasedChannel;
+    /** The channel this interaction was used in */
+    public get channel(): Exclude<If<InGuild, GuildTextBasedChannel, TextBasedChannel>, StageChannel> {
+        return super.channel as Exclude<If<InGuild, GuildTextBasedChannel, TextBasedChannel>, StageChannel>;
     }
 
     /** Command that the interaction triggers */
@@ -62,9 +63,9 @@ export default class CommandoInteraction extends CommandInteraction {
         return this._command;
     }
 
-    /** The guild this message is for */
-    public get guild(): CommandoGuild | null {
-        return super.guild as CommandoGuild;
+    /** The guild this interaction was used in */
+    public get guild(): If<InGuild, CommandoGuild> {
+        return super.guild as If<InGuild, CommandoGuild>;
     }
 
     /** Whether this interaction is able to been edited (has been previously deferred or replied to) */

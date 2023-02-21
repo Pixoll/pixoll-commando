@@ -8,14 +8,14 @@ import CommandoMessage from '../extensions/message';
 import CommandoGuild from '../extensions/guild';
 import CommandoInteraction from '../extensions/interaction';
 /** Options for throttling usages of the command. */
-interface ThrottlingOptions {
+export interface ThrottlingOptions {
     /** Maximum number of usages of the command allowed in the time frame. */
     usages: number;
     /** Amount of time to count the usages of the command within (in seconds). */
     duration: number;
 }
 /** The command information */
-interface CommandInfo {
+export interface CommandInfo<InGuild extends boolean = boolean> {
     /** The name of the command (must be lowercase). */
     name: string;
     /** Alternative names for the command (all must be lowercase). */
@@ -54,7 +54,7 @@ interface CommandInfo {
      * Whether or not the command should only function in a guild channel.
      * @default false
      */
-    guildOnly?: boolean;
+    guildOnly?: InGuild;
     /**
      * Whether or not the command is usable only by a server owner.
      * @default false
@@ -143,7 +143,7 @@ interface CommandInfo {
     replacing?: string;
 }
 /** Throttling object of the command. */
-interface Throttle {
+export interface Throttle {
     /** Time when the throttle started */
     start: number;
     /** Amount usages of the command */
@@ -152,12 +152,12 @@ interface Throttle {
     timeout: NodeJS.Timeout;
 }
 /** The instances the command is being run for */
-export type CommandInstances = {
+export type CommandInstances<InGuild extends boolean = boolean> = {
     /** The interaction the command is being run for */
-    interaction: CommandoInteraction;
+    interaction: CommandoInteraction<InGuild>;
 } | {
     /** The message the command is being run for */
-    message: CommandoMessage;
+    message: CommandoMessage<InGuild>;
 };
 /** The reason of {@link Command#onBlock} */
 export type CommandBlockReason = 'clientPermissions' | 'dmOnly' | 'guildOnly' | 'guildOwnerOnly' | 'modPermissions' | 'nsfw' | 'ownerOnly' | 'throttling' | 'userPermissions';
@@ -179,13 +179,13 @@ export interface CommandBlockData {
      */
     missing?: PermissionsString[];
 }
-interface SlashCommandInfo extends ChatInputApplicationCommandData {
+export interface SlashCommandInfo extends ChatInputApplicationCommandData {
     /** Whether the deferred reply should be ephemeral or not */
     deferEphemeral?: boolean;
 }
 export type AppCommandData = MessageApplicationCommandData | SlashCommandInfo | UserApplicationCommandData;
 /** A command that can be run in a client */
-export default abstract class Command {
+export default abstract class Command<InGuild extends boolean = boolean> {
     /** Client that this command is for */
     readonly client: CommandoClient;
     /** Name of this command */
@@ -209,7 +209,7 @@ export default abstract class Command {
     /** Whether the command can only be run in direct messages */
     dmOnly: boolean;
     /** Whether the command can only be run in a guild channel */
-    guildOnly: boolean;
+    guildOnly: InGuild;
     /** Whether the command can only be used by a server owner */
     guildOwnerOnly: boolean;
     /** Whether the command can only be used by an owner */
@@ -259,14 +259,7 @@ export default abstract class Command {
      * @param info - The command information
      * @param slashInfo - The slash command information
      */
-    constructor(client: CommandoClient, info: CommandInfo, slashInfo?: AppCommandData);
-    /**
-     * Checks whether the user has permission to use the command
-     * @param instances - The triggering command instances
-     * @param ownerOverride - Whether the bot owner(s) will always have permission
-     * @return Whether the user has permission, or an error message to respond with if they don't
-     */
-    hasPermission(instances: CommandInstances, ownerOverride?: boolean): CommandBlockReason | PermissionsString[] | true;
+    constructor(client: CommandoClient, info: CommandInfo<InGuild>, slashInfo?: AppCommandData);
     /**
      * Runs the command
      * @param instances - The message the command is being run for
@@ -278,7 +271,14 @@ export default abstract class Command {
      * @param fromPattern - Whether or not the command is being run from a pattern match
      * @param result - Result from obtaining the arguments from the collector (if applicable)
      */
-    run(instances: CommandInstances, args: Record<string, unknown> | string[] | string, fromPattern?: boolean, result?: ArgumentCollectorResult | null): Promise<Message | Message[] | null>;
+    abstract run(instances: CommandInstances<InGuild>, args: Record<string, unknown> | string[] | string, fromPattern?: boolean, result?: ArgumentCollectorResult | null): Promise<Message | Message[] | null>;
+    /**
+     * Checks whether the user has permission to use the command
+     * @param instances - The triggering command instances
+     * @param ownerOverride - Whether the bot owner(s) will always have permission
+     * @return Whether the user has permission, or an error message to respond with if they don't
+     */
+    hasPermission(instances: CommandInstances<InGuild>, ownerOverride?: boolean): CommandBlockReason | PermissionsString[] | true;
     /**
      * Called when the command is prevented from running
      * @param instances - The instances the command is being run for
@@ -321,7 +321,7 @@ export default abstract class Command {
      * Checks if the command is usable for a message
      * @param instances - The instances
      */
-    isUsable(instances?: CommandInstances): boolean;
+    isUsable(instances?: CommandInstances<InGuild>): boolean;
     /**
      * Creates a usage string for the command
      * @param argString - A string of arguments for the command
@@ -353,4 +353,3 @@ export default abstract class Command {
      */
     protected static validateSlashInfo(info: CommandInfo, slashInfo: ApplicationCommandData): void;
 }
-export {};

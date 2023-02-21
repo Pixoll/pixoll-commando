@@ -1,10 +1,10 @@
-import { Message, EmbedBuilder, User, MessageCreateOptions, MessageReplyOptions, If } from 'discord.js';
+import { Message, EmbedBuilder, User, MessageCreateOptions, TextBasedChannel, MessageReplyOptions, If, GuildTextBasedChannel, StageChannel } from 'discord.js';
 import Command from '../commands/base';
 import CommandoClient from '../client';
 import CommandoGuild from './guild';
 /** Type of the response */
 type ResponseType = 'code' | 'direct' | 'plain' | 'reply';
-type StringResolvable = MessageCreateOptions | string[] | string;
+type StringResolvable = MessageCreateOptions | string;
 interface ResponseOptions {
     /** Type of the response */
     type?: ResponseType;
@@ -18,10 +18,7 @@ interface ResponseOptions {
     fromEdit?: boolean;
 }
 export type CommandoMessageResponse<InGuild extends boolean = boolean> = Array<Message<InGuild>> | CommandoMessage<InGuild> | Message<InGuild> | null;
-/**
- * An extension of the base Discord.js Message class to add command-related functionality.
- * @augments Message
- */
+/** An extension of the base Discord.js Message class to add command-related functionality. */
 export default class CommandoMessage<InGuild extends boolean = boolean> extends Message<InGuild> {
     /** The client the message is for */
     readonly client: CommandoClient<true>;
@@ -42,8 +39,10 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
      * @param data - The message data
      */
     constructor(client: CommandoClient, data: Message);
-    /** The guild this message is for */
+    /** The guild this message was sent in */
     get guild(): If<InGuild, CommandoGuild>;
+    /** The channel this message was sent in */
+    get channel(): Exclude<If<InGuild, GuildTextBasedChannel, TextBasedChannel>, StageChannel>;
     /**
      * Initializes the message for a command
      * @param command - Command the message triggers

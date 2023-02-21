@@ -30,6 +30,8 @@ import {
     MessageCreateOptions,
     MessageReplyOptions,
     If,
+    GuildTextBasedChannel,
+    StageChannel,
 } from 'discord.js';
 import { FilterQuery, Model, Types, UpdateAggregationStage, UpdateQuery, UpdateWriteOpResult } from 'mongoose';
 
@@ -243,13 +245,13 @@ export class ArgumentUnionType extends ArgumentType {
 }
 
 /** A command that can be run in a client */
-export abstract class Command {
+export abstract class Command<InGuild extends boolean = boolean> {
     /**
      * @param client - The client the command is for
      * @param info - The command information
      * @param slashInfo - The slash command information
      */
-    constructor(client: CommandoClient, info: CommandInfo, slashInfo?: AppCommandData);
+    constructor(client: CommandoClient, info: CommandInfo<InGuild>, slashInfo?: AppCommandData);
 
     /** Whether the command is enabled globally */
     protected _globalEnabled: boolean;
@@ -297,7 +299,7 @@ export abstract class Command {
     /** Whether the command can only be run in direct messages */
     dmOnly: boolean;
     /** Whether the command can only be run in a guild channel */
-    guildOnly: boolean;
+    guildOnly: InGuild;
     /** Whether the command can only be used by a server owner */
     guildOwnerOnly: boolean;
     /** Whether the command can only be used by an owner */
@@ -340,13 +342,6 @@ export abstract class Command {
     slashInfo?: AppCommandData;
 
     /**
-     * Checks whether the user has permission to use the command
-     * @param instances - The triggering command instances
-     * @param ownerOverride - Whether the bot owner(s) will always have permission
-     * @return Whether the user has permission, or an error message to respond with if they don't
-     */
-    hasPermission(instances: CommandInstances, ownerOverride?: boolean): CommandBlockReason | PermissionsString[] | true;
-    /**
      * Runs the command
      * @param instances - The message the command is being run for
      * @param args - The arguments for the command, or the matches from a pattern.
@@ -357,12 +352,21 @@ export abstract class Command {
      * @param fromPattern - Whether or not the command is being run from a pattern match
      * @param result - Result from obtaining the arguments from the collector (if applicable)
      */
-    run(
-        instances: CommandInstances,
+    abstract run(
+        instances: CommandInstances<InGuild>,
         args: Record<string, unknown> | string[] | string,
         fromPattern?: boolean,
         result?: ArgumentCollectorResult | null
     ): Promise<Message | Message[] | null>;
+    /**
+     * Checks whether the user has permission to use the command
+     * @param instances - The triggering command instances
+     * @param ownerOverride - Whether the bot owner(s) will always have permission
+     * @return Whether the user has permission, or an error message to respond with if they don't
+     */
+    hasPermission(
+        instances: CommandInstances<InGuild>, ownerOverride?: boolean
+    ): CommandBlockReason | PermissionsString[] | true;
     /**
      * Called when the command is prevented from running
      * @param instances - The instances the command is being run for
@@ -406,7 +410,7 @@ export abstract class Command {
      * Checks if the command is usable for a message
      * @param instances - The instances
      */
-    isUsable(instances?: CommandInstances): boolean;
+    isUsable(instances?: CommandInstances<InGuild>): boolean;
     /**
      * Creates a usage string for the command
      * @param argString - A string of arguments for the command
@@ -703,7 +707,7 @@ export class CommandoGuild extends Guild {
  * An extension of the base Discord.js CommandInteraction class to add command-related functionality.
  * @augments CommandInteraction
  */
-export class CommandoInteraction extends CommandInteraction {
+export class CommandoInteraction<InGuild extends boolean = boolean> extends CommandInteraction {
     /**
      * @param client - The client the interaction is for
      * @param data - The interaction data
@@ -714,13 +718,14 @@ export class CommandoInteraction extends CommandInteraction {
     protected _command: Command;
 
     get author(): User;
-    get channel(): TextBasedChannel;
+    /** The channel this interaction was used in */
+    get channel(): Exclude<If<InGuild, GuildTextBasedChannel, TextBasedChannel>, StageChannel>;
     /** The client the interaction is for */
     readonly client: CommandoClient<true>;
     /** Command that the interaction triggers */
     get command(): Command;
-    /** The guild this message is for */
-    get guild(): CommandoGuild | null;
+    /** The guild this interaction was used in */
+    get guild(): If<InGuild, CommandoGuild>;
     member: CommandoMember | null;
 
     /**
@@ -779,8 +784,10 @@ export class CommandoMessage<InGuild extends boolean = boolean> extends Message<
 
     /** The client the message is for */
     readonly client: CommandoClient<true>;
-    /** The guild this message is for */
+    /** The guild this message was sent in */
     get guild(): If<InGuild, CommandoGuild>;
+    /** The channel this message was sent in */
+    get channel(): Exclude<If<InGuild, GuildTextBasedChannel, TextBasedChannel>, StageChannel>;
     /** Whether the message contains a command (even an unknown one) */
     isCommand: boolean;
     /** Command that the message triggers, if any */
@@ -1064,6 +1071,11 @@ export class Util extends null {
      */
     static mutateObjectInstance<T extends object>(obj: object, newObj: T): T;
     /**
+     * Gets the last item of an array.
+     * @param array - An array.
+     */
+    static lastFromArray<T>(array: T[]): T;
+    /**
      * **For arrays.**
      * Filters all nullish (`undefined` | `null`) items from an array. Mostly useful for TS.
      * @param array - Any array that could contain nullish items.
@@ -1314,7 +1326,7 @@ type Inhibitor = (msg: CommandoMessage) => Inhibition | string;
 /** Type of the response */
 export type ResponseType = 'code' | 'direct' | 'plain' | 'reply';
 
-export type StringResolvable = MessageCreateOptions | string[] | string;
+export type StringResolvable = MessageCreateOptions | string;
 
 /** Result object from obtaining argument values from an {@link ArgumentCollector} */
 export interface ArgumentCollectorResult<T = Record<string, unknown>> {
@@ -1430,7 +1442,7 @@ export interface CommandBlockData {
 }
 
 /** The command information */
-export interface CommandInfo {
+export interface CommandInfo<InGuild extends boolean = boolean> {
     /** The name of the command (must be lowercase). */
     name: string;
     /** Alternative names for the command (all must be lowercase). */
@@ -1469,7 +1481,7 @@ export interface CommandInfo {
      * Whether or not the command should only function in a guild channel.
      * @default false
      */
-    guildOnly?: boolean;
+    guildOnly?: InGuild;
     /**
      * Whether or not the command is usable only by a server owner.
      * @default false
@@ -1559,12 +1571,12 @@ export interface CommandInfo {
 }
 
 /** The instances the command is being run for */
-export type CommandInstances = {
+export type CommandInstances<InGuild extends boolean = boolean> = {
     /** The interaction the command is being run for */
-    interaction: CommandoInteraction;
+    interaction: CommandoInteraction<InGuild>;
 } | {
     /** The message the command is being run for */
-    message: CommandoMessage;
+    message: CommandoMessage<InGuild>;
 };
 
 export interface CommandoClientEvents {

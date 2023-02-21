@@ -17,6 +17,7 @@ import {
     InteractionType,
     IntentsBitField,
     Message,
+    ChannelType,
 } from 'discord.js';
 import CommandoRegistry from './registry';
 import CommandDispatcher from './dispatcher';
@@ -254,13 +255,16 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
             this.emit('error', err);
         };
         this.on('messageCreate', async message => {
+            if (message.channel.type === ChannelType.GuildStageVoice) return;
             const commando = new CommandoMessage(this, message);
             this.emit('commandoMessageCreate', commando);
             // @ts-expect-error: handleMessage is protected in CommandDispatcher
             await this.dispatcher.handleMessage(commando).catch(catchErr);
         });
         this.on('messageUpdate', async (oldMessage, newMessage) => {
-            if (oldMessage.partial || newMessage.partial) return;
+            if (
+                oldMessage.partial || newMessage.partial || newMessage.channel.type === ChannelType.GuildStageVoice
+            ) return;
             const commando = new CommandoMessage(this, newMessage);
             // @ts-expect-error: handleMessage is protected in CommandDispatcher
             await this.dispatcher.handleMessage(commando, oldMessage).catch(catchErr);
@@ -272,7 +276,10 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
             this.registry.registerSlashCommands()
         );
         this.on('interactionCreate', interaction => {
-            if (interaction.type !== InteractionType.ApplicationCommand) return;
+            if (
+                interaction.type !== InteractionType.ApplicationCommand
+                || interaction.channel?.type === ChannelType.GuildStageVoice
+            ) return;
             const commando = new CommandoInteraction(this, interaction);
             // @ts-expect-error: handleSlash is protected in CommandDispatcher
             this.dispatcher.handleSlash(commando).catch(catchErr);

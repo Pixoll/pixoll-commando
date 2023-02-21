@@ -35,7 +35,7 @@ import CommandoGuild from '../extensions/guild';
 import CommandoInteraction from '../extensions/interaction';
 
 /** Options for throttling usages of the command. */
-interface ThrottlingOptions {
+export interface ThrottlingOptions {
     /** Maximum number of usages of the command allowed in the time frame. */
     usages: number;
     /** Amount of time to count the usages of the command within (in seconds). */
@@ -43,7 +43,7 @@ interface ThrottlingOptions {
 }
 
 /** The command information */
-interface CommandInfo {
+export interface CommandInfo<InGuild extends boolean = boolean> {
     /** The name of the command (must be lowercase). */
     name: string;
     /** Alternative names for the command (all must be lowercase). */
@@ -82,7 +82,7 @@ interface CommandInfo {
      * Whether or not the command should only function in a guild channel.
      * @default false
      */
-    guildOnly?: boolean;
+    guildOnly?: InGuild;
     /**
      * Whether or not the command is usable only by a server owner.
      * @default false
@@ -172,7 +172,7 @@ interface CommandInfo {
 }
 
 /** Throttling object of the command. */
-interface Throttle {
+export interface Throttle {
     /** Time when the throttle started */
     start: number;
     /** Amount usages of the command */
@@ -182,14 +182,14 @@ interface Throttle {
 }
 
 /** The instances the command is being run for */
-export type CommandInstances =
+export type CommandInstances<InGuild extends boolean = boolean> =
     | {
         /** The interaction the command is being run for */
-        interaction: CommandoInteraction;
+        interaction: CommandoInteraction<InGuild>;
     }
     | {
         /** The message the command is being run for */
-        message: CommandoMessage;
+        message: CommandoMessage<InGuild>;
     };
 
 // /** The instances the command is being run for */
@@ -231,7 +231,7 @@ export interface CommandBlockData {
     missing?: PermissionsString[];
 }
 
-interface SlashCommandInfo extends ChatInputApplicationCommandData {
+export interface SlashCommandInfo extends ChatInputApplicationCommandData {
     /** Whether the deferred reply should be ephemeral or not */
     deferEphemeral?: boolean;
 }
@@ -242,7 +242,7 @@ export type AppCommandData =
     | UserApplicationCommandData;
 
 /** A command that can be run in a client */
-export default abstract class Command {
+export default abstract class Command<InGuild extends boolean = boolean> {
     /** Client that this command is for */
     declare public readonly client: CommandoClient;
     /** Name of this command */
@@ -266,7 +266,7 @@ export default abstract class Command {
     /** Whether the command can only be run in direct messages */
     public dmOnly: boolean;
     /** Whether the command can only be run in a guild channel */
-    public guildOnly: boolean;
+    public guildOnly: InGuild;
     /** Whether the command can only be used by a server owner */
     public guildOwnerOnly: boolean;
     /** Whether the command can only be used by an owner */
@@ -317,7 +317,7 @@ export default abstract class Command {
      * @param info - The command information
      * @param slashInfo - The slash command information
      */
-    public constructor(client: CommandoClient, info: CommandInfo, slashInfo?: AppCommandData) {
+    public constructor(client: CommandoClient, info: CommandInfo<InGuild>, slashInfo?: AppCommandData) {
         Command.validateInfo(client, info);
         if (slashInfo) Command.validateSlashInfo(info, slashInfo);
 
@@ -339,6 +339,7 @@ export default abstract class Command {
         this.details = info.details ?? null;
         this.examples = info.examples ?? null;
         this.dmOnly = !!info.dmOnly;
+        // @ts-expect-error: seriously?
         this.guildOnly = !!info.guildOnly;
         this.guildOwnerOnly = !!info.guildOwnerOnly;
         this.ownerOnly = !!info.ownerOnly;
@@ -375,13 +376,31 @@ export default abstract class Command {
     }
 
     /**
+     * Runs the command
+     * @param instances - The message the command is being run for
+     * @param args - The arguments for the command, or the matches from a pattern.
+     * If args is specified on the command, this will be the argument values object. If argsType is single, then only
+     * one string will be passed. If multiple, an array of strings will be passed. When fromPattern is true, this is the
+     * matches array from the pattern match (see
+     * {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec RegExp#exec}).
+     * @param fromPattern - Whether or not the command is being run from a pattern match
+     * @param result - Result from obtaining the arguments from the collector (if applicable)
+     */
+    public abstract run(
+        instances: CommandInstances<InGuild>,
+        args: Record<string, unknown> | string[] | string,
+        fromPattern?: boolean,
+        result?: ArgumentCollectorResult | null
+    ): Promise<Message | Message[] | null>;
+
+    /**
      * Checks whether the user has permission to use the command
      * @param instances - The triggering command instances
      * @param ownerOverride - Whether the bot owner(s) will always have permission
      * @return Whether the user has permission, or an error message to respond with if they don't
      */
     public hasPermission(
-        instances: CommandInstances, ownerOverride = true
+        instances: CommandInstances<InGuild>, ownerOverride = true
     ): CommandBlockReason | PermissionsString[] | true {
         const { guildOwnerOnly, ownerOnly, userPermissions, modPermissions, client } = this;
         const instance = Util.getInstanceFrom(instances);
@@ -409,26 +428,6 @@ export default abstract class Command {
         }
 
         return true;
-    }
-
-    /**
-     * Runs the command
-     * @param instances - The message the command is being run for
-     * @param args - The arguments for the command, or the matches from a pattern.
-     * If args is specified on the command, this will be the argument values object. If argsType is single, then only
-     * one string will be passed. If multiple, an array of strings will be passed. When fromPattern is true, this is the
-     * matches array from the pattern match (see
-     * {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec RegExp#exec}).
-     * @param fromPattern - Whether or not the command is being run from a pattern match
-     * @param result - Result from obtaining the arguments from the collector (if applicable)
-     */
-    public run(
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        instances: CommandInstances, args: Record<string, unknown> | string[] | string, fromPattern?: boolean,
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        result?: ArgumentCollectorResult | null
-    ): Promise<Message | Message[] | null> {
-        throw new Error(`${this.constructor.name} doesn't have a run() method.`);
     }
 
     /**
@@ -570,7 +569,7 @@ export default abstract class Command {
      * Checks if the command is usable for a message
      * @param instances - The instances
      */
-    public isUsable(instances?: CommandInstances): boolean {
+    public isUsable(instances?: CommandInstances<InGuild>): boolean {
         if (!instances) return this._globalEnabled;
         const instance = Util.getInstanceFrom(instances);
         const { guild } = instance;

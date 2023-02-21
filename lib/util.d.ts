@@ -71,6 +71,11 @@ export default class Util extends null {
      */
     static mutateObjectInstance<T extends object>(obj: object, newObj: T): T;
     /**
+     * Gets the last item of an array.
+     * @param array - An array.
+     */
+    static lastFromArray<T>(array: T[]): T;
+    /**
      * **For arrays.**
      * Filters all nullish (`undefined` | `null`) items from an array. Mostly useful for TS.
      * @param array - Any array that could contain nullish items.
@@ -95,7 +100,7 @@ export default class Util extends null {
      * @param instances - The instances object.
      * @returns The instance of the command.
      */
-    static getInstanceFrom(instances: CommandInstances): CommandoInteraction | CommandoMessage;
+    static getInstanceFrom<InGuild extends boolean = boolean>(instances: CommandInstances<InGuild>): CommandoInteraction<InGuild> | CommandoMessage<InGuild>;
     static equals<T extends number | string, V extends T>(value: T, values: V[]): value is V;
     /**
      * Verifies the provided data is a string, otherwise throws provided error.
