@@ -4,6 +4,8 @@ import { CommandInstances } from './commands/base';
 import CommandoInteraction from './extensions/interaction';
 import CommandoMessage from './extensions/message';
 
+export type Tuple<T, N extends number, R extends T[] = []> = R['length'] extends N ? R : Tuple<T, N, [T, ...R]>;
+
 /** Options for splitting a message */
 export interface SplitOptions {
     /**

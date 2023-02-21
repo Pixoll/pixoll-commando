@@ -1,12 +1,10 @@
 import {
-    GuildMember,
     GuildResolvable,
     Message,
     EmbedBuilder,
     PermissionsString,
     User,
     Colors,
-    ApplicationCommandType,
     SlashCommandBuilder,
     PermissionsBitField,
     ApplicationCommandOptionType,
@@ -16,13 +14,9 @@ import {
     SharedNameAndDescription,
     SharedSlashCommandOptions,
     ChatInputApplicationCommandData,
-    ContextMenuCommandBuilder,
-    UserApplicationCommandData,
-    MessageApplicationCommandData,
-    ApplicationCommandData,
-    MessagePayloadOption,
-    MessagePayload,
-    ChatInputCommandInteraction,
+    RESTPostAPIChatInputApplicationCommandsJSONBody as RESTPostAPISlashCommand,
+    Awaitable,
+    MessageCreateOptions,
 } from 'discord.js';
 import path from 'path';
 import ArgumentCollector, { ArgumentCollectorResult } from './collector';
@@ -31,7 +25,7 @@ import CommandoClient from '../client';
 import CommandGroup from './group';
 import { ArgumentInfo } from './argument';
 import CommandoMessage from '../extensions/message';
-import CommandoGuild from '../extensions/guild';
+import CommandoGuild, { CommandoGuildMember } from '../extensions/guild';
 import CommandoInteraction from '../extensions/interaction';
 
 /** Options for throttling usages of the command. */
@@ -168,7 +162,7 @@ export interface CommandInfo<InGuild extends boolean = boolean> {
      * The name or alias of the command that is replacing the deprecated command.
      * Required if `deprecated` is `true`.
      */
-    replacing?: string;
+    deprecatedReplacement?: string;
 }
 
 /** Throttling object of the command. */
@@ -191,14 +185,6 @@ export type CommandInstances<InGuild extends boolean = boolean> =
         /** The message the command is being run for */
         message: CommandoMessage<InGuild>;
     };
-
-// /** The instances the command is being run for */
-// export interface CommandInstances {
-//     /** The message the command is being run for */
-//     message?: CommandoMessage;
-//     /** The interaction the command is being run for */
-//     interaction?: CommandoInteraction;
-// }
 
 /** The reason of {@link Command#onBlock} */
 export type CommandBlockReason =
@@ -231,15 +217,14 @@ export interface CommandBlockData {
     missing?: PermissionsString[];
 }
 
-export interface SlashCommandInfo extends ChatInputApplicationCommandData {
+export interface SlashCommandInfo extends Omit<
+    ChatInputApplicationCommandData, 'defaultMemberPermissions' | 'description' | 'dmPermission' | 'name' | 'type'
+> {
     /** Whether the deferred reply should be ephemeral or not */
     deferEphemeral?: boolean;
 }
 
-export type AppCommandData =
-    | MessageApplicationCommandData
-    | SlashCommandInfo
-    | UserApplicationCommandData;
+export type APISlashCommand = Required<Pick<SlashCommandInfo, 'deferEphemeral'>> & RESTPostAPISlashCommand;
 
 /** A command that can be run in a client */
 export default abstract class Command<InGuild extends boolean = boolean> {
@@ -302,11 +287,11 @@ export default abstract class Command<InGuild extends boolean = boolean> {
     /** Whether the command is marked as deprecated */
     public deprecated: boolean;
     /** The name or alias of the command that is replacing the deprecated command. Required if `deprecated` is `true`. */
-    public replacing: string | null;
+    public deprecatedReplacement: string | null;
     /** Whether this command will be registered in the test guild only or not */
     public testEnv: boolean;
     /** The data for the slash command */
-    public slashInfo?: AppCommandData;
+    public slashInfo: APISlashCommand | null;
     /** Whether the command is enabled globally */
     protected _globalEnabled: boolean;
     /** Current throttle objects for the command, mapped by user ID */
@@ -317,9 +302,9 @@ export default abstract class Command<InGuild extends boolean = boolean> {
      * @param info - The command information
      * @param slashInfo - The slash command information
      */
-    public constructor(client: CommandoClient, info: CommandInfo<InGuild>, slashInfo?: AppCommandData) {
+    public constructor(client: CommandoClient, info: CommandInfo<InGuild>, slashInfo?: SlashCommandInfo) {
         Command.validateInfo(client, info);
-        if (slashInfo) Command.validateSlashInfo(info, slashInfo);
+        const parsedSlashInfo = Command.validateAndParseSlashInfo(info, slashInfo);
 
         Object.defineProperty(this, 'client', { value: client });
 
@@ -368,9 +353,9 @@ export default abstract class Command<InGuild extends boolean = boolean> {
         this.hidden = !!info.hidden;
         this.unknown = !!info.unknown;
         this.deprecated = !!info.deprecated;
-        this.replacing = info.replacing ?? null;
+        this.deprecatedReplacement = info.deprecatedReplacement ?? null;
         this.testEnv = !!info.testEnv;
-        this.slashInfo = slashInfo;
+        this.slashInfo = parsedSlashInfo;
         this._globalEnabled = true;
         this._throttles = new Map();
     }
@@ -391,7 +376,7 @@ export default abstract class Command<InGuild extends boolean = boolean> {
         args: Record<string, unknown> | string[] | string,
         fromPattern?: boolean,
         result?: ArgumentCollectorResult | null
-    ): Promise<Message | Message[] | null>;
+    ): Awaitable<Message | Message[] | null | void>;
 
     /**
      * Checks whether the user has permission to use the command
@@ -418,7 +403,7 @@ export default abstract class Command<InGuild extends boolean = boolean> {
         }
 
         if (!channel.isDMBased()) {
-            if (modPermissions && !isModerator(member as GuildMember)) {
+            if (modPermissions && !isModerator(member as CommandoGuildMember)) {
                 return 'modPermissions';
             }
             if (userPermissions) {
@@ -449,26 +434,26 @@ export default abstract class Command<InGuild extends boolean = boolean> {
 
         switch (reason) {
             case 'dmOnly':
-                return replyInteraction(instances, embed(useCommandOnlyIf('in direct messages')));
+                return replyInstance(instances, embed(useCommandOnlyIf('in direct messages')));
             case 'guildOnly':
-                return replyInteraction(instances, embed(useCommandOnlyIf('in a server channel')));
+                return replyInstance(instances, embed(useCommandOnlyIf('in a server channel')));
             case 'guildOwnerOnly':
-                return replyInteraction(instances, embed(useCommandOnlyIf('by the server\'s owner')));
+                return replyInstance(instances, embed(useCommandOnlyIf('by the server\'s owner')));
             case 'nsfw':
-                return replyInteraction(instances, embed(useCommandOnlyIf('in a NSFW channel')));
+                return replyInstance(instances, embed(useCommandOnlyIf('in a NSFW channel')));
             case 'ownerOnly':
-                return replyInteraction(instances, embed(useCommandOnlyIf('by the bot\'s owner')));
+                return replyInstance(instances, embed(useCommandOnlyIf('by the bot\'s owner')));
             case 'userPermissions': {
                 if (!missing) {
                     throw new Error('Missing permissions object must be specified for "userPermissions" case');
                 }
-                return replyInteraction(instances, embed(
+                return replyInstance(instances, embed(
                     'You are missing the following permissions:',
                     missing.map(perm => `\`${Util.permissions[perm]}\``).join(', ')
                 ));
             }
             case 'modPermissions':
-                return replyInteraction(instances, embed(
+                return replyInstance(instances, embed(
                     useCommandOnlyIf('by "moderators"'),
                     'For more information visit the `page 3` of the `help` command.'
                 ));
@@ -476,7 +461,7 @@ export default abstract class Command<InGuild extends boolean = boolean> {
                 if (!missing) {
                     throw new Error('Missing permissions object must be specified for "clientPermissions" case');
                 }
-                return replyInteraction(instances, embed(
+                return replyInstance(instances, embed(
                     'The bot is missing the following permissions:',
                     missing.map(perm => `\`${Util.permissions[perm]}\``).join(', ')
                 ));
@@ -485,7 +470,7 @@ export default abstract class Command<InGuild extends boolean = boolean> {
                 if (!remaining) {
                     throw new Error('Remaining time value must be specified for "throttling" case');
                 }
-                return replyInteraction(instances, embed(
+                return replyInstance(instances, embed(
                     `Please wait **${remaining.toFixed(1)} seconds** before using the \`${name}\` command again.`
                 ));
             }
@@ -733,11 +718,11 @@ export default abstract class Command<InGuild extends boolean = boolean> {
             throw new TypeError('Command patterns must be an Array of regular expressions.');
         }
         if (info.deprecated) {
-            if (typeof info.replacing !== 'string') {
-                throw new TypeError('Command replacing must be a string.');
+            if (typeof info.deprecatedReplacement !== 'string') {
+                throw new TypeError('Command deprecatedReplacement must be a string.');
             }
-            if (info.replacing !== info.replacing.toLowerCase()) {
-                throw new TypeError('Command replacing must be lowercase.');
+            if (info.deprecatedReplacement !== info.deprecatedReplacement.toLowerCase()) {
+                throw new TypeError('Command deprecatedReplacement must be lowercase.');
             }
         }
     }
@@ -747,39 +732,23 @@ export default abstract class Command<InGuild extends boolean = boolean> {
      * @param info - Info to validate
      * @param slashInfo - Slash info to validate
      */
-    protected static validateSlashInfo(info: CommandInfo, slashInfo: ApplicationCommandData): void {
-        const { name, defaultMemberPermissions, dmPermission, nameLocalizations, type: cmdType } = slashInfo;
-
-        if (name !== info.name) {
-            throw new RangeError(`Slash command name "${name}" is not the same as message command name "${info.name}".`);
-        }
-
-        if (cmdType && cmdType !== ApplicationCommandType.ChatInput) {
-            const ctxMenu = new ContextMenuCommandBuilder()
-                .setType(cmdType)
-                .setName(name)
-                .setNameLocalizations(nameLocalizations ?? null)
-                .setDMPermission(dmPermission)
-                .setDefaultMemberPermissions(
-                    PermissionsBitField.resolve(defaultMemberPermissions ?? undefined)
-                );
-
-            // Validate data
-            ctxMenu.toJSON();
-            return;
-        }
-
-        const { description, descriptionLocalizations, options } = slashInfo;
+    protected static validateAndParseSlashInfo(info: CommandInfo, slashInfo?: SlashCommandInfo): APISlashCommand | null {
+        if (!slashInfo) return null;
+        const { name, description, userPermissions, dmOnly, guildOnly } = info;
+        const {
+            nameLocalizations = null,
+            descriptionLocalizations = null,
+            options,
+        } = slashInfo;
+        const memberPermissions = dmOnly ? 0n : (userPermissions && PermissionsBitField.resolve(userPermissions));
 
         const slash = new SlashCommandBuilder()
             .setName(name)
-            .setNameLocalizations(nameLocalizations ?? null)
+            .setNameLocalizations(nameLocalizations)
             .setDescription(description)
-            .setDescriptionLocalizations(descriptionLocalizations ?? null)
-            .setDMPermission(dmPermission)
-            .setDefaultMemberPermissions(
-                PermissionsBitField.resolve(defaultMemberPermissions ?? undefined)
-            );
+            .setDescriptionLocalizations(descriptionLocalizations)
+            .setDMPermission(!guildOnly)
+            .setDefaultMemberPermissions(memberPermissions);
 
         if (options) {
             addBasicOptions(slash, options);
@@ -812,7 +781,11 @@ export default abstract class Command<InGuild extends boolean = boolean> {
         }
 
         // Validate data
-        slash.toJSON();
+        const validatedData = slash.toJSON();
+        return {
+            ...validatedData,
+            deferEphemeral: !!slashInfo.deferEphemeral,
+        };
     }
 }
 
@@ -937,25 +910,23 @@ function embed(name: string, value?: string): EmbedBuilder {
     return embed;
 }
 
-async function replyInteraction(
-    instances: CommandInstances, options: EmbedBuilder | MessagePayloadOption | string
+async function replyInstance(
+    instances: CommandInstances, options: EmbedBuilder | Omit<MessageCreateOptions, 'flags'> | string
 ): Promise<Message | null> {
     if (options instanceof EmbedBuilder) options = { embeds: [options] };
     if (typeof options === 'string') options = { content: options };
     if ('interaction' in instances) {
         const { interaction } = instances;
-        const payload = new MessagePayload(interaction as unknown as ChatInputCommandInteraction, options);
         if (interaction.isEditable()) {
-            return await interaction.editReply(payload).catch(() => null);
+            return await interaction.editReply(options).catch(() => null);
         }
-        await interaction.reply(payload).catch(() => null);
+        await interaction.reply(options).catch(() => null);
         return null;
     }
     if ('message' in instances) {
         const { message } = instances;
-        const payload = new MessagePayload(message as Message, options);
         Object.assign(options, Util.noReplyPingInDMs(message));
-        return await message.reply(payload).catch(() => null);
+        return await message.reply(options).catch(() => null);
     }
     return null;
 }
@@ -976,7 +947,7 @@ const isModConditions: PermissionsString[] = [
     'MuteMembers',
 ];
 
-function isModerator(member: GuildMember): boolean {
+function isModerator(member: CommandoGuildMember): boolean {
     if (!member) return false;
     const { permissions } = member;
     if (permissions.has('Administrator')) return true;

@@ -59,13 +59,15 @@ export interface ArgumentInfo {
      */
     type?: ArgumentTypes | ArgumentTypes[];
     /**
-     * If type is `integer` or `float`, this is the maximum value of the number.
-     * If type is `string`, this is the maximum length of the string.
+     * - If type is `integer` or `float`, this is the maximum value of the number.
+     * - If type is `string`, this is the maximum length of the string.
+     * - If type is `duration`, this is the maximum duration.
      */
     max?: number;
     /**
-     * If type is `integer` or `float`, this is the minimum value of the number.
-     * If type is `string`, this is the minimum length of the string.
+     * - If type is `integer` or `float`, this is the minimum value of the number.
+     * - If type is `string`, this is the minimum length of the string.
+     * - If type is `duration`, this is the minimum duration.
      */
     min?: number;
     /** Default value for the argument (makes the arg optional - cannot be `null`) */
@@ -78,10 +80,10 @@ export interface ArgumentInfo {
      */
     required?: boolean;
     /**
-     * Whether the default argument's validation is skipped or not
+     * Whether the date/time argument validation is skipped or not
      * @default false
      */
-    skipValidation?: boolean;
+    skipExtraDateValidation?: boolean;
     /**
      * Whether the argument accepts infinite values
      * @default false;
@@ -140,11 +142,13 @@ export default class Argument {
     /**
      * - If type is `integer` or `float`, this is the maximum value of the number.
      * - If type is `string`, this is the maximum length of the string.
+     * - If type is `duration`, this is the maximum duration.
      */
     public max: number | null;
     /**
      * - If type is `integer` or `float`, this is the minimum value of the number.
      * - If type is `string`, this is the minimum length of the string.
+     * - If type is `duration`, this is the minimum duration.
      */
     public min: number | null;
     /** The default value for the argument */
@@ -152,7 +156,7 @@ export default class Argument {
     /** Whether the argument is required or not */
     public required: boolean;
     /** Whether the default argument's validation is skipped or not */
-    public skipValidation: boolean;
+    public skipExtraDateValidation: boolean;
     /**
      * Values the user can choose from.
      * - If type is `string`, this will be case-insensitive.
@@ -195,7 +199,7 @@ export default class Argument {
         this.min = info.min ?? null;
         this.default = info.default ?? null;
         this.required = 'required' in info ? !!info.required : !('default' in info);
-        this.skipValidation = !!info.skipValidation;
+        this.skipExtraDateValidation = !!info.skipExtraDateValidation;
         this.oneOf = info.oneOf?.map(el => typeof el === 'string' ? el.toLowerCase() : el) ?? null;
         this.infinite = !!info.infinite;
         this.validator = info.validate ?? null;
@@ -369,7 +373,7 @@ export default class Argument {
                         }])
                         .setFooter({
                             text: wait
-                                ?  `The command will automatically be cancelled in ${this.wait} seconds, unless you respond.`
+                                ? `The command will automatically be cancelled in ${this.wait} seconds, unless you respond.`
                                 : '',
                         });
 
@@ -418,7 +422,7 @@ export default class Argument {
 
                 valid = await this.validate(val, msg, response);
             }
- 
+
             results.push(await this.parse(
                 val as string, msg, answers[answers.length - 1] as CommandoMessage ?? msg
             ) as ArgumentResponse);

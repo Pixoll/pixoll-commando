@@ -5,7 +5,6 @@ import {
     Client,
     ClientOptions,
     Collection,
-    CommandInteraction,
     FetchGuildOptions,
     FetchGuildsOptions,
     Guild,
@@ -23,26 +22,18 @@ import {
     LimitedCollection,
     OAuth2Guild,
     ChatInputApplicationCommandData,
-    ApplicationCommandData,
     CommandInteractionOption,
-    MessageApplicationCommandData,
-    UserApplicationCommandData,
+    RESTPostAPIChatInputApplicationCommandsJSONBody as RESTPostAPISlashCommand,
     MessageCreateOptions,
     MessageReplyOptions,
     If,
     GuildTextBasedChannel,
     StageChannel,
+    ClientEvents,
+    Awaitable,
+    ChatInputCommandInteraction,
 } from 'discord.js';
 import { FilterQuery, Model, Types, UpdateAggregationStage, UpdateQuery, UpdateWriteOpResult } from 'mongoose';
-
-//#region Overrides
-
-declare module 'discord.js' {
-    // eslint-disable-next-line @typescript-eslint/no-empty-interface
-    interface ClientEvents extends CommandoClientEvents { }
-}
-
-//#endregion
 
 //#region Classes
 
@@ -105,11 +96,13 @@ export class Argument {
     /**
      * - If type is `integer` or `float`, this is the maximum value of the number.
      * - If type is `string`, this is the maximum length of the string.
+     * - If type is `duration`, this is the maximum duration.
      */
     max: number | null;
     /**
      * - If type is `integer` or `float`, this is the minimum value of the number.
      * - If type is `string`, this is the minimum length of the string.
+     * - If type is `duration`, this is the minimum duration.
      */
     min: number | null;
     /** The default value for the argument */
@@ -117,7 +110,7 @@ export class Argument {
     /** Whether the argument is required or not */
     required: boolean;
     /** Whether the default argument's validation is skipped or not */
-    skipValidation: boolean;
+    skipExtraDateValidation: boolean;
     /**
      * Values the user can choose from.
      * - If type is `string`, this will be case-insensitive.
@@ -229,10 +222,7 @@ export abstract class ArgumentType {
     isEmpty(val: string[] | string, originalMsg: CommandoMessage, arg: Argument, currentMsg?: CommandoMessage): boolean;
 }
 
-/**
- * A type for command arguments that handles multiple other types
- * @augments ArgumentType
- */
+/** A type for command arguments that handles multiple other types */
 export class ArgumentUnionType extends ArgumentType {
     constructor(client: CommandoClient, id: string);
 
@@ -251,7 +241,7 @@ export abstract class Command<InGuild extends boolean = boolean> {
      * @param info - The command information
      * @param slashInfo - The slash command information
      */
-    constructor(client: CommandoClient, info: CommandInfo<InGuild>, slashInfo?: AppCommandData);
+    constructor(client: CommandoClient, info: CommandInfo<InGuild>, slashInfo?: SlashCommandInfo);
 
     /** Whether the command is enabled globally */
     protected _globalEnabled: boolean;
@@ -274,7 +264,7 @@ export abstract class Command<InGuild extends boolean = boolean> {
      * @param info - Info to validate
      * @param slashInfo - Slash info to validate
      */
-    protected static validateSlashInfo(info: CommandInfo, slashInfo: ApplicationCommandData): void;
+    protected static validateAndParseSlashInfo(info: CommandInfo, slashInfo?: SlashCommandInfo): APISlashCommand | null;
 
     /** Client that this command is for */
     readonly client: CommandoClient;
@@ -335,11 +325,11 @@ export abstract class Command<InGuild extends boolean = boolean> {
     /** Whether the command is marked as deprecated */
     deprecated: boolean;
     /** The name or alias of the command that is replacing the deprecated command. Required if `deprecated` is `true`. */
-    replacing: string | null;
+    deprecatedReplacement: string | null;
     /** Whether this command will be registered in the test guild only or not */
     testEnv: boolean;
     /** The data for the slash command */
-    slashInfo?: AppCommandData;
+    slashInfo?: APISlashCommand | null;
 
     /**
      * Runs the command
@@ -357,7 +347,7 @@ export abstract class Command<InGuild extends boolean = boolean> {
         args: Record<string, unknown> | string[] | string,
         fromPattern?: boolean,
         result?: ArgumentCollectorResult | null
-    ): Promise<Message | Message[] | null>;
+    ): Awaitable<Message | Message[] | null | void>;
     /**
      * Checks whether the user has permission to use the command
      * @param instances - The triggering command instances
@@ -535,10 +525,7 @@ export class CommandDispatcher {
     removeInhibitor(inhibitor: Inhibitor): boolean;
 }
 
-/**
- * Has a descriptive message for a command not having proper format
- * @augments FriendlyError
- */
+/** Has a descriptive message for a command not having proper format */
 export class CommandFormatError extends FriendlyError {
     /**
      * @param msg - The command message the error is for
@@ -586,10 +573,7 @@ export class CommandGroup {
     reload(): void;
 }
 
-/**
- * Discord.js Client with a command framework
- * @augments Client
- */
+/** Discord.js Client with a command framework */
 export class CommandoClient<Ready extends boolean = boolean> extends Client<Ready> {
     /**
      * @param options - Options for the client
@@ -602,7 +586,7 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
     /** Initializes all default listeners that make the client work. */
     protected initDefaultListeners(): void;
     /** Parses all {@link Guild} instances into {@link CommandoGuild}s. */
-    protected parseGuilds(): void;
+    protected parseGuilds(client: CommandoClient<true>): void;
     /**
      * Parses a {@link Guild} instance into a {@link CommandoGuild}.
      * @param guild - The {@link Guild} to parse
@@ -623,7 +607,7 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
     /** Options for the client */
     options: CommandoClientOptions;
     /**
-     * Owners of the bot, set by the {@link CommandoClientOptions#owner} option
+     * Owners of the bot, set by the {@link CommandoClientOptions#owners} option
      * <info>If you simply need to check if a user is an owner of the bot, please instead use
      * {@link CommandoClient#isOwner}.</info>
      */
@@ -637,16 +621,25 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
     registry: CommandoRegistry;
 
     /**
-     * Checks whether a user is an owner of the bot (in {@link CommandoClientOptions#owner})
+     * Checks whether a user is an owner of the bot (in {@link CommandoClientOptions#owners})
      * @param user - User to check for ownership
      */
     isOwner(user: UserResolvable): boolean;
+
+    on<K extends keyof CommandoClientEvents>(
+        event: K, listener: (...args: CommandoClientEvents[K]) => Awaitable<void>
+    ): this;
+    once<K extends keyof CommandoClientEvents>(
+        event: K, listener: (...args: CommandoClientEvents[K]) => Awaitable<void>
+    ): this;
+    emit<K extends keyof CommandoClientEvents>(event: K, ...args: CommandoClientEvents[K]): boolean;
+    off<K extends keyof CommandoClientEvents>(
+        event: K, listener: (...args: CommandoClientEvents[K]) => Awaitable<void>
+    ): this;
+    removeAllListeners<K extends keyof CommandoClientEvents>(event?: K): this;
 }
 
-/**
- * A fancier Guild for fancier people.
- * @augments Guild
- */
+/** A fancier Guild for fancier people. */
 export class CommandoGuild extends Guild {
     /**
      * @param client - The client the guild is for
@@ -703,19 +696,16 @@ export class CommandoGuild extends Guild {
     commandUsage(command: string, user?: User | null): string;
 }
 
-/**
- * An extension of the base Discord.js CommandInteraction class to add command-related functionality.
- * @augments CommandInteraction
- */
-export class CommandoInteraction<InGuild extends boolean = boolean> extends CommandInteraction {
+/** An extension of the base Discord.js ChatInputCommandInteraction class to add command-related functionality. */
+export class CommandoInteraction<InGuild extends boolean = boolean> extends ChatInputCommandInteraction {
     /**
      * @param client - The client the interaction is for
      * @param data - The interaction data
      */
-    constructor(client: CommandoClient, data: CommandInteraction);
+    constructor(client: CommandoClient<true>, data: ChatInputCommandInteraction);
 
     /** Command that the interaction triggers */
-    protected _command: Command;
+    protected _command: Command<InGuild>;
 
     get author(): User;
     /** The channel this interaction was used in */
@@ -723,10 +713,10 @@ export class CommandoInteraction<InGuild extends boolean = boolean> extends Comm
     /** The client the interaction is for */
     readonly client: CommandoClient<true>;
     /** Command that the interaction triggers */
-    get command(): Command;
+    get command(): Command<InGuild>;
     /** The guild this interaction was used in */
     get guild(): If<InGuild, CommandoGuild>;
-    member: CommandoMember | null;
+    member: CommandoGuildMember | null;
 
     /**
      * Parses the options data into usable arguments
@@ -737,16 +727,13 @@ export class CommandoInteraction<InGuild extends boolean = boolean> extends Comm
     run(): Promise<void>;
 }
 
-/**
- * An extension of the base Discord.js Message class to add command-related functionality.
- * @augments Message
- */
+/** An extension of the base Discord.js Message class to add command-related functionality. */
 export class CommandoMessage<InGuild extends boolean = boolean> extends Message<InGuild> {
     /**
      * @param client - The client the message is for
      * @param data - The message data
      */
-    constructor(client: CommandoClient, data: Message);
+    constructor(client: CommandoClient<true>, data: Message);
 
     /**
      * Initializes the message for a command
@@ -784,6 +771,7 @@ export class CommandoMessage<InGuild extends boolean = boolean> extends Message<
 
     /** The client the message is for */
     readonly client: CommandoClient<true>;
+    get member(): CommandoGuildMember | null;
     /** The guild this message was sent in */
     get guild(): If<InGuild, CommandoGuild>;
     /** The channel this message was sent in */
@@ -1008,10 +996,7 @@ export class CommandoRegistry {
     resolveCommandPath(group: string, memberName: string): string;
 }
 
-/**
- * Has a message that can be considered user-friendly
- * @augments Error
- */
+/** Has a message that can be considered user-friendly */
 export class FriendlyError extends Error {
     /**
      * @param message - The error message
@@ -1238,11 +1223,11 @@ declare class CommandoGuildManager extends CachedManager<Snowflake, CommandoGuil
     fetch(options?: FetchGuildsOptions): Promise<Collection<Snowflake, OAuth2Guild>>;
 }
 
-export class CommandoMember extends GuildMember {
+export class CommandoGuildMember extends GuildMember {
     guild: CommandoGuild;
 }
 
-export type AppCommandData = MessageApplicationCommandData | SlashCommandInfo | UserApplicationCommandData;
+export type APISlashCommand = Required<Pick<SlashCommandInfo, 'deferEphemeral'>> & RESTPostAPISlashCommand;
 
 type ArgumentCheckerParams = [
     val: string[] | string,
@@ -1364,13 +1349,15 @@ export interface ArgumentInfo {
      */
     type?: ArgumentTypes | ArgumentTypes[];
     /**
-     * If type is `integer` or `float`, this is the maximum value of the number.
-     * If type is `string`, this is the maximum length of the string.
+     * - If type is `integer` or `float`, this is the maximum value of the number.
+     * - If type is `string`, this is the maximum length of the string.
+     * - If type is `duration`, this is the maximum duration.
      */
     max?: number;
     /**
-     * If type is `integer` or `float`, this is the minimum value of the number.
-     * If type is `string`, this is the minimum length of the string.
+     * - If type is `integer` or `float`, this is the minimum value of the number.
+     * - If type is `string`, this is the minimum length of the string.
+     * - If type is `duration`, this is the minimum duration.
      */
     min?: number;
     /** Default value for the argument (makes the arg optional - cannot be `null`) */
@@ -1383,10 +1370,10 @@ export interface ArgumentInfo {
      */
     required?: boolean;
     /**
-     * Whether the default argument's validation is skipped or not
+     * Whether the date/time argument validation is skipped or not
      * @default false
      */
-    skipValidation?: boolean;
+    skipExtraDateValidation?: boolean;
     /**
      * Whether the argument accepts infinite values
      * @default false;
@@ -1567,7 +1554,7 @@ export interface CommandInfo<InGuild extends boolean = boolean> {
      * The name or alias of the command that is replacing the deprecated command.
      * Required if `deprecated` is `true`.
      */
-    replacing?: string;
+    deprecatedReplacement?: string;
 }
 
 /** The instances the command is being run for */
@@ -1579,7 +1566,11 @@ export type CommandInstances<InGuild extends boolean = boolean> = {
     message: CommandoMessage<InGuild>;
 };
 
-export interface CommandoClientEvents {
+export interface CommandoClientEvents extends ClientEvents {
+    // Overrides
+    ready: [client: CommandoClient<true>];
+    guildDelete: [guild: CommandoGuild];
+    // New events
     commandBlock: [instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData];
     commandCancel: [command: Command, reason: string, message: CommandoMessage, result?: ArgumentCollectorResult];
     commandError: [
@@ -1598,7 +1589,7 @@ export interface CommandoClientEvents {
     commandReregister: [newCommand: Command, oldCommand: Command];
     commandRun: [
         command: Command,
-        promise: Promise<unknown>,
+        promise: Awaitable<Message | Message[] | null | void>,
         instances: CommandInstances,
         args: Record<string, unknown> | string[] | string,
         fromPattern?: boolean,
@@ -1631,8 +1622,8 @@ export interface CommandoClientOptions extends ClientOptions {
      * @default true
      */
     nonCommandEditable?: boolean;
-    /** ID of the bot owner's Discord user, or multiple ids */
-    owner?: Set<string> | string[] | string;
+    /** IDs of the bot owners' Discord user */
+    owners?: Set<string> | string[];
     /** Invite URL to the bot's support server */
     serverInvite?: string;
     /** Invite options for the bot */
@@ -1798,7 +1789,9 @@ export interface ResponseOptions {
 }
 
 /** The slash command information */
-export interface SlashCommandInfo extends ChatInputApplicationCommandData {
+export interface SlashCommandInfo extends Omit<
+    ChatInputApplicationCommandData, 'defaultMemberPermissions' | 'description' | 'dmPermission' | 'name' | 'type'
+> {
     /** Whether the deferred reply should be ephemeral or not */
     deferEphemeral?: boolean;
 }

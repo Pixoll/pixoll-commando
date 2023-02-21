@@ -1,13 +1,15 @@
-import { Guild, User, EmbedBuilder } from 'discord.js';
+import { Guild, User, EmbedBuilder, GuildMember } from 'discord.js';
 import CommandoClient from '../client';
 import Command from '../commands/base';
 import GuildDatabaseManager from '../database/GuildDatabaseManager';
 import { CommandGroupResolvable, CommandResolvable } from '../registry';
 
-/**
- * A fancier Guild for fancier people.
- * @augments Guild
- */
+// @ts-expect-error: GuildMember's constructor is private
+export declare class CommandoGuildMember extends GuildMember {
+    public guild: CommandoGuild;
+}
+
+/** A fancier Guild for fancier people. */
 // @ts-expect-error: Guild's constructor is private
 export default class CommandoGuild extends Guild {
     /** The client the guild is for */

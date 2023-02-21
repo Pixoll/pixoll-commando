@@ -1,3 +1,13 @@
+declare module 'process' {
+    global {
+        namespace NodeJS {
+            interface ProcessEnv {
+                MONGO_DB_URI: string;
+            }
+        }
+    }
+}
+
 declare module 'better-ms' {
     /** Short/Long format for `value`. */
     export function ms(value: number, options?: { long: boolean }): string;

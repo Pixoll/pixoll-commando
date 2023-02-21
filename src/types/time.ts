@@ -1,6 +1,6 @@
+import { ms } from 'better-ms';
 import CommandoClient from '../client';
-import { Tuple } from '../utilTypes';
-import Util from '../util';
+import Util, { Tuple } from '../util';
 import ArgumentType from './base';
 
 export default class TimeArgumentType extends ArgumentType {
@@ -20,6 +20,14 @@ export default class TimeArgumentType extends ArgumentType {
         const date = this._parseDate(val.match(this.timeRegex), val);
         if (!date) {
             return 'Please enter a valid date format. Use the `help` command for more information.';
+        }
+
+        const int = date.getTime();
+        if (int <= Date.now()) {
+            return 'Please enter a date that\'s in the future.';
+        }
+        if (int > (Date.now() + ms('1y'))) {
+            return 'The max. usable date is `1 year` in the future. Please try again.';
         }
 
         return true;

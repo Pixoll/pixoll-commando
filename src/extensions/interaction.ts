@@ -1,12 +1,13 @@
 import { stripIndent } from 'common-tags';
 import {
+    APIChatInputApplicationCommandInteraction,
+    APIUser,
     ApplicationCommandOptionType,
     ApplicationCommandType,
+    ChatInputCommandInteraction,
     Colors,
-    CommandInteraction,
     CommandInteractionOption,
     EmbedBuilder,
-    GuildMember,
     GuildTextBasedChannel,
     If,
     StageChannel,
@@ -17,35 +18,25 @@ import CommandoClient from '../client';
 import Command from '../commands/base';
 import FriendlyError from '../errors/friendly';
 import Util from '../util';
-import CommandoGuild from './guild';
+import CommandoGuild, { CommandoGuildMember } from './guild';
 
-// @ts-expect-error: GuildMember's constructor is private
-declare class CommandoMember extends GuildMember {
-    public guild: CommandoGuild;
-}
-
-/** An extension of the base Discord.js CommandInteraction class to add command-related functionality. */
-export default class CommandoInteraction<InGuild extends boolean = boolean> extends CommandInteraction {
+/** An extension of the base Discord.js ChatInputCommandInteraction class to add command-related functionality. */
+export default class CommandoInteraction<InGuild extends boolean = boolean> extends ChatInputCommandInteraction {
     /** The client the interaction is for */
     declare public readonly client: CommandoClient<true>;
-    declare public member: CommandoMember | null;
+    declare public member: CommandoGuildMember | null;
     /** Command that the interaction triggers */
-    protected _command: Command;
+    protected _command: Command<InGuild>;
 
     /**
      * @param client - The client the interaction is for
      * @param data - The interaction data
      */
-    public constructor(client: CommandoClient, data: CommandInteraction) {
-        if (data.commandType !== ApplicationCommandType.ChatInput) {
-            throw new RangeError(`Unsupported command interaction type "${data.commandType}".`);
-        }
-
-        // @ts-expect-error: data.toJSON() does not work
-        super(client, { id: data.id });
+    public constructor(client: CommandoClient<true>, data: ChatInputCommandInteraction) {
+        super(client, interactionToJSON(data));
         Object.assign(this, data);
 
-        this._command = client.registry.resolveCommand(data.commandName);
+        this._command = client.registry.resolveCommand(data.commandName) as Command<InGuild>;
     }
 
     public get author(): User {
@@ -59,7 +50,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
 
     /** Command that the interaction triggers */
     // @ts-expect-error: This is meant to override CommandInteraction's command getter.
-    public get command(): Command {
+    public get command(): Command<InGuild> {
         return this._command;
     }
 
@@ -110,7 +101,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
                     args[optionName] = channel ? channels.resolve(channel.id) : null;
                     break;
                 case ApplicationCommandOptionType.Mentionable: {
-                    const resolvedMember = member instanceof GuildMember && members ? members.resolve(member) : null;
+                    const resolvedMember = member instanceof CommandoGuildMember && members ? members.resolve(member) : null;
                     const resolvedChannel = channel ? channels.resolve(channel.id) : null;
                     const resolvedRole = role && roles ? roles.resolve(role.id) : null;
                     args[optionName] = resolvedMember ?? user ?? resolvedChannel ?? resolvedRole ?? null;
@@ -120,7 +111,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
                     args[optionName] = role && roles ? roles.resolve(role.id) : null;
                     break;
                 case ApplicationCommandOptionType.User: {
-                    const resolvedMember = member instanceof GuildMember && members ? members.resolve(member) : null;
+                    const resolvedMember = member instanceof CommandoGuildMember && members ? members.resolve(member) : null;
                     args[optionName] = resolvedMember ?? user ?? null;
                     break;
                 }
@@ -180,7 +171,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
         }
 
         // Ensure the channel is a NSFW one if required
-        if ('nsfw' in channel && !channel.nsfw) {
+        if (command.nsfw && 'nsfw' in channel && !channel.nsfw) {
             client.emit('commandBlock', { interaction: this }, 'nsfw');
             await command.onBlock({ interaction: this }, 'nsfw');
             return;
@@ -216,7 +207,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
                 .setColor(Colors.Gold)
                 .addFields([{
                     name: `The \`${command.name}\` command has been marked as deprecated!`,
-                    value: `Please start using the \`${command.replacing}\` command from now on.`,
+                    value: `Please start using the \`${command.deprecatedReplacement}\` command from now on.`,
                 }]);
 
             await channel.send({ content: author.toString(), embeds: [embed] });
@@ -229,9 +220,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
         try {
             const location = guildId ? `${guildId}:${channelId}` : `DM:${author.id}`;
             client.emit('debug', `Running slash command "${groupId}:${memberName}" at "${location}".`);
-            if (command.slashInfo && 'deferEphemeral' in command.slashInfo) {
-                await this.deferReply({ ephemeral: command.slashInfo.deferEphemeral }).catch(() => null);
-            }
+            await this.deferReply({ ephemeral: command.slashInfo?.deferEphemeral });
             const promise = command.run({ interaction: this }, args);
 
             client.emit('commandRun', command, promise, { interaction: this }, args);
@@ -239,8 +228,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
         } catch (err) {
             client.emit('commandError', command, err as Error, { interaction: this }, args);
             if (err instanceof FriendlyError) {
-                const { deferred, replied } = this;
-                if (deferred || replied) {
+                if (this.isEditable()) {
                     await this.editReply({ content: err.message, components: [], embeds: [] });
                 } else {
                     await this.reply(err.message);
@@ -249,4 +237,27 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
             await command.onError(err as Error, { interaction: this }, args);
         }
     }
+}
+
+function interactionToJSON(
+    data: ChatInputCommandInteraction
+): APIChatInputApplicationCommandInteraction {
+    /* eslint-disable camelcase */
+    return {
+        app_permissions: data.appPermissions?.bitfield.toString() ?? '',
+        application_id: data.applicationId,
+        channel_id: data.channelId,
+        data: {
+            id: data.command?.id ?? '',
+            name: data.command?.name ?? '',
+            type: ApplicationCommandType.ChatInput,
+        },
+        id: data.id,
+        locale: data.locale,
+        token: data.token,
+        type: data.type,
+        user: data.user.toJSON() as APIUser,
+        version: 1,
+    };
+    /* eslint-enable camelcase */
 }

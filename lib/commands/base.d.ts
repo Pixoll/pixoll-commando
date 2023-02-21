@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { GuildResolvable, Message, PermissionsString, User, ChatInputApplicationCommandData, UserApplicationCommandData, MessageApplicationCommandData, ApplicationCommandData } from 'discord.js';
+import { GuildResolvable, Message, PermissionsString, User, ChatInputApplicationCommandData, RESTPostAPIChatInputApplicationCommandsJSONBody as RESTPostAPISlashCommand, Awaitable } from 'discord.js';
 import ArgumentCollector, { ArgumentCollectorResult } from './collector';
 import CommandoClient from '../client';
 import CommandGroup from './group';
@@ -140,7 +140,7 @@ export interface CommandInfo<InGuild extends boolean = boolean> {
      * The name or alias of the command that is replacing the deprecated command.
      * Required if `deprecated` is `true`.
      */
-    replacing?: string;
+    deprecatedReplacement?: string;
 }
 /** Throttling object of the command. */
 export interface Throttle {
@@ -179,11 +179,11 @@ export interface CommandBlockData {
      */
     missing?: PermissionsString[];
 }
-export interface SlashCommandInfo extends ChatInputApplicationCommandData {
+export interface SlashCommandInfo extends Omit<ChatInputApplicationCommandData, 'defaultMemberPermissions' | 'description' | 'dmPermission' | 'name' | 'type'> {
     /** Whether the deferred reply should be ephemeral or not */
     deferEphemeral?: boolean;
 }
-export type AppCommandData = MessageApplicationCommandData | SlashCommandInfo | UserApplicationCommandData;
+export type APISlashCommand = Required<Pick<SlashCommandInfo, 'deferEphemeral'>> & RESTPostAPISlashCommand;
 /** A command that can be run in a client */
 export default abstract class Command<InGuild extends boolean = boolean> {
     /** Client that this command is for */
@@ -245,11 +245,11 @@ export default abstract class Command<InGuild extends boolean = boolean> {
     /** Whether the command is marked as deprecated */
     deprecated: boolean;
     /** The name or alias of the command that is replacing the deprecated command. Required if `deprecated` is `true`. */
-    replacing: string | null;
+    deprecatedReplacement: string | null;
     /** Whether this command will be registered in the test guild only or not */
     testEnv: boolean;
     /** The data for the slash command */
-    slashInfo?: AppCommandData;
+    slashInfo: APISlashCommand | null;
     /** Whether the command is enabled globally */
     protected _globalEnabled: boolean;
     /** Current throttle objects for the command, mapped by user ID */
@@ -259,7 +259,7 @@ export default abstract class Command<InGuild extends boolean = boolean> {
      * @param info - The command information
      * @param slashInfo - The slash command information
      */
-    constructor(client: CommandoClient, info: CommandInfo<InGuild>, slashInfo?: AppCommandData);
+    constructor(client: CommandoClient, info: CommandInfo<InGuild>, slashInfo?: SlashCommandInfo);
     /**
      * Runs the command
      * @param instances - The message the command is being run for
@@ -271,7 +271,7 @@ export default abstract class Command<InGuild extends boolean = boolean> {
      * @param fromPattern - Whether or not the command is being run from a pattern match
      * @param result - Result from obtaining the arguments from the collector (if applicable)
      */
-    abstract run(instances: CommandInstances<InGuild>, args: Record<string, unknown> | string[] | string, fromPattern?: boolean, result?: ArgumentCollectorResult | null): Promise<Message | Message[] | null>;
+    abstract run(instances: CommandInstances<InGuild>, args: Record<string, unknown> | string[] | string, fromPattern?: boolean, result?: ArgumentCollectorResult | null): Awaitable<Message | Message[] | null | void>;
     /**
      * Checks whether the user has permission to use the command
      * @param instances - The triggering command instances
@@ -351,5 +351,5 @@ export default abstract class Command<InGuild extends boolean = boolean> {
      * @param info - Info to validate
      * @param slashInfo - Slash info to validate
      */
-    protected static validateSlashInfo(info: CommandInfo, slashInfo: ApplicationCommandData): void;
+    protected static validateAndParseSlashInfo(info: CommandInfo, slashInfo?: SlashCommandInfo): APISlashCommand | null;
 }

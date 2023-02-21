@@ -30,13 +30,15 @@ export interface ArgumentInfo {
      */
     type?: ArgumentTypes | ArgumentTypes[];
     /**
-     * If type is `integer` or `float`, this is the maximum value of the number.
-     * If type is `string`, this is the maximum length of the string.
+     * - If type is `integer` or `float`, this is the maximum value of the number.
+     * - If type is `string`, this is the maximum length of the string.
+     * - If type is `duration`, this is the maximum duration.
      */
     max?: number;
     /**
-     * If type is `integer` or `float`, this is the minimum value of the number.
-     * If type is `string`, this is the minimum length of the string.
+     * - If type is `integer` or `float`, this is the minimum value of the number.
+     * - If type is `string`, this is the minimum length of the string.
+     * - If type is `duration`, this is the minimum duration.
      */
     min?: number;
     /** Default value for the argument (makes the arg optional - cannot be `null`) */
@@ -49,10 +51,10 @@ export interface ArgumentInfo {
      */
     required?: boolean;
     /**
-     * Whether the default argument's validation is skipped or not
+     * Whether the date/time argument validation is skipped or not
      * @default false
      */
-    skipValidation?: boolean;
+    skipExtraDateValidation?: boolean;
     /**
      * Whether the argument accepts infinite values
      * @default false;
@@ -105,11 +107,13 @@ export default class Argument {
     /**
      * - If type is `integer` or `float`, this is the maximum value of the number.
      * - If type is `string`, this is the maximum length of the string.
+     * - If type is `duration`, this is the maximum duration.
      */
     max: number | null;
     /**
      * - If type is `integer` or `float`, this is the minimum value of the number.
      * - If type is `string`, this is the minimum length of the string.
+     * - If type is `duration`, this is the minimum duration.
      */
     min: number | null;
     /** The default value for the argument */
@@ -117,7 +121,7 @@ export default class Argument {
     /** Whether the argument is required or not */
     required: boolean;
     /** Whether the default argument's validation is skipped or not */
-    skipValidation: boolean;
+    skipExtraDateValidation: boolean;
     /**
      * Values the user can choose from.
      * - If type is `string`, this will be case-insensitive.

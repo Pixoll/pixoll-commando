@@ -185,7 +185,7 @@ export default class CommandDispatcher {
             return;
         }
 
-        interaction.run();
+        await interaction.run();
     }
 
     /**

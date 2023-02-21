@@ -10,6 +10,8 @@ import {
     If,
     GuildTextBasedChannel,
     StageChannel,
+    APIMessage,
+    APIUser,
 } from 'discord.js';
 import { oneLine, stripIndent } from 'common-tags';
 import Command from '../commands/base';
@@ -17,7 +19,7 @@ import FriendlyError from '../errors/friendly';
 import CommandFormatError from '../errors/command-format';
 import Util from '../util';
 import CommandoClient from '../client';
-import CommandoGuild from './guild';
+import CommandoGuild, { CommandoGuildMember } from './guild';
 
 /** Type of the response */
 type ResponseType =
@@ -49,6 +51,9 @@ export type CommandoMessageResponse<InGuild extends boolean = boolean> =
     | Message<InGuild>
     | null;
 
+const singleSmartQuote = /[\u2018\u2019]/g;
+const doubleSmartQuote = /[“”]/g;
+
 /** An extension of the base Discord.js Message class to add command-related functionality. */
 // @ts-expect-error: Message's constructor is private
 export default class CommandoMessage<InGuild extends boolean = boolean> extends Message<InGuild> {
@@ -71,9 +76,8 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
      * @param client - The client the message is for
      * @param data - The message data
      */
-    public constructor(client: CommandoClient, data: Message) {
-        // @ts-expect-error: data.toJSON() does not work
-        super(client, { id: data.id });
+    public constructor(client: CommandoClient<true>, data: Message) {
+        super(client, messageToJSON(data));
         Object.assign(this, data);
 
         this.isCommand = false;
@@ -82,6 +86,10 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
         this.patternMatches = null;
         this.responses = new Map();
         this.responsePositions = new Map();
+    }
+
+    public get member(): CommandoGuildMember | null {
+        return super.member as CommandoGuildMember | null;
     }
 
     /** The guild this message was sent in */
@@ -194,7 +202,7 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
         }
 
         // Ensure the channel is a NSFW one if required
-        if ('nsfw' in channel && !channel.nsfw) {
+        if (command.nsfw && 'nsfw' in channel && !channel.nsfw) {
             client.emit('commandBlock', { message: this }, 'nsfw');
             return await command.onBlock({ message: this }, 'nsfw');
         }
@@ -222,7 +230,7 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
         }
 
         // Throttle the command
-        // @ts-expect-error: method throttle is protected 
+        //@ts-expect-error: method throttle is protected 
         const throttle = command.throttle(author.id);
         if (throttle && command.throttling && throttle.usages + 1 > command.throttling.usages) {
             const remaining = (throttle.start + (command.throttling.duration * 1000) - Date.now()) / 1000;
@@ -235,8 +243,8 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
             const embed = new EmbedBuilder()
                 .setColor(Colors.Gold)
                 .addFields([{
-                    name: `The \`${command.name}\` command has been marked as deprecated!`,
-                    value: `Please start using the \`${command.replacing}\` command from now on.`,
+                    name: `The \`${command.name}\` command has been marked as deprecated.`,
+                    value: `Please start using the \`${command.deprecatedReplacement}\` command from now on.`,
                 }]);
 
             await this.replyEmbed(embed);
@@ -274,7 +282,7 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
             const promise = command.run({ message: this }, args, fromPattern, collResult);
 
             client.emit('commandRun', command, promise, { message: this }, args, fromPattern, collResult);
-            const retVal = await promise;
+            const retVal = await promise as CommandoMessageResponse;
             const isValid = retVal instanceof Message || Array.isArray(retVal) || Util.isNullish(retVal);
             if (!isValid) {
                 const retValType = retVal !== null ? (
@@ -541,8 +549,6 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
 
 function removeSmartQuotes(argString: string, allowSingleQuote = true): string {
     let replacementArgString = argString;
-    const singleSmartQuote = /[\u2018\u2019]/g;
-    const doubleSmartQuote = /[“”]/g;
     if (allowSingleQuote) replacementArgString = argString.replace(singleSmartQuote, '\'');
     return replacementArgString.replace(doubleSmartQuote, '"');
 }
@@ -558,6 +564,27 @@ function channelIdOrDM(channel: TextBasedChannel): string {
  */
 function resolveString(data: StringResolvable): string {
     if (typeof data === 'string') return data;
-    if (Array.isArray(data)) return data.join('\n');
+    if ('content' in data && data.content) return data.content;
     return `${data}`;
+}
+
+function messageToJSON(data: Message): APIMessage {
+    /* eslint-disable camelcase */
+    return {
+        attachments: [],
+        author: data.author.toJSON() as APIUser,
+        channel_id: '',
+        content: '',
+        edited_timestamp: null,
+        embeds: [],
+        id: '',
+        mention_everyone: false,
+        mention_roles: [],
+        mentions: [],
+        pinned: false,
+        timestamp: '',
+        tts: false,
+        type: data.type,
+    };
+    /* eslint-enable camelcase */
 }

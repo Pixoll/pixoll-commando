@@ -2,8 +2,7 @@ import { ms } from 'better-ms';
 import CommandoClient from '../client';
 import Argument from '../commands/argument';
 import CommandoMessage from '../extensions/message';
-import { Tuple } from '../utilTypes';
-import Util from '../util';
+import Util, { Tuple } from '../util';
 import ArgumentType from './base';
 
 export default class DateArgumentType extends ArgumentType {
@@ -13,7 +12,7 @@ export default class DateArgumentType extends ArgumentType {
         super(client, 'date');
 
         this.dateRegex = new RegExp(
-            '^(?<date>[1-3]?\\d[\\/\\-\\.,][01]?\\d(?:[\\/\\-\\.,]\\d{2})?(?:\\d{2})?)?\\s*' // date
+            '^(?<date>[0-3]?\\d[\\/\\-\\.,][01]?\\d(?:[\\/\\-\\.,]\\d{2})?(?:\\d{2})?)?\\s*' // date
             + '(?<time>[0-2]?\\d(?::[0-5]?\\d)?)?\\s*' // time/hour
             + '(?<ampm>[aApP]\\.?[mM]\\.?)?\\s*' // am pm
             + '(?<tz>[+-]\\d\\d?)?$' // time zone offset
@@ -25,7 +24,7 @@ export default class DateArgumentType extends ArgumentType {
         if (!date) {
             return 'Please enter a valid date format. Use the `help` command for more information.';
         }
-        if (arg.skipValidation) return true;
+        if (arg.skipExtraDateValidation) return true;
 
         const int = date.getTime();
         if (int <= Date.now()) {

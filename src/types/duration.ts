@@ -23,10 +23,10 @@ export default class DurationArgumentType extends ArgumentType {
         }
 
         if (!Util.isNullish(arg.min) && int < arg.min) {
-            return `Please enter a duration above or exactly ${ms(arg.min)}.`;
+            return `Please enter a duration greater than or exactly to ${ms(arg.min)}.`;
         }
         if (!Util.isNullish(arg.max) && int > arg.max) {
-            return `Please enter a duration below or exactly ${ms(arg.max)}.`;
+            return `Please enter a duration less than or exactly to ${ms(arg.max)}.`;
         }
 
         return true;

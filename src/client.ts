@@ -14,10 +14,11 @@ import {
     User,
     OAuth2Guild,
     FetchGuildsOptions,
-    InteractionType,
     IntentsBitField,
     Message,
     ChannelType,
+    ClientEvents,
+    Awaitable,
 } from 'discord.js';
 import CommandoRegistry from './registry';
 import CommandDispatcher from './dispatcher';
@@ -34,7 +35,7 @@ import Command, { CommandBlockData, CommandBlockReason, CommandInstances } from 
 import CommandGroup from './commands/group';
 import ArgumentType from './types/base';
 
-interface CommandoClientOptions extends ClientOptions {
+export interface CommandoClientOptions extends ClientOptions {
     /**
      * Default command prefix
      * @default '!'
@@ -50,8 +51,8 @@ interface CommandoClientOptions extends ClientOptions {
      * @default true
      */
     nonCommandEditable?: boolean;
-    /** ID of the bot owner's Discord user, or multiple ids */
-    owner?: Set<string> | string[] | string;
+    /** IDs of the bot owners' Discord user */
+    owners?: Set<string> | string[];
     /** Invite URL to the bot's support server */
     serverInvite?: string;
     /** Invite options for the bot */
@@ -66,7 +67,11 @@ interface CommandoClientOptions extends ClientOptions {
     excludeModules?: string[];
 }
 
-export interface CommandoClientEvents {
+export interface CommandoClientEvents extends ClientEvents {
+    // Overrides
+    ready: [client: CommandoClient<true>];
+    guildDelete: [guild: CommandoGuild];
+    // New events
     commandBlock: [instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData];
     commandCancel: [command: Command, reason: string, message: CommandoMessage, result?: ArgumentCollectorResult];
     commandError: [
@@ -85,7 +90,7 @@ export interface CommandoClientEvents {
     commandReregister: [newCommand: Command, oldCommand: Command];
     commandRun: [
         command: Command,
-        promise: Promise<unknown>,
+        promise: Awaitable<Message | Message[] | null | void>,
         instances: CommandInstances,
         args: Record<string, unknown> | string[] | string,
         fromPattern?: boolean,
@@ -102,21 +107,13 @@ export interface CommandoClientEvents {
     unknownCommand: [message: CommandoMessage];
 }
 
-declare module 'discord.js' {
-    // eslint-disable-next-line @typescript-eslint/no-empty-interface
-    interface ClientEvents extends CommandoClientEvents { }
-}
-
 declare class CommandoGuildManager extends CachedManager<Snowflake, CommandoGuild, CommandoGuild | GuildResolvable> {
     public create(options: GuildCreateOptions): Promise<CommandoGuild>;
     public fetch(options: FetchGuildOptions | Snowflake): Promise<CommandoGuild>;
     public fetch(options?: FetchGuildsOptions): Promise<Collection<Snowflake, OAuth2Guild>>;
 }
 
-/**
- * Discord.js Client with a command framework
- * @augments Client
- */
+/** Discord.js Client with a command framework */
 export class CommandoClient<Ready extends boolean = boolean> extends Client<Ready> {
     /** Internal global command prefix, controlled by the {@link CommandoClient#prefix} getter/setter */
     protected _prefix?: string | null;
@@ -141,7 +138,7 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
      * @param options - Options for the client
      */
     public constructor(options: CommandoClientOptions) {
-        const { prefix, commandEditableDuration, nonCommandEditable, inviteOptions, owner } = options;
+        const { prefix, commandEditableDuration, nonCommandEditable, inviteOptions, owners } = options;
 
         if (typeof prefix === 'undefined') options.prefix = '!';
         if (prefix === null) options.prefix = '';
@@ -165,31 +162,16 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
         this.dispatcher = new CommandDispatcher(this, this.registry);
         this.database = new ClientDatabaseManager(this);
         this.databases = new Collection();
-        // @ts-expect-error: SimplifiedSchemas is meant to narrow and simplify methods for better understanding
-        this.databaseSchemas = Schemas;
+        this.databaseSchemas = Schemas as unknown as SimplifiedSchemas;
         this._prefix = null;
 
         this.initDefaultListeners();
 
         // Fetch the owner(s)
-        if (owner) {
-            this.once('ready', () => {
-                if (Array.isArray(owner) || owner instanceof Set) {
-                    for (const user of owner) {
-                        this.users.fetch(user).catch(err => {
-                            this.emit('warn', `Unable to fetch owner ${user}.`);
-                            this.emit('error', err);
-                        });
-                    }
-                    return;
-                }
-
-                this.users.fetch(owner).catch(err => {
-                    this.emit('warn', `Unable to fetch owner ${owner}.`);
-                    this.emit('error', err);
-                });
-            });
-        }
+        this.once('ready', () => owners?.forEach(owner => this.users.fetch(owner).catch(err => {
+            this.emit('warn', `Unable to fetch owner ${owner}.`);
+            this.emit('error', err);
+        })));
     }
 
     /**
@@ -209,29 +191,25 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
     }
 
     /**
-     * Owners of the bot, set by the {@link CommandoClientOptions#owner} option
+     * Owners of the bot, set by the {@link CommandoClientOptions#owners} option
      * <info>If you simply need to check if a user is an owner of the bot, please instead use
      * {@link CommandoClient#isOwner}.</info>
      * @readonly
      */
     public get owners(): User[] | null {
         const { options, users } = this;
-        const { owner } = options;
-
-        if (!owner) return null;
-        if (typeof owner === 'string') return Util.filterNullishItems([users.resolve(owner)]);
-        const owners = [];
-        for (const user of owner) owners.push(users.resolve(user));
-        return Util.filterNullishItems(owners);
+        const owners = options.owners && Array.from(options.owners);
+        if (!owners) return null;
+        return Util.filterNullishItems(owners.map(users.resolve));
     }
 
     /**
-     * Checks whether a user is an owner of the bot (in {@link CommandoClientOptions#owner})
+     * Checks whether a user is an owner of the bot (in {@link CommandoClientOptions#owners})
      * @param user - User to check for ownership
      */
     public isOwner(user: UserResolvable): boolean {
         const { users, options } = this;
-        const { owner } = options;
+        const { owners: owner } = options;
 
         if (!owner) return false;
         const resolved = users.resolve(user);
@@ -256,7 +234,7 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
         };
         this.on('messageCreate', async message => {
             if (message.channel.type === ChannelType.GuildStageVoice) return;
-            const commando = new CommandoMessage(this, message);
+            const commando = new CommandoMessage(this as CommandoClient<true>, message);
             this.emit('commandoMessageCreate', commando);
             // @ts-expect-error: handleMessage is protected in CommandDispatcher
             await this.dispatcher.handleMessage(commando).catch(catchErr);
@@ -265,7 +243,7 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
             if (
                 oldMessage.partial || newMessage.partial || newMessage.channel.type === ChannelType.GuildStageVoice
             ) return;
-            const commando = new CommandoMessage(this, newMessage);
+            const commando = new CommandoMessage(this as CommandoClient<true>, newMessage);
             // @ts-expect-error: handleMessage is protected in CommandDispatcher
             await this.dispatcher.handleMessage(commando, oldMessage).catch(catchErr);
         });
@@ -277,10 +255,9 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
         );
         this.on('interactionCreate', interaction => {
             if (
-                interaction.type !== InteractionType.ApplicationCommand
-                || interaction.channel?.type === ChannelType.GuildStageVoice
+                !interaction.isChatInputCommand() || interaction.channel?.type === ChannelType.GuildStageVoice
             ) return;
-            const commando = new CommandoInteraction(this, interaction);
+            const commando = new CommandoInteraction(this as CommandoClient<true>, interaction);
             // @ts-expect-error: handleSlash is protected in CommandDispatcher
             this.dispatcher.handleSlash(commando).catch(catchErr);
         });
@@ -290,9 +267,9 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
     }
 
     /** Parses all {@link Guild} instances into {@link CommandoGuild}s. */
-    protected parseGuilds(): void {
+    protected parseGuilds(client: CommandoClient<true>): void {
         this.guilds.cache.forEach(guild => this.parseGuild(guild as Guild));
-        this.emit('guildsReady', this as CommandoClient<true>);
+        this.emit('guildsReady', client);
     }
 
     /**
@@ -304,6 +281,23 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
         const mutatedGuild = Util.mutateObjectInstance(guild, commandoGuild);
         this.emit('commandoGuildCreate', mutatedGuild);
     }
+
+    // @ts-expect-error: method type override
+    declare public on<K extends keyof CommandoClientEvents>(
+        event: K, listener: (this: this, ...args: CommandoClientEvents[K]) => unknown
+    ): this;
+    // @ts-expect-error: method type override
+    declare public once<K extends keyof CommandoClientEvents>(
+        event: K, listener: (this: this, ...args: CommandoClientEvents[K]) => unknown
+    ): this;
+    // @ts-expect-error: method type override
+    declare public emit<K extends keyof CommandoClientEvents>(event: K, ...args: CommandoClientEvents[K]): boolean;
+    // @ts-expect-error: method type override
+    declare public off<K extends keyof CommandoClientEvents>(
+        event: K, listener: (this: this, ...args: CommandoClientEvents[K]) => unknown
+    ): this;
+    // @ts-expect-error: method type override
+    declare public removeAllListeners<K extends keyof CommandoClientEvents>(event?: K): this;
 }
 
 export default CommandoClient;

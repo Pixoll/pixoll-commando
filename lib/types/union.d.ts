@@ -2,10 +2,7 @@ import CommandoClient from '../client';
 import Argument from '../commands/argument';
 import CommandoMessage from '../extensions/message';
 import ArgumentType from './base';
-/**
- * A type for command arguments that handles multiple other types
- * @augments ArgumentType
- */
+/** A type for command arguments that handles multiple other types */
 export default class ArgumentUnionType extends ArgumentType {
     /** Types to handle, in order of priority */
     types: ArgumentType[];

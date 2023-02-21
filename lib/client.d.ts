@@ -1,4 +1,4 @@
-import { Client, Collection, ClientOptions, InviteGenerationOptions, CachedManager, Snowflake, GuildResolvable, GuildCreateOptions, FetchGuildOptions, UserResolvable, Guild, User, OAuth2Guild, FetchGuildsOptions, IntentsBitField, Message } from 'discord.js';
+import { Client, Collection, ClientOptions, InviteGenerationOptions, CachedManager, Snowflake, GuildResolvable, GuildCreateOptions, FetchGuildOptions, UserResolvable, Guild, User, OAuth2Guild, FetchGuildsOptions, IntentsBitField, Message, ClientEvents, Awaitable } from 'discord.js';
 import CommandoRegistry from './registry';
 import CommandDispatcher from './dispatcher';
 import CommandoMessage from './extensions/message';
@@ -10,7 +10,7 @@ import { ArgumentCollectorResult } from './commands/collector';
 import Command, { CommandBlockData, CommandBlockReason, CommandInstances } from './commands/base';
 import CommandGroup from './commands/group';
 import ArgumentType from './types/base';
-interface CommandoClientOptions extends ClientOptions {
+export interface CommandoClientOptions extends ClientOptions {
     /**
      * Default command prefix
      * @default '!'
@@ -26,8 +26,8 @@ interface CommandoClientOptions extends ClientOptions {
      * @default true
      */
     nonCommandEditable?: boolean;
-    /** ID of the bot owner's Discord user, or multiple ids */
-    owner?: Set<string> | string[] | string;
+    /** IDs of the bot owners' Discord user */
+    owners?: Set<string> | string[];
     /** Invite URL to the bot's support server */
     serverInvite?: string;
     /** Invite options for the bot */
@@ -41,7 +41,9 @@ interface CommandoClientOptions extends ClientOptions {
     /** The names of the modules to exclude */
     excludeModules?: string[];
 }
-export interface CommandoClientEvents {
+export interface CommandoClientEvents extends ClientEvents {
+    ready: [client: CommandoClient<true>];
+    guildDelete: [guild: CommandoGuild];
     commandBlock: [instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData];
     commandCancel: [command: Command, reason: string, message: CommandoMessage, result?: ArgumentCollectorResult];
     commandError: [
@@ -60,7 +62,7 @@ export interface CommandoClientEvents {
     commandReregister: [newCommand: Command, oldCommand: Command];
     commandRun: [
         command: Command,
-        promise: Promise<unknown>,
+        promise: Awaitable<Message | Message[] | null | void>,
         instances: CommandInstances,
         args: Record<string, unknown> | string[] | string,
         fromPattern?: boolean,
@@ -76,19 +78,12 @@ export interface CommandoClientEvents {
     typeRegister: [type: ArgumentType, registry: CommandoRegistry];
     unknownCommand: [message: CommandoMessage];
 }
-declare module 'discord.js' {
-    interface ClientEvents extends CommandoClientEvents {
-    }
-}
 declare class CommandoGuildManager extends CachedManager<Snowflake, CommandoGuild, CommandoGuild | GuildResolvable> {
     create(options: GuildCreateOptions): Promise<CommandoGuild>;
     fetch(options: FetchGuildOptions | Snowflake): Promise<CommandoGuild>;
     fetch(options?: FetchGuildsOptions): Promise<Collection<Snowflake, OAuth2Guild>>;
 }
-/**
- * Discord.js Client with a command framework
- * @augments Client
- */
+/** Discord.js Client with a command framework */
 export declare class CommandoClient<Ready extends boolean = boolean> extends Client<Ready> {
     /** Internal global command prefix, controlled by the {@link CommandoClient#prefix} getter/setter */
     protected _prefix?: string | null;
@@ -121,25 +116,30 @@ export declare class CommandoClient<Ready extends boolean = boolean> extends Cli
     get prefix(): string | undefined;
     set prefix(prefix: string | undefined);
     /**
-     * Owners of the bot, set by the {@link CommandoClientOptions#owner} option
+     * Owners of the bot, set by the {@link CommandoClientOptions#owners} option
      * <info>If you simply need to check if a user is an owner of the bot, please instead use
      * {@link CommandoClient#isOwner}.</info>
      * @readonly
      */
     get owners(): User[] | null;
     /**
-     * Checks whether a user is an owner of the bot (in {@link CommandoClientOptions#owner})
+     * Checks whether a user is an owner of the bot (in {@link CommandoClientOptions#owners})
      * @param user - User to check for ownership
      */
     isOwner(user: UserResolvable): boolean;
     /** Initializes all default listeners that make the client work. */
     protected initDefaultListeners(): void;
     /** Parses all {@link Guild} instances into {@link CommandoGuild}s. */
-    protected parseGuilds(): void;
+    protected parseGuilds(client: CommandoClient<true>): void;
     /**
      * Parses a {@link Guild} instance into a {@link CommandoGuild}.
      * @param guild - The Guild to parse
      */
     protected parseGuild(guild: Guild): void;
+    on<K extends keyof CommandoClientEvents>(event: K, listener: (this: this, ...args: CommandoClientEvents[K]) => unknown): this;
+    once<K extends keyof CommandoClientEvents>(event: K, listener: (this: this, ...args: CommandoClientEvents[K]) => unknown): this;
+    emit<K extends keyof CommandoClientEvents>(event: K, ...args: CommandoClientEvents[K]): boolean;
+    off<K extends keyof CommandoClientEvents>(event: K, listener: (this: this, ...args: CommandoClientEvents[K]) => unknown): this;
+    removeAllListeners<K extends keyof CommandoClientEvents>(event?: K): this;
 }
 export default CommandoClient;

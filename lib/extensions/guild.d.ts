@@ -1,11 +1,11 @@
-import { Guild, User, EmbedBuilder } from 'discord.js';
+import { Guild, User, EmbedBuilder, GuildMember } from 'discord.js';
 import CommandoClient from '../client';
 import GuildDatabaseManager from '../database/GuildDatabaseManager';
 import { CommandGroupResolvable, CommandResolvable } from '../registry';
-/**
- * A fancier Guild for fancier people.
- * @augments Guild
- */
+export declare class CommandoGuildMember extends GuildMember {
+    guild: CommandoGuild;
+}
+/** A fancier Guild for fancier people. */
 export default class CommandoGuild extends Guild {
     /** The client the guild is for */
     readonly client: CommandoClient<true>;
