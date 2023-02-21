@@ -135,7 +135,7 @@ export declare class CommandoClient<Ready extends boolean = boolean> extends Cli
      * Parses a {@link Guild} instance into a {@link CommandoGuild}.
      * @param guild - The Guild to parse
      */
-    protected parseGuild(guild: Guild): void;
+    protected parseGuild(guild: Guild): CommandoGuild;
     on<K extends keyof CommandoClientEvents>(event: K, listener: (this: this, ...args: CommandoClientEvents[K]) => unknown): this;
     once<K extends keyof CommandoClientEvents>(event: K, listener: (this: this, ...args: CommandoClientEvents[K]) => unknown): this;
     emit<K extends keyof CommandoClientEvents>(event: K, ...args: CommandoClientEvents[K]): boolean;

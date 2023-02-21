@@ -591,7 +591,7 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
      * Parses a {@link Guild} instance into a {@link CommandoGuild}.
      * @param guild - The {@link Guild} to parse
      */
-    protected parseGuild(guild: Guild): void;
+    protected parseGuild(guild: Guild): CommandoGuild;
 
     /** Invite for the bot */
     botInvite: string | null;

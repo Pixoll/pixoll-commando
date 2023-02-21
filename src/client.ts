@@ -226,7 +226,10 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
     protected initDefaultListeners(): void {
         // Parses all the guild instances
         this.once('ready', this.parseGuilds);
-        this.on('guildCreate', this.parseGuild);
+        this.on('guildCreate', guild => {
+            const commandoGuild = this.parseGuild(guild);
+            this.emit('commandoGuildCreate', commandoGuild);
+        });
 
         // Set up message command handling
         const catchErr = (err: Error): void => {
@@ -276,10 +279,9 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
      * Parses a {@link Guild} instance into a {@link CommandoGuild}.
      * @param guild - The Guild to parse
      */
-    protected parseGuild(guild: Guild): void {
+    protected parseGuild(guild: Guild): CommandoGuild {
         const commandoGuild = new CommandoGuild(this, guild);
-        const mutatedGuild = Util.mutateObjectInstance(guild, commandoGuild);
-        this.emit('commandoGuildCreate', mutatedGuild);
+        return Util.mutateObjectInstance(guild, commandoGuild);
     }
 
     // @ts-expect-error: method type override
