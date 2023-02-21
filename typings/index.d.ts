@@ -389,7 +389,7 @@ export abstract class Command<InGuild extends boolean = boolean> {
      * @param guild - Guild to enable/disable the command in
      * @param enabled - Whether the command should be enabled or disabled
      */
-    setEnabledIn(guild: GuildResolvable | null, enabled: boolean): void;
+    setEnabledIn(guild: CommandoGuild | GuildResolvable | null, enabled: boolean): void;
     /**
      * Checks if the command is enabled in a guild
      * @param guild - Guild to check in
@@ -562,13 +562,13 @@ export class CommandGroup {
      * @param guild - Guild to enable/disable the group in
      * @param enabled - Whether the group should be enabled or disabled
      */
-    setEnabledIn(guild: GuildResolvable | null, enabled: boolean): void;
+    setEnabledIn(guild: CommandoGuild | GuildResolvable | null, enabled: boolean): void;
     /**
      * Checks if the group is enabled in a guild
      * @param guild - Guild to check in
      * @return Whether or not the group is enabled
      */
-    isEnabledIn(guild: GuildResolvable | null): boolean;
+    isEnabledIn(guild: CommandoGuild | GuildResolvable | null): boolean;
     /** Reloads all of the group's commands */
     reload(): void;
 }

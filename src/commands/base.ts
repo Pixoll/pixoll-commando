@@ -523,7 +523,7 @@ export default abstract class Command<InGuild extends boolean = boolean> {
      * @param guild - Guild to enable/disable the command in
      * @param enabled - Whether the command should be enabled or disabled
      */
-    public setEnabledIn(guild: GuildResolvable | null, enabled: boolean): void {
+    public setEnabledIn(guild: CommandoGuild | GuildResolvable | null, enabled: boolean): void {
         const { client, guarded } = this;
         if (typeof guild === 'undefined') throw new TypeError('Guild must not be undefined.');
         if (typeof enabled === 'undefined') throw new TypeError('Enabled must not be undefined.');

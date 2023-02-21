@@ -1,5 +1,6 @@
 import { Collection, GuildResolvable } from 'discord.js';
 import CommandoClient from '../client';
+import CommandoGuild from '../extensions/guild';
 import Command from './base';
 
 /** A group for commands. Whodathunkit? */
@@ -42,7 +43,7 @@ export default class CommandGroup {
      * @param guild - Guild to enable/disable the group in
      * @param enabled - Whether the group should be enabled or disabled
      */
-    public setEnabledIn(guild: GuildResolvable | null, enabled: boolean): void {
+    public setEnabledIn(guild: CommandoGuild | GuildResolvable | null, enabled: boolean): void {
         const { client, guarded } = this;
         if (typeof guild === 'undefined') throw new TypeError('Guild must not be undefined.');
         if (typeof enabled === 'undefined') throw new TypeError('Enabled must not be undefined.');
@@ -62,7 +63,7 @@ export default class CommandGroup {
      * @param guild - Guild to check in
      * @return Whether or not the group is enabled
      */
-    public isEnabledIn(guild: GuildResolvable | null): boolean {
+    public isEnabledIn(guild: CommandoGuild | GuildResolvable | null): boolean {
         const { client, _globalEnabled, guarded } = this;
         if (guarded) return true;
         if (!guild) return _globalEnabled;
