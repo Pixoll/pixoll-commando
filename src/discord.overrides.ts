@@ -29,6 +29,7 @@ import type {
     Message,
     MessageContextMenuCommandInteraction,
     MessageReaction,
+    ModalMessageModalSubmitInteraction,
     ModalSubmitInteraction,
     NewsChannel,
     OAuth2Guild,
@@ -46,6 +47,7 @@ import type {
     StringSelectMenuInteraction,
     TextChannel,
     TextChannelType,
+    ThreadChannel,
     ThreadMember,
     Typing,
     User,
@@ -187,6 +189,10 @@ export declare class CommandoGuildBan extends GuildBan {
 export declare class CommandoGuildMember extends GuildMember {
     public readonly client: CommandoClient<true>;
     public guild: CommandoGuild;
+    public isCommunicationDisabled(): this is CommandoGuildMember & {
+        communicationDisabledUntilTimestamp: number;
+        readonly communicationDisabledUntil: Date;
+    };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -214,6 +220,10 @@ export declare class CommandoRole extends Role {
 export declare class CommandoTyping extends Typing {
     public readonly client: CommandoClient<true>;
     public get guild(): CommandoGuild | null;
+    public inGuild(): this is this & {
+        channel: CommandoNewsChannel | CommandoTextChannel | CommandoThreadChannel;
+        get guild(): CommandoGuild;
+    };
 }
 
 // @ts-expect-error: private constructor
@@ -240,12 +250,17 @@ export declare class CommandoGuildScheduledEvent<
 > extends GuildScheduledEvent<S> {
     public readonly client: CommandoClient<true>;
     public get guild(): CommandoGuild | null;
+    public isActive(): this is CommandoGuildScheduledEvent<GuildScheduledEventStatus.Active>;
+    public isCanceled(): this is CommandoGuildScheduledEvent<GuildScheduledEventStatus.Canceled>;
+    public isCompleted(): this is CommandoGuildScheduledEvent<GuildScheduledEventStatus.Completed>;
+    public isScheduled(): this is CommandoGuildScheduledEvent<GuildScheduledEventStatus.Scheduled>;
 }
 
 // @ts-expect-error: private constructor
 export declare class CommandoifiedMessage<InGuild extends boolean = boolean> extends Message<InGuild> {
     public readonly client: CommandoClient<true>;
     public get guild(): If<InGuild, CommandoGuild>;
+    public inGuild(): this is CommandoifiedMessage<true>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -256,11 +271,19 @@ export interface PartialCommandoifiedMessage extends Partialize<
 export declare class CommandoCategoryChannel extends CategoryChannel {
     public readonly client: CommandoClient<true>;
     public guild: CommandoGuild;
+    public isThread(): this is AnyCommandoThreadChannel;
+    public isTextBased(): this is CommandoGuildBasedChannel & CommandoTextBasedChannel;
+    public isDMBased(): this is CommandoDMChannel | PartialCommandoDMChannel | PartialCommandoGroupDMChannel;
+    public isVoiceBased(): this is CommandoVoiceBasedChannel;
 }
 
 // @ts-expect-error: private constructor
 export declare class CommandoDMChannel extends DMChannel {
     public readonly client: CommandoClient<true>;
+    public isThread(): this is AnyCommandoThreadChannel;
+    public isTextBased(): this is CommandoTextBasedChannel;
+    public isDMBased(): this is CommandoDMChannel | PartialCommandoDMChannel | PartialCommandoGroupDMChannel;
+    public isVoiceBased(): this is CommandoVoiceBasedChannel;
 }
 
 export interface PartialCommandoDMChannel extends Partialize<CommandoDMChannel, null, null, 'lastMessageId'> {
@@ -270,31 +293,65 @@ export interface PartialCommandoDMChannel extends Partialize<CommandoDMChannel, 
 export declare class CommandoForumChannel extends ForumChannel {
     public readonly client: CommandoClient<true>;
     public guild: CommandoGuild;
+    public isThread(): this is AnyCommandoThreadChannel;
+    public isTextBased(): this is CommandoGuildBasedChannel & CommandoTextBasedChannel;
+    public isDMBased(): this is CommandoDMChannel | PartialCommandoDMChannel | PartialCommandoGroupDMChannel;
+    public isVoiceBased(): this is CommandoVoiceBasedChannel;
 }
 
 // @ts-expect-error: private constructor
 export declare class PartialCommandoGroupDMChannel extends PartialGroupDMChannel {
     public readonly client: CommandoClient<true>;
+    public isThread(): this is AnyCommandoThreadChannel;
+    public isTextBased(): this is CommandoTextBasedChannel;
+    public isDMBased(): this is CommandoDMChannel | PartialCommandoDMChannel | PartialCommandoGroupDMChannel;
+    public isVoiceBased(): this is CommandoVoiceBasedChannel;
 }
 
 export declare class CommandoNewsChannel extends NewsChannel {
     public readonly client: CommandoClient<true>;
     public guild: CommandoGuild;
+    public isThread(): this is AnyCommandoThreadChannel;
+    public isTextBased(): this is CommandoGuildBasedChannel & CommandoTextBasedChannel;
+    public isDMBased(): this is CommandoDMChannel | PartialCommandoDMChannel | PartialCommandoGroupDMChannel;
+    public isVoiceBased(): this is CommandoVoiceBasedChannel;
 }
 
 export declare class CommandoStageChannel extends StageChannel {
     public readonly client: CommandoClient<true>;
     public guild: CommandoGuild;
+    public isThread(): this is AnyCommandoThreadChannel;
+    public isTextBased(): this is CommandoGuildBasedChannel & CommandoTextBasedChannel;
+    public isDMBased(): this is CommandoDMChannel | PartialCommandoDMChannel | PartialCommandoGroupDMChannel;
+    public isVoiceBased(): this is CommandoVoiceBasedChannel;
 }
 
 export declare class CommandoTextChannel extends TextChannel {
     public readonly client: CommandoClient<true>;
     public guild: CommandoGuild;
+    public isThread(): this is AnyCommandoThreadChannel;
+    public isTextBased(): this is CommandoGuildBasedChannel & CommandoTextBasedChannel;
+    public isDMBased(): this is CommandoDMChannel | PartialCommandoDMChannel | PartialCommandoGroupDMChannel;
+    public isVoiceBased(): this is CommandoVoiceBasedChannel;
+}
+
+// @ts-expect-error: private constructor
+export declare class CommandoThreadChannel extends ThreadChannel {
+    public readonly client: CommandoClient<true>;
+    public guild: CommandoGuild;
+    public isThread(): this is AnyCommandoThreadChannel;
+    public isTextBased(): this is CommandoTextBasedChannel;
+    public isDMBased(): this is CommandoDMChannel | PartialCommandoDMChannel | PartialCommandoGroupDMChannel;
+    public isVoiceBased(): this is CommandoVoiceBasedChannel;
 }
 
 export declare class CommandoVoiceChannel extends VoiceChannel {
     public readonly client: CommandoClient<true>;
     public guild: CommandoGuild;
+    public isThread(): this is AnyCommandoThreadChannel;
+    public isTextBased(): this is CommandoGuildBasedChannel & CommandoTextBasedChannel;
+    public isDMBased(): this is CommandoDMChannel | PartialCommandoDMChannel | PartialCommandoGroupDMChannel;
+    public isVoiceBased(): this is CommandoVoiceBasedChannel;
 }
 
 export type AnyCommandoThreadChannel<Forum extends boolean = boolean> =
@@ -304,11 +361,19 @@ export type AnyCommandoThreadChannel<Forum extends boolean = boolean> =
 export interface CommandoPublicThreadChannel<Forum extends boolean = boolean> extends PublicThreadChannel<Forum> {
     readonly client: CommandoClient<true>;
     guild: CommandoGuild;
+    isThread(): this is AnyCommandoThreadChannel;
+    isTextBased(): this is CommandoTextBasedChannel;
+    isDMBased(): this is CommandoDMChannel | PartialCommandoDMChannel | PartialCommandoGroupDMChannel;
+    isVoiceBased(): this is CommandoVoiceBasedChannel;
 }
 
 export interface CommandoPrivateThreadChannel extends PrivateThreadChannel {
     readonly client: CommandoClient<true>;
     guild: CommandoGuild;
+    isThread(): this is AnyCommandoThreadChannel;
+    isTextBased(): this is CommandoTextBasedChannel;
+    isDMBased(): this is CommandoDMChannel | PartialCommandoDMChannel | PartialCommandoGroupDMChannel;
+    isVoiceBased(): this is CommandoVoiceBasedChannel;
 }
 
 export type CommandoChannel =
@@ -327,6 +392,8 @@ export type CommandoTextBasedChannel = Exclude<
     Extract<CommandoChannel, { type: TextChannelType }>,
     CommandoForumChannel | PartialCommandoGroupDMChannel
 >;
+
+export type CommandoVoiceBasedChannel = Extract<CommandoChannel, { bitrate: number }>;
 
 export type CommandoGuildBasedChannel = Extract<CommandoChannel, { guild: CommandoGuild }>;
 
@@ -364,12 +431,18 @@ export declare class CommandoAutocompleteInteraction<
 > extends AutocompleteInteraction<Cached> {
     public readonly client: CommandoClient<true>;
     public get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+    public inGuild(): this is CommandoAutocompleteInteraction<'cached' | 'raw'>;
+    public inCachedGuild(): this is CommandoAutocompleteInteraction<'cached'>;
+    public inRawGuild(): this is CommandoAutocompleteInteraction<'raw'>;
 }
 
 // @ts-expect-error: private constructor
 export declare class CommandoButtonInteraction<Cached extends CacheType = CacheType> extends ButtonInteraction<Cached> {
     public readonly client: CommandoClient<true>;
     public get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+    public inGuild(): this is CommandoButtonInteraction<'cached' | 'raw'>;
+    public inCachedGuild(): this is CommandoButtonInteraction<'cached'>;
+    public inRawGuild(): this is CommandoButtonInteraction<'raw'>;
 }
 
 export declare class CommandoChatInputCommandInteraction<
@@ -377,6 +450,9 @@ export declare class CommandoChatInputCommandInteraction<
 > extends ChatInputCommandInteraction<Cached> {
     public readonly client: CommandoClient<true>;
     public get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+    public inGuild(): this is CommandoChatInputCommandInteraction<'cached' | 'raw'>;
+    public inCachedGuild(): this is CommandoChatInputCommandInteraction<'cached'>;
+    public inRawGuild(): this is CommandoChatInputCommandInteraction<'raw'>;
 }
 
 export declare class CommandoMessageContextMenuCommandInteraction<
@@ -384,14 +460,31 @@ export declare class CommandoMessageContextMenuCommandInteraction<
 > extends MessageContextMenuCommandInteraction<Cached> {
     public readonly client: CommandoClient<true>;
     public get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+    public inGuild(): this is CommandoMessageContextMenuCommandInteraction<'cached' | 'raw'>;
+    public inCachedGuild(): this is CommandoMessageContextMenuCommandInteraction<'cached'>;
+    public inRawGuild(): this is CommandoMessageContextMenuCommandInteraction<'raw'>;
 }
 
 export declare class CommandoModalSubmitInteraction<
     Cached extends CacheType = CacheType
-    // @ts-expect-error: private constructor
+// @ts-expect-error: private constructor
 > extends ModalSubmitInteraction<Cached> {
     public readonly client: CommandoClient<true>;
     public get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+    public inGuild(): this is CommandoModalSubmitInteraction<'cached' | 'raw'>;
+    public inCachedGuild(): this is CommandoModalSubmitInteraction<'cached'>;
+    public inRawGuild(): this is CommandoModalSubmitInteraction<'raw'>;
+    public isFromMessage(): this is CommandoModalMessageModalSubmitInteraction<Cached>;
+}
+
+export interface CommandoModalMessageModalSubmitInteraction<
+    Cached extends CacheType = CacheType
+> extends ModalMessageModalSubmitInteraction<Cached> {
+    readonly client: CommandoClient<true>;
+    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+    inGuild(): this is CommandoModalMessageModalSubmitInteraction<'cached' | 'raw'>;
+    inCachedGuild(): this is CommandoModalMessageModalSubmitInteraction<'cached'>;
+    inRawGuild(): this is CommandoModalMessageModalSubmitInteraction<'raw'>;
 }
 
 export declare class CommandoUserContextMenuCommandInteraction<
@@ -399,6 +492,9 @@ export declare class CommandoUserContextMenuCommandInteraction<
 > extends UserContextMenuCommandInteraction<Cached> {
     public readonly client: CommandoClient<true>;
     public get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+    public inGuild(): this is CommandoUserContextMenuCommandInteraction<'cached' | 'raw'>;
+    public inCachedGuild(): this is CommandoUserContextMenuCommandInteraction<'cached'>;
+    public inRawGuild(): this is CommandoUserContextMenuCommandInteraction<'raw'>;
 }
 
 export declare class CommandoChannelSelectMenuInteraction<
@@ -406,6 +502,9 @@ export declare class CommandoChannelSelectMenuInteraction<
 > extends ChannelSelectMenuInteraction<Cached> {
     public readonly client: CommandoClient<true>;
     public get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+    public inGuild(): this is CommandoChannelSelectMenuInteraction<'cached' | 'raw'>;
+    public inCachedGuild(): this is CommandoChannelSelectMenuInteraction<'cached'>;
+    public inRawGuild(): this is CommandoChannelSelectMenuInteraction<'raw'>;
 }
 
 export declare class CommandoMentionableSelectMenuInteraction<
@@ -413,6 +512,9 @@ export declare class CommandoMentionableSelectMenuInteraction<
 > extends MentionableSelectMenuInteraction<Cached> {
     public readonly client: CommandoClient<true>;
     public get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+    public inGuild(): this is CommandoMentionableSelectMenuInteraction<'cached' | 'raw'>;
+    public inCachedGuild(): this is CommandoMentionableSelectMenuInteraction<'cached'>;
+    public inRawGuild(): this is CommandoMentionableSelectMenuInteraction<'raw'>;
 }
 
 export declare class CommandoRoleSelectMenuInteraction<
@@ -420,6 +522,9 @@ export declare class CommandoRoleSelectMenuInteraction<
 > extends RoleSelectMenuInteraction<Cached> {
     public readonly client: CommandoClient<true>;
     public get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+    public inGuild(): this is CommandoRoleSelectMenuInteraction<'cached' | 'raw'>;
+    public inCachedGuild(): this is CommandoRoleSelectMenuInteraction<'cached'>;
+    public inRawGuild(): this is CommandoRoleSelectMenuInteraction<'raw'>;
 }
 
 export declare class CommandoStringSelectMenuInteraction<
@@ -427,6 +532,9 @@ export declare class CommandoStringSelectMenuInteraction<
 > extends StringSelectMenuInteraction<Cached> {
     public readonly client: CommandoClient<true>;
     public get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+    public inGuild(): this is CommandoStringSelectMenuInteraction<'cached' | 'raw'>;
+    public inCachedGuild(): this is CommandoStringSelectMenuInteraction<'cached'>;
+    public inRawGuild(): this is CommandoStringSelectMenuInteraction<'raw'>;
 }
 
 export declare class CommandoUserSelectMenuInteraction<
@@ -434,6 +542,9 @@ export declare class CommandoUserSelectMenuInteraction<
 > extends UserSelectMenuInteraction<Cached> {
     public readonly client: CommandoClient<true>;
     public get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+    public inGuild(): this is CommandoUserSelectMenuInteraction<'cached' | 'raw'>;
+    public inCachedGuild(): this is CommandoUserSelectMenuInteraction<'cached'>;
+    public inRawGuild(): this is CommandoUserSelectMenuInteraction<'raw'>;
 }
 
 export type AnyCommandoSelectMenuInteraction<Cached extends CacheType = CacheType> =
@@ -444,10 +555,10 @@ export type AnyCommandoSelectMenuInteraction<Cached extends CacheType = CacheTyp
     | CommandoUserSelectMenuInteraction<Cached>;
 
 export type CommandoifiedInteraction<Cached extends CacheType = CacheType> =
-  | AnyCommandoSelectMenuInteraction<Cached>
-  | CommandoAutocompleteInteraction<Cached>
-  | CommandoButtonInteraction<Cached>
-  | CommandoChatInputCommandInteraction<Cached>
-  | CommandoMessageContextMenuCommandInteraction<Cached>
-  | CommandoModalSubmitInteraction<Cached>
-  | CommandoUserContextMenuCommandInteraction<Cached>;
+    | AnyCommandoSelectMenuInteraction<Cached>
+    | CommandoAutocompleteInteraction<Cached>
+    | CommandoButtonInteraction<Cached>
+    | CommandoChatInputCommandInteraction<Cached>
+    | CommandoMessageContextMenuCommandInteraction<Cached>
+    | CommandoModalSubmitInteraction<Cached>
+    | CommandoUserContextMenuCommandInteraction<Cached>;

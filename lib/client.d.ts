@@ -119,6 +119,7 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
      * @param user - User to check for ownership
      */
     isOwner(user: UserResolvable): boolean;
+    isReady(): this is CommandoClient<true>;
     /** Initializes all default listeners that make the client work. */
     protected initDefaultListeners(): void;
     /** Parses all {@link Guild} instances into {@link CommandoGuild}s. */

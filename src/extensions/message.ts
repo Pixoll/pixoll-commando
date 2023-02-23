@@ -103,6 +103,10 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
         return super.channel as Exclude<If<InGuild, GuildTextBasedChannel, TextBasedChannel>, StageChannel>;
     }
 
+    public inGuild(): this is CommandoMessage<true> {
+        return super.inGuild();
+    }
+
     /**
      * Initializes the message for a command
      * @param command - Command the message triggers

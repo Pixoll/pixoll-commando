@@ -203,6 +203,10 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
         throw new RangeError('The client\'s "owner" option is an unknown value.');
     }
 
+    public isReady(): this is CommandoClient<true> {
+        return super.isReady();
+    }
+
     /** Initializes all default listeners that make the client work. */
     protected initDefaultListeners(): void {
         // Parses all the guild instances
@@ -249,6 +253,10 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
 
         // Establishes MongoDB connection and loads all modules
         this.once('guildsReady', initializeDB);
+
+        this.on('channelDelete', channel => {
+            if (channel.isDMBased()) channel;
+        });
     }
 
     /** Parses all {@link Guild} instances into {@link CommandoGuild}s. */

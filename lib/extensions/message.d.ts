@@ -45,6 +45,7 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
     get guild(): If<InGuild, CommandoGuild>;
     /** The channel this message was sent in */
     get channel(): Exclude<If<InGuild, GuildTextBasedChannel, TextBasedChannel>, StageChannel>;
+    inGuild(): this is CommandoMessage<true>;
     /**
      * Initializes the message for a command
      * @param command - Command the message triggers
