@@ -3,7 +3,7 @@ import { FilterQuery, UpdateAggregationStage, UpdateQuery } from 'mongoose';
 import CommandoGuild from '../extensions/guild';
 import { ModelFrom, SimplifiedModel, AnySchema } from './Schemas';
 /** A MongoDB database schema manager */
-export default class DatabaseManager<T extends AnySchema> {
+export default class DatabaseManager<T extends AnySchema, IncludeId extends boolean = boolean> {
     /** Guild for this database */
     readonly guild: CommandoGuild | null;
     /** The name of the schema this manager is for */
@@ -14,7 +14,7 @@ export default class DatabaseManager<T extends AnySchema> {
      * @param schema - The schema of this manager
      * @param guild - The guild this manager is for
      */
-    constructor(schema: ModelFrom<T, boolean>, guild?: CommandoGuild);
+    constructor(schema: ModelFrom<T, IncludeId>, guild?: CommandoGuild);
     /**
      * Add a single document to the database.
      * @param doc - The document to add

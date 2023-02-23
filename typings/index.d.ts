@@ -32,6 +32,31 @@ import {
     ClientEvents,
     Awaitable,
     ChatInputCommandInteraction,
+    PartialMessage,
+    AutoModerationActionExecution,
+    AutoModerationRule,
+    NonThreadGuildBasedChannel,
+    DMChannel,
+    GuildEmoji,
+    GuildBan,
+    PartialGuildMember,
+    Invite,
+    MessageReaction,
+    Role,
+    Presence,
+    AnyThreadChannel,
+    PartialThreadMember,
+    ThreadMember,
+    Typing,
+    VoiceState,
+    ForumChannel,
+    NewsChannel,
+    TextChannel,
+    VoiceChannel,
+    Interaction,
+    StageInstance,
+    Sticker,
+    GuildScheduledEvent,
 } from 'discord.js';
 import { FilterQuery, Model, Types, UpdateAggregationStage, UpdateQuery, UpdateWriteOpResult } from 'mongoose';
 
@@ -627,14 +652,14 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
     isOwner(user: UserResolvable): boolean;
 
     on<K extends keyof CommandoClientEvents>(
-        event: K, listener: (...args: CommandoClientEvents[K]) => Awaitable<void>
+        event: K, listener: (...args: CommandoClientEvents[K]) => unknown
     ): this;
     once<K extends keyof CommandoClientEvents>(
-        event: K, listener: (...args: CommandoClientEvents[K]) => Awaitable<void>
+        event: K, listener: (...args: CommandoClientEvents[K]) => unknown
     ): this;
     emit<K extends keyof CommandoClientEvents>(event: K, ...args: CommandoClientEvents[K]): boolean;
     off<K extends keyof CommandoClientEvents>(
-        event: K, listener: (...args: CommandoClientEvents[K]) => Awaitable<void>
+        event: K, listener: (...args: CommandoClientEvents[K]) => unknown
     ): this;
     removeAllListeners<K extends keyof CommandoClientEvents>(event?: K): this;
 }
@@ -716,7 +741,7 @@ export class CommandoInteraction<InGuild extends boolean = boolean> extends Chat
     get command(): Command<InGuild>;
     /** The guild this interaction was used in */
     get guild(): If<InGuild, CommandoGuild>;
-    member: CommandoGuildMember | null;
+    member: Commandoify<GuildMember, true> | null;
 
     /**
      * Parses the options data into usable arguments
@@ -733,7 +758,7 @@ export class CommandoMessage<InGuild extends boolean = boolean> extends Message<
      * @param client - The client the message is for
      * @param data - The message data
      */
-    constructor(client: CommandoClient<true>, data: Message);
+    constructor(client: CommandoClient<true>, data: CommandoifyMessage<Message>);
 
     /**
      * Initializes the message for a command
@@ -771,7 +796,7 @@ export class CommandoMessage<InGuild extends boolean = boolean> extends Message<
 
     /** The client the message is for */
     readonly client: CommandoClient<true>;
-    get member(): CommandoGuildMember | null;
+    get member(): Commandoify<GuildMember, true> | null;
     /** The guild this message was sent in */
     get guild(): If<InGuild, CommandoGuild>;
     /** The channel this message was sent in */
@@ -1133,13 +1158,13 @@ export class ClientDatabaseManager {
     todo: DatabaseManager<TodoSchema>;
 }
 
-/** A database schema manager (MongoDB) */
-export class DatabaseManager<T extends AnySchema> {
+/** A MongoDB database schema manager */
+export default class DatabaseManager<T extends AnySchema, IncludeId extends boolean = boolean> {
     /**
      * @param schema - The schema of this manager
      * @param guild - The guild this manager is for
      */
-    constructor(schema: ModelFrom<T>, guild?: CommandoGuild);
+    constructor(schema: ModelFrom<T, IncludeId>, guild?: CommandoGuild);
     /** Filtering function for fetching documents. May only be used in `Array.filter()` or `Collection.filter()` */
     protected filterDocuments(filter: FilterQuery<T>): (doc: T) => boolean;
 
@@ -1223,10 +1248,6 @@ declare class CommandoGuildManager extends CachedManager<Snowflake, CommandoGuil
     fetch(options?: FetchGuildsOptions): Promise<Collection<Snowflake, OAuth2Guild>>;
 }
 
-export class CommandoGuildMember extends GuildMember {
-    guild: CommandoGuild;
-}
-
 export type APISlashCommand = Required<Pick<SlashCommandInfo, 'deferEphemeral'>> & RESTPostAPISlashCommand;
 
 type ArgumentCheckerParams = [
@@ -1284,6 +1305,15 @@ export type CommandBlockReason =
  */
 export type CommandGroupResolvable = CommandGroup | string;
 
+export type Commandoify<T, Ready extends boolean = boolean> = OverrideGuild<OverrideClient<T, Ready>>;
+
+export type CommandoifyMessage<
+    Type extends Message | PartialMessage,
+    InGuild extends boolean = boolean
+> = OverrideClient<Omit<Type extends Message ? Message<InGuild> : PartialMessage, 'guild'> & {
+    get guild(): If<InGuild, CommandoGuild>;
+}>;
+
 export type CommandoMessageResponse<InGuild extends boolean = boolean> =
     | Array<Message<InGuild>>
     | CommandoMessage<InGuild>
@@ -1307,6 +1337,18 @@ export type CommandResolvable = Command | CommandoMessage | string;
  * - An Inhibition object
  */
 type Inhibitor = (msg: CommandoMessage) => Inhibition | string;
+
+export type OverrideGuild<T> = T extends {
+    guild: Guild | infer R;
+} ? Omit<T, 'guild'> & {
+    guild: CommandoGuild | Exclude<R, Guild>;
+} : T;
+
+export type OverrideClient<T, Ready extends boolean = boolean> = T extends {
+    client: Client | infer R;
+} ? Omit<T, 'client'> & {
+    readonly client: CommandoClient<Ready> | Exclude<R, Client>;
+} : T;
 
 /** Type of the response */
 export type ResponseType = 'code' | 'direct' | 'plain' | 'reply';
@@ -1566,11 +1608,7 @@ export type CommandInstances<InGuild extends boolean = boolean> = {
     message: CommandoMessage<InGuild>;
 };
 
-export interface CommandoClientEvents extends ClientEvents {
-    // Overrides
-    ready: [client: CommandoClient<true>];
-    guildDelete: [guild: CommandoGuild];
-    // New events
+export interface CommandoClientEvents extends OverwrittenClientEvents {
     commandBlock: [instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData];
     commandCancel: [command: Command, reason: string, message: CommandoMessage, result?: ArgumentCollectorResult];
     commandError: [
@@ -1582,8 +1620,6 @@ export interface CommandoClientEvents extends ClientEvents {
         result?: ArgumentCollectorResult
     ];
     commandoGuildCreate: [guild: CommandoGuild];
-    commandoMessageCreate: [message: CommandoMessage];
-    commandoMessageUpdate: [oldMessage: Message, newMessage: CommandoMessage];
     commandPrefixChange: [guild?: CommandoGuild | null, prefix?: string | null];
     commandRegister: [command: Command, registry: CommandoRegistry];
     commandReregister: [newCommand: Command, oldCommand: Command];
@@ -1604,6 +1640,104 @@ export interface CommandoClientEvents extends ClientEvents {
     modulesReady: [client: CommandoClient<true>];
     typeRegister: [type: ArgumentType, registry: CommandoRegistry];
     unknownCommand: [message: CommandoMessage];
+}
+
+interface OverwrittenClientEvents extends ClientEvents {
+    autoModerationActionExecution: [autoModerationActionExecution: Commandoify<AutoModerationActionExecution>];
+    autoModerationRuleCreate: [autoModerationRule: Commandoify<AutoModerationRule>];
+    autoModerationRuleDelete: [autoModerationRule: Commandoify<AutoModerationRule>];
+    autoModerationRuleUpdate: [
+        oldAutoModerationRule: Commandoify<AutoModerationRule> | null,
+        newAutoModerationRule: Commandoify<AutoModerationRule>,
+    ];
+    channelCreate: [channel: Commandoify<NonThreadGuildBasedChannel>];
+    channelDelete: [channel: Commandoify<NonThreadGuildBasedChannel> | DMChannel];
+    channelPinsUpdate: [channel: Commandoify<TextBasedChannel>, date: Date];
+    channelUpdate: [
+        oldChannel: Commandoify<NonThreadGuildBasedChannel> | DMChannel,
+        newChannel: Commandoify<NonThreadGuildBasedChannel> | DMChannel,
+    ];
+    emojiCreate: [emoji: Commandoify<GuildEmoji>];
+    emojiDelete: [emoji: Commandoify<GuildEmoji>];
+    emojiUpdate: [oldEmoji: Commandoify<GuildEmoji>, newEmoji: Commandoify<GuildEmoji>];
+    guildBanAdd: [ban: Commandoify<GuildBan>];
+    guildBanRemove: [ban: Commandoify<GuildBan>];
+    guildDelete: [guild: CommandoGuild];
+    guildUnavailable: [guild: CommandoGuild];
+    guildIntegrationsUpdate: [guild: CommandoGuild];
+    guildMemberAdd: [member: Commandoify<GuildMember>];
+    guildMemberAvailable: [member: Commandoify<GuildMember> | Commandoify<PartialGuildMember>];
+    guildMemberRemove: [member: Commandoify<GuildMember> | Commandoify<PartialGuildMember>];
+    guildMembersChunk: [
+        members: Collection<Snowflake, Commandoify<GuildMember>>,
+        guild: CommandoGuild,
+        data: {
+            count: number;
+            index: number;
+            nonce: string | undefined;
+        },
+    ];
+    guildMemberUpdate: [
+        oldMember: Commandoify<GuildMember> | Commandoify<PartialGuildMember>,
+        newMember: Commandoify<GuildMember>,
+    ];
+    guildUpdate: [oldGuild: CommandoGuild, newGuild: CommandoGuild];
+    inviteCreate: [invite: Commandoify<Invite>];
+    inviteDelete: [invite: Commandoify<Invite>];
+    messageCreate: [message: CommandoifyMessage<Message>];
+    messageDelete: [message: CommandoifyMessage<Message> | CommandoifyMessage<PartialMessage>];
+    messageReactionRemoveAll: [
+        message: CommandoifyMessage<Message> | CommandoifyMessage<PartialMessage>,
+        reactions: Collection<Snowflake | string, MessageReaction>,
+    ];
+    messageDeleteBulk: [
+        messages: Collection<Snowflake, CommandoifyMessage<Message> | CommandoifyMessage<PartialMessage>>,
+        channel: Commandoify<GuildTextBasedChannel>,
+    ];
+    messageUpdate: [
+        oldMessage: CommandoifyMessage<Message> | CommandoifyMessage<PartialMessage>,
+        newMessage: CommandoifyMessage<Message> | CommandoifyMessage<PartialMessage>,
+    ];
+    presenceUpdate: [oldPresence: Commandoify<Presence> | null, newPresence: Commandoify<Presence>];
+    ready: [client: CommandoClient<true>];
+    roleCreate: [role: Commandoify<Role>];
+    roleDelete: [role: Commandoify<Role>];
+    roleUpdate: [oldRole: Commandoify<Role>, newRole: Commandoify<Role>];
+    threadCreate: [thread: Commandoify<AnyThreadChannel>, newlyCreated: boolean];
+    threadDelete: [thread: Commandoify<AnyThreadChannel>];
+    threadListSync: [threads: Collection<Snowflake, Commandoify<AnyThreadChannel>>, guild: CommandoGuild];
+    threadMembersUpdate: [
+        addedMembers: Collection<Snowflake, ThreadMember>,
+        removedMembers: Collection<Snowflake, PartialThreadMember | ThreadMember>,
+        thread: Commandoify<AnyThreadChannel>,
+    ];
+    threadUpdate: [oldThread: Commandoify<AnyThreadChannel>, newThread: Commandoify<AnyThreadChannel>];
+    typingStart: [typing: Commandoify<Typing>];
+    voiceStateUpdate: [oldState: Commandoify<VoiceState>, newState: Commandoify<VoiceState>];
+    webhookUpdate: [
+        channel: Commandoify<ForumChannel>
+        | Commandoify<NewsChannel>
+        | Commandoify<TextChannel>
+        | Commandoify<VoiceChannel>,
+    ];
+    interactionCreate: [interaction: Commandoify<Interaction>];
+    stageInstanceCreate: [stageInstance: Commandoify<StageInstance>];
+    stageInstanceUpdate: [
+        oldStageInstance: Commandoify<StageInstance> | null,
+        newStageInstance: Commandoify<StageInstance>,
+    ];
+    stageInstanceDelete: [stageInstance: Commandoify<StageInstance>];
+    stickerCreate: [sticker: Commandoify<Sticker>];
+    stickerDelete: [sticker: Commandoify<Sticker>];
+    stickerUpdate: [oldSticker: Commandoify<Sticker>, newSticker: Commandoify<Sticker>];
+    guildScheduledEventCreate: [guildScheduledEvent: Commandoify<GuildScheduledEvent>];
+    guildScheduledEventUpdate: [
+        oldGuildScheduledEvent: Commandoify<GuildScheduledEvent> | null,
+        newGuildScheduledEvent: Commandoify<GuildScheduledEvent>,
+    ];
+    guildScheduledEventDelete: [guildScheduledEvent: Commandoify<GuildScheduledEvent>];
+    guildScheduledEventUserAdd: [guildScheduledEvent: Commandoify<GuildScheduledEvent>, user: User];
+    guildScheduledEventUserRemove: [guildScheduledEvent: Commandoify<GuildScheduledEvent>, user: User];
 }
 
 export interface CommandoClientOptions extends ClientOptions {
@@ -1836,7 +1970,7 @@ export interface ThrottlingOptions {
 
 //#region Schemas
 
-export type AnySchema = BaseSchema & Partial<
+export type AnySchema<IncludeId extends boolean = boolean> = Partial<
     | ActiveSchema
     | AfkSchema
     | DisabledSchema
@@ -1854,7 +1988,9 @@ export type AnySchema = BaseSchema & Partial<
     | StickyRoleSchema
     | TodoSchema
     | WelcomeSchema
-> & { guild?: string };
+>
+    & (IncludeId extends true ? (Omit<BaseSchema, '_id'> & { readonly _id: string }) : BaseSchema)
+    & { guild?: string };
 
 export interface SimplifiedSchemas {
     ActiveModel: SimplifiedModel<ActiveSchema>;
@@ -1876,11 +2012,19 @@ export interface SimplifiedSchemas {
     WelcomeModel: SimplifiedModel<WelcomeSchema>;
 }
 
-type DocumentFrom<T extends BaseSchema = BaseSchema, IncludeId extends boolean = false> = Omit<
+export type DocumentFrom<
+    T extends BaseSchema | (Omit<BaseSchema, '_id'> & { readonly _id: string }) = BaseSchema,
+    IncludeId extends boolean = false
+> = Omit<
     T, IncludeId extends true ? Exclude<keyof BaseSchema, '_id'> : keyof BaseSchema
->;
+> & (IncludeId extends true ? { readonly _id: string } : object);
 
-type ModelFrom<T extends BaseSchema = BaseSchema, IncludeId extends boolean = false> = Model<DocumentFrom<T, IncludeId>>;
+export type ModelFrom<
+    T extends BaseSchema | (Omit<BaseSchema, '_id'> & { readonly _id: string }) = BaseSchema,
+    IncludeId extends boolean = boolean
+> = Model<
+    DocumentFrom<T, IncludeId>
+>;
 
 type TimeBasedModerationType = 'mute' | 'temp-ban' | 'time-out';
 
@@ -1892,7 +2036,8 @@ interface BaseSchema {
     readonly updatedAt?: Date;
 }
 
-export interface ActiveSchema extends BaseSchema {
+export interface ActiveSchema extends Omit<BaseSchema, '_id'> {
+    readonly _id: string;
     type: TimeBasedModerationType | 'temp-role';
     guild: Snowflake;
     userId: Snowflake;
@@ -1914,11 +2059,12 @@ export interface DisabledSchema extends BaseSchema {
     groups: string[];
 }
 
-export interface ErrorSchema extends BaseSchema {
+export interface ErrorSchema extends Omit<BaseSchema, '_id'> {
+    readonly _id: string;
     type: string;
     name: string;
     message: string;
-    command: string;
+    command?: string | undefined;
     files: string;
 }
 
@@ -1927,7 +2073,8 @@ export interface FaqSchema extends BaseSchema {
     answer: string;
 }
 
-export interface ModerationSchema extends BaseSchema {
+export interface ModerationSchema extends Omit<BaseSchema, '_id'> {
+    readonly _id: string;
     type: ModerationType;
     guild: Snowflake;
     userId: Snowflake;

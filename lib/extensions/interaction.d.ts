@@ -1,12 +1,13 @@
-import { ChatInputCommandInteraction, CommandInteractionOption, GuildTextBasedChannel, If, StageChannel, TextBasedChannel, User } from 'discord.js';
+import { ChatInputCommandInteraction, CommandInteractionOption, GuildMember, GuildTextBasedChannel, If, StageChannel, TextBasedChannel, User } from 'discord.js';
 import CommandoClient from '../client';
 import Command from '../commands/base';
-import CommandoGuild, { CommandoGuildMember } from './guild';
+import { Commandoify } from '../util';
+import CommandoGuild from './guild';
 /** An extension of the base Discord.js ChatInputCommandInteraction class to add command-related functionality. */
 export default class CommandoInteraction<InGuild extends boolean = boolean> extends ChatInputCommandInteraction {
     /** The client the interaction is for */
     readonly client: CommandoClient<true>;
-    member: CommandoGuildMember | null;
+    member: Commandoify<GuildMember, true> | null;
     /** Command that the interaction triggers */
     protected _command: Command<InGuild>;
     /**

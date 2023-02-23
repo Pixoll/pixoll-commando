@@ -17,15 +17,16 @@ import {
     RESTPostAPIChatInputApplicationCommandsJSONBody as RESTPostAPISlashCommand,
     Awaitable,
     MessageCreateOptions,
+    GuildMember,
 } from 'discord.js';
 import path from 'path';
 import ArgumentCollector, { ArgumentCollectorResult } from './collector';
-import Util from '../util';
+import Util, { Commandoify } from '../util';
 import CommandoClient from '../client';
 import CommandGroup from './group';
 import { ArgumentInfo } from './argument';
 import CommandoMessage from '../extensions/message';
-import CommandoGuild, { CommandoGuildMember } from '../extensions/guild';
+import CommandoGuild from '../extensions/guild';
 import CommandoInteraction from '../extensions/interaction';
 
 /** Options for throttling usages of the command. */
@@ -403,7 +404,7 @@ export default abstract class Command<InGuild extends boolean = boolean> {
         }
 
         if (!channel.isDMBased()) {
-            if (modPermissions && !isModerator(member as CommandoGuildMember)) {
+            if (member && modPermissions && !isModerator(member)) {
                 return 'modPermissions';
             }
             if (userPermissions) {
@@ -947,7 +948,7 @@ const isModConditions: PermissionsString[] = [
     'MuteMembers',
 ];
 
-function isModerator(member: CommandoGuildMember): boolean {
+function isModerator(member: Commandoify<GuildMember>): boolean {
     if (!member) return false;
     const { permissions } = member;
     if (permissions.has('Administrator')) return true;

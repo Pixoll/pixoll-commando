@@ -40,7 +40,8 @@ async function connectDB(client: CommandoClient<true>): Promise<boolean> {
 async function cacheDB(client: CommandoClient<true>): Promise<void> {
     const { database, databases, guilds } = client;
 
-    const schemas = Object.values(Schemas) as Array<ModelFrom<AnySchema, true>>;
+    // @ts-expect-error: we only care about the general schema type
+    const schemas = Object.values(Schemas) as Array<ModelFrom<AnySchema>>;
     // Resolves all promises at once after getting all data.
     const schemasData = await Promise.all(schemas.map(schema => schema.find({})));
 

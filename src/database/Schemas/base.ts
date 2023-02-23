@@ -6,6 +6,9 @@ export interface BaseSchema {
     readonly updatedAt?: Date;
 }
 
-export type DocumentFrom<T extends BaseSchema = BaseSchema, IncludeId extends boolean = false> = Omit<
+export type DocumentFrom<
+    T extends BaseSchema | (Omit<BaseSchema, '_id'> & { readonly _id: string }) = BaseSchema,
+    IncludeId extends boolean = false
+> = Omit<
     T, IncludeId extends true ? Exclude<keyof BaseSchema, '_id'> : keyof BaseSchema
->;
+> & (IncludeId extends true ? { readonly _id: string } : object);

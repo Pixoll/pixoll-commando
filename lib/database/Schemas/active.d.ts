@@ -25,7 +25,8 @@
 /// <reference types="mongoose/types/inferschematype" />
 import { BaseSchema, DocumentFrom } from './base';
 import { TimeBasedModerationType } from './moderations';
-export interface ActiveSchema extends BaseSchema {
+export interface ActiveSchema extends Omit<BaseSchema, '_id'> {
+    readonly _id: string;
     type: TimeBasedModerationType | 'temp-role';
     guild: string;
     userId: string;

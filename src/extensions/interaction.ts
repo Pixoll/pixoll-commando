@@ -8,6 +8,7 @@ import {
     Colors,
     CommandInteractionOption,
     EmbedBuilder,
+    GuildMember,
     GuildTextBasedChannel,
     If,
     StageChannel,
@@ -17,14 +18,14 @@ import {
 import CommandoClient from '../client';
 import Command from '../commands/base';
 import FriendlyError from '../errors/friendly';
-import Util from '../util';
-import CommandoGuild, { CommandoGuildMember } from './guild';
+import Util, { Commandoify } from '../util';
+import CommandoGuild from './guild';
 
 /** An extension of the base Discord.js ChatInputCommandInteraction class to add command-related functionality. */
 export default class CommandoInteraction<InGuild extends boolean = boolean> extends ChatInputCommandInteraction {
     /** The client the interaction is for */
     declare public readonly client: CommandoClient<true>;
-    declare public member: CommandoGuildMember | null;
+    declare public member: Commandoify<GuildMember, true> | null;
     /** Command that the interaction triggers */
     protected _command: Command<InGuild>;
 
@@ -101,7 +102,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
                     args[optionName] = channel ? channels.resolve(channel.id) : null;
                     break;
                 case ApplicationCommandOptionType.Mentionable: {
-                    const resolvedMember = member instanceof CommandoGuildMember && members ? members.resolve(member) : null;
+                    const resolvedMember = member instanceof GuildMember && members ? members.resolve(member) : null;
                     const resolvedChannel = channel ? channels.resolve(channel.id) : null;
                     const resolvedRole = role && roles ? roles.resolve(role.id) : null;
                     args[optionName] = resolvedMember ?? user ?? resolvedChannel ?? resolvedRole ?? null;
@@ -111,7 +112,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
                     args[optionName] = role && roles ? roles.resolve(role.id) : null;
                     break;
                 case ApplicationCommandOptionType.User: {
-                    const resolvedMember = member instanceof CommandoGuildMember && members ? members.resolve(member) : null;
+                    const resolvedMember = member instanceof GuildMember && members ? members.resolve(member) : null;
                     args[optionName] = resolvedMember ?? user ?? null;
                     break;
                 }

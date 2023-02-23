@@ -12,14 +12,15 @@ import {
     StageChannel,
     APIMessage,
     APIUser,
+    GuildMember,
 } from 'discord.js';
 import { oneLine, stripIndent } from 'common-tags';
 import Command from '../commands/base';
 import FriendlyError from '../errors/friendly';
 import CommandFormatError from '../errors/command-format';
-import Util from '../util';
+import Util, { Commandoify, CommandoifyMessage } from '../util';
 import CommandoClient from '../client';
-import CommandoGuild, { CommandoGuildMember } from './guild';
+import CommandoGuild from './guild';
 
 /** Type of the response */
 type ResponseType =
@@ -76,7 +77,7 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
      * @param client - The client the message is for
      * @param data - The message data
      */
-    public constructor(client: CommandoClient<true>, data: Message) {
+    public constructor(client: CommandoClient<true>, data: CommandoifyMessage<Message>) {
         super(client, messageToJSON(data));
         Object.assign(this, data);
 
@@ -88,8 +89,8 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
         this.responsePositions = new Map();
     }
 
-    public get member(): CommandoGuildMember | null {
-        return super.member as CommandoGuildMember | null;
+    public get member(): Commandoify<GuildMember, true> | null {
+        return super.member as Commandoify<GuildMember, true> | null;
     }
 
     /** The guild this message was sent in */
@@ -568,7 +569,7 @@ function resolveString(data: StringResolvable): string {
     return `${data}`;
 }
 
-function messageToJSON(data: Message): APIMessage {
+function messageToJSON(data: CommandoifyMessage<Message>): APIMessage {
     /* eslint-disable camelcase */
     return {
         attachments: [],

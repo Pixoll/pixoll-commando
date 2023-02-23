@@ -1,10 +1,29 @@
-import { Collection, Message, MessageCreateOptions, PermissionsString } from 'discord.js';
+import { Client, Collection, Guild, If, Message, MessageCreateOptions, PartialMessage, PermissionsString } from 'discord.js';
 import { capitalize } from 'lodash';
+import CommandoClient from './client';
 import { CommandInstances } from './commands/base';
+import CommandoGuild from './extensions/guild';
 import CommandoInteraction from './extensions/interaction';
 import CommandoMessage from './extensions/message';
 
 export type Tuple<T, N extends number, R extends T[] = []> = R['length'] extends N ? R : Tuple<T, N, [T, ...R]>;
+
+export type Commandoify<T, Ready extends boolean = boolean> = OverrideGuild<OverrideClient<T, Ready>>;
+
+export type OverrideGuild<T> = T extends { guild: Guild | infer R }
+    ? Omit<T, 'guild'> & { guild: CommandoGuild | Exclude<R, Guild> }
+    : T;
+
+export type OverrideClient<T, Ready extends boolean = boolean> = T extends { client: Client | infer R }
+    ? Omit<T, 'client'> & { readonly client: CommandoClient<Ready> | Exclude<R, Client> }
+    : T;
+
+export type CommandoifyMessage<
+    Type extends Message | PartialMessage,
+    InGuild extends boolean = boolean
+> = OverrideClient<Omit<Type extends Message ? Message<InGuild> : PartialMessage, 'guild'> & {
+    get guild(): If<InGuild, CommandoGuild>;
+}>;
 
 /** Options for splitting a message */
 export interface SplitOptions {

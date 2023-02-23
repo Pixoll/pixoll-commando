@@ -157,10 +157,6 @@ export default class CommandDispatcher {
             if (!nonCommandEditable) _results.delete(message.id);
         }
 
-        if (cmdMsg && oldMessage) {
-            client.emit('commandoMessageUpdate', oldMessage, cmdMsg);
-        }
-
         this.cacheCommandoMessage(message, oldMessage, cmdMsg, responses);
     }
 

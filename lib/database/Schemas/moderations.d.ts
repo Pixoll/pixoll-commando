@@ -26,7 +26,8 @@
 import { BaseSchema, DocumentFrom } from './base';
 export type TimeBasedModerationType = 'mute' | 'temp-ban' | 'time-out';
 type ModerationType = TimeBasedModerationType | 'ban' | 'kick' | 'soft-ban' | 'warn';
-export interface ModerationSchema extends BaseSchema {
+export interface ModerationSchema extends Omit<BaseSchema, '_id'> {
+    readonly _id: string;
     type: ModerationType;
     guild: string;
     userId: string;

@@ -13,7 +13,8 @@ type ModerationType =
     | 'soft-ban'
     | 'warn';
 
-export interface ModerationSchema extends BaseSchema {
+export interface ModerationSchema extends Omit<BaseSchema, '_id'> {
+    readonly _id: string;
     type: ModerationType;
     guild: string;
     userId: string;

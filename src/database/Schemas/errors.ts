@@ -1,11 +1,12 @@
 import { model, Schema } from 'mongoose';
 import { BaseSchema, DocumentFrom } from './base';
 
-export interface ErrorSchema extends BaseSchema {
+export interface ErrorSchema extends Omit<BaseSchema, '_id'> {
+    readonly _id: string;
     type: string;
     name: string;
     message: string;
-    command: string;
+    command?: string | undefined;
     files: string;
 }
 

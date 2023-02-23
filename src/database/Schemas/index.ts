@@ -26,11 +26,14 @@ export interface SimplifiedModel<T> extends Model<T> {
     updateOne(filter: FilterQuery<T>, update: Omit<T, '_id'> | UpdateQuery<Omit<T, '_id'>>): Promise<UpdateWriteOpResult>;
 }
 
-export type ModelFrom<T extends BaseSchema = BaseSchema, IncludeId extends boolean = false> = Model<
+export type ModelFrom<
+    T extends BaseSchema | (Omit<BaseSchema, '_id'> & { readonly _id: string }) = BaseSchema,
+    IncludeId extends boolean = boolean
+> = Model<
     DocumentFrom<T, IncludeId>
 >;
 
-export type AnySchema = BaseSchema & Partial<
+export type AnySchema<IncludeId extends boolean = boolean> = Partial<
     | ActiveSchema
     | AfkSchema
     | DisabledSchema
@@ -48,7 +51,9 @@ export type AnySchema = BaseSchema & Partial<
     | StickyRoleSchema
     | TodoSchema
     | WelcomeSchema
-> & { guild?: string };
+>
+    & (IncludeId extends true ? (Omit<BaseSchema, '_id'> & { readonly _id: string }) : BaseSchema)
+    & { guild?: string };
 
 export {
     BaseSchema,

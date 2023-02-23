@@ -15,10 +15,7 @@ import {
     OAuth2Guild,
     FetchGuildsOptions,
     IntentsBitField,
-    Message,
     ChannelType,
-    ClientEvents,
-    Awaitable,
 } from 'discord.js';
 import CommandoRegistry from './registry';
 import CommandDispatcher from './dispatcher';
@@ -30,10 +27,7 @@ import GuildDatabaseManager from './database/GuildDatabaseManager';
 import Util from './util';
 import initializeDB from './database/initializeDB';
 import CommandoInteraction from './extensions/interaction';
-import { ArgumentCollectorResult } from './commands/collector';
-import Command, { CommandBlockData, CommandBlockReason, CommandInstances } from './commands/base';
-import CommandGroup from './commands/group';
-import ArgumentType from './types/base';
+import { CommandoClientEvents } from './events';
 
 export interface CommandoClientOptions extends ClientOptions {
     /**
@@ -65,46 +59,6 @@ export interface CommandoClientOptions extends ClientOptions {
     modulesDir?: string;
     /** The names of the modules to exclude */
     excludeModules?: string[];
-}
-
-export interface CommandoClientEvents extends ClientEvents {
-    // Overrides
-    ready: [client: CommandoClient<true>];
-    guildDelete: [guild: CommandoGuild];
-    // New events
-    commandBlock: [instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData];
-    commandCancel: [command: Command, reason: string, message: CommandoMessage, result?: ArgumentCollectorResult];
-    commandError: [
-        command: Command,
-        error: Error,
-        instances: CommandInstances,
-        args: Record<string, unknown> | string[] | string,
-        fromPattern?: boolean,
-        result?: ArgumentCollectorResult
-    ];
-    commandoGuildCreate: [guild: CommandoGuild];
-    commandoMessageCreate: [message: CommandoMessage];
-    commandoMessageUpdate: [oldMessage: Message, newMessage: CommandoMessage];
-    commandPrefixChange: [guild?: CommandoGuild | null, prefix?: string | null];
-    commandRegister: [command: Command, registry: CommandoRegistry];
-    commandReregister: [newCommand: Command, oldCommand: Command];
-    commandRun: [
-        command: Command,
-        promise: Awaitable<Message | Message[] | null | void>,
-        instances: CommandInstances,
-        args: Record<string, unknown> | string[] | string,
-        fromPattern?: boolean,
-        result?: ArgumentCollectorResult | null
-    ];
-    commandStatusChange: [guild: CommandoGuild | null, command: Command, enabled: boolean];
-    commandUnregister: [command: Command];
-    databaseReady: [client: CommandoClient<true>];
-    groupRegister: [group: CommandGroup, registry: CommandoRegistry];
-    groupStatusChange: [guild: CommandoGuild | null, group: CommandGroup, enabled: boolean];
-    guildsReady: [client: CommandoClient<true>];
-    modulesReady: [client: CommandoClient<true>];
-    typeRegister: [type: ArgumentType, registry: CommandoRegistry];
-    unknownCommand: [message: CommandoMessage];
 }
 
 declare class CommandoGuildManager extends CachedManager<Snowflake, CommandoGuild, CommandoGuild | GuildResolvable> {
@@ -238,17 +192,14 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
         this.on('messageCreate', async message => {
             if (message.channel.type === ChannelType.GuildStageVoice) return;
             const commando = new CommandoMessage(this as CommandoClient<true>, message);
-            this.emit('commandoMessageCreate', commando);
             // @ts-expect-error: handleMessage is protected in CommandDispatcher
             await this.dispatcher.handleMessage(commando).catch(catchErr);
         });
         this.on('messageUpdate', async (oldMessage, newMessage) => {
-            if (
-                oldMessage.partial || newMessage.partial || newMessage.channel.type === ChannelType.GuildStageVoice
-            ) return;
-            const commando = new CommandoMessage(this as CommandoClient<true>, newMessage);
+            if (newMessage.partial || newMessage.channel.type === ChannelType.GuildStageVoice) return;
+            const newCommando = new CommandoMessage(this as CommandoClient<true>, newMessage);
             // @ts-expect-error: handleMessage is protected in CommandDispatcher
-            await this.dispatcher.handleMessage(commando, oldMessage).catch(catchErr);
+            await this.dispatcher.handleMessage(newCommando, oldMessage).catch(catchErr);
         });
 
         // Set up slash command handling
@@ -260,9 +211,13 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
             if (
                 !interaction.isChatInputCommand() || interaction.channel?.type === ChannelType.GuildStageVoice
             ) return;
-            const commando = new CommandoInteraction(this as CommandoClient<true>, interaction);
-            // @ts-expect-error: handleSlash is protected in CommandDispatcher
-            this.dispatcher.handleSlash(commando).catch(catchErr);
+            try {
+                const commando = new CommandoInteraction(this as CommandoClient<true>, interaction);
+                // @ts-expect-error: handleSlash is protected in CommandDispatcher
+                this.dispatcher.handleSlash(commando).catch(catchErr);
+            } catch (error) {
+                console.error(error);
+            }
         });
 
         // Establishes MongoDB connection and loads all modules

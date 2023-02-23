@@ -23,8 +23,12 @@ export interface SimplifiedModel<T> extends Model<T> {
     findById(id: string): Promise<T>;
     updateOne(filter: FilterQuery<T>, update: Omit<T, '_id'> | UpdateQuery<Omit<T, '_id'>>): Promise<UpdateWriteOpResult>;
 }
-export type ModelFrom<T extends BaseSchema = BaseSchema, IncludeId extends boolean = false> = Model<DocumentFrom<T, IncludeId>>;
-export type AnySchema = BaseSchema & Partial<ActiveSchema | AfkSchema | DisabledSchema | ErrorSchema | FaqSchema | McIpSchema | ModerationSchema | ModuleSchema | PollSchema | PrefixSchema | ReactionRoleSchema | ReminderSchema | RuleSchema | SetupSchema | StickyRoleSchema | TodoSchema | WelcomeSchema> & {
+export type ModelFrom<T extends BaseSchema | (Omit<BaseSchema, '_id'> & {
+    readonly _id: string;
+}) = BaseSchema, IncludeId extends boolean = boolean> = Model<DocumentFrom<T, IncludeId>>;
+export type AnySchema<IncludeId extends boolean = boolean> = Partial<ActiveSchema | AfkSchema | DisabledSchema | ErrorSchema | FaqSchema | McIpSchema | ModerationSchema | ModuleSchema | PollSchema | PrefixSchema | ReactionRoleSchema | ReminderSchema | RuleSchema | SetupSchema | StickyRoleSchema | TodoSchema | WelcomeSchema> & (IncludeId extends true ? (Omit<BaseSchema, '_id'> & {
+    readonly _id: string;
+}) : BaseSchema) & {
     guild?: string;
 };
 export { BaseSchema, ActiveSchema, AfkSchema, DisabledSchema, ErrorSchema, FaqSchema, McIpSchema, ModerationSchema, ModuleSchema, PollSchema, PrefixSchema, ReactionRoleSchema, ReminderSchema, RuleSchema, SetupSchema, StickyRoleSchema, TodoSchema, WelcomeSchema, };

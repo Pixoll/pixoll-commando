@@ -1,7 +1,8 @@
-import { Message, EmbedBuilder, User, MessageCreateOptions, TextBasedChannel, MessageReplyOptions, If, GuildTextBasedChannel, StageChannel } from 'discord.js';
+import { Message, EmbedBuilder, User, MessageCreateOptions, TextBasedChannel, MessageReplyOptions, If, GuildTextBasedChannel, StageChannel, GuildMember } from 'discord.js';
 import Command from '../commands/base';
+import { Commandoify, CommandoifyMessage } from '../util';
 import CommandoClient from '../client';
-import CommandoGuild, { CommandoGuildMember } from './guild';
+import CommandoGuild from './guild';
 /** Type of the response */
 type ResponseType = 'code' | 'direct' | 'plain' | 'reply';
 type StringResolvable = MessageCreateOptions | string;
@@ -38,8 +39,8 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
      * @param client - The client the message is for
      * @param data - The message data
      */
-    constructor(client: CommandoClient<true>, data: Message);
-    get member(): CommandoGuildMember | null;
+    constructor(client: CommandoClient<true>, data: CommandoifyMessage<Message>);
+    get member(): Commandoify<GuildMember, true> | null;
     /** The guild this message was sent in */
     get guild(): If<InGuild, CommandoGuild>;
     /** The channel this message was sent in */
