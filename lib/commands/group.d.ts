@@ -1,6 +1,6 @@
-import { Collection, GuildResolvable } from 'discord.js';
+import { Collection } from 'discord.js';
 import CommandoClient from '../client';
-import CommandoGuild from '../extensions/guild';
+import { CommandoGuildResolvable } from '../discord.overrides';
 import Command from './base';
 /** A group for commands. Whodathunkit? */
 export default class CommandGroup {
@@ -28,13 +28,13 @@ export default class CommandGroup {
      * @param guild - Guild to enable/disable the group in
      * @param enabled - Whether the group should be enabled or disabled
      */
-    setEnabledIn(guild: CommandoGuild | GuildResolvable | null, enabled: boolean): void;
+    setEnabledIn(guild: CommandoGuildResolvable | null, enabled: boolean): void;
     /**
      * Checks if the group is enabled in a guild
      * @param guild - Guild to check in
      * @return Whether or not the group is enabled
      */
-    isEnabledIn(guild: CommandoGuild | GuildResolvable | null): boolean;
+    isEnabledIn(guild: CommandoGuildResolvable | null): boolean;
     /** Reloads all of the group's commands */
     reload(): void;
 }

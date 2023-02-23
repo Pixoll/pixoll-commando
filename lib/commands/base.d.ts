@@ -1,12 +1,12 @@
 /// <reference types="node" />
-import { GuildResolvable, Message, PermissionsString, User, ChatInputApplicationCommandData, RESTPostAPIChatInputApplicationCommandsJSONBody as RESTPostAPISlashCommand, Awaitable } from 'discord.js';
+import { Message, PermissionsString, User, ChatInputApplicationCommandData, RESTPostAPIChatInputApplicationCommandsJSONBody as RESTPostAPISlashCommand, Awaitable } from 'discord.js';
 import ArgumentCollector, { ArgumentCollectorResult } from './collector';
 import CommandoClient from '../client';
 import CommandGroup from './group';
 import { ArgumentInfo } from './argument';
 import CommandoMessage from '../extensions/message';
-import CommandoGuild from '../extensions/guild';
 import CommandoInteraction from '../extensions/interaction';
+import { CommandoGuildResolvable } from '../discord.overrides';
 /** Options for throttling usages of the command. */
 export interface ThrottlingOptions {
     /** Maximum number of usages of the command allowed in the time frame. */
@@ -310,13 +310,13 @@ export default abstract class Command<InGuild extends boolean = boolean> {
      * @param guild - Guild to enable/disable the command in
      * @param enabled - Whether the command should be enabled or disabled
      */
-    setEnabledIn(guild: CommandoGuild | GuildResolvable | null, enabled: boolean): void;
+    setEnabledIn(guild: CommandoGuildResolvable | null, enabled: boolean): void;
     /**
      * Checks if the command is enabled in a guild
      * @param guild - Guild to check in
      * @param bypassGroup - Whether to bypass checking the group's status
      */
-    isEnabledIn(guild: CommandoGuild | GuildResolvable | null, bypassGroup?: boolean): boolean;
+    isEnabledIn(guild: CommandoGuildResolvable | null, bypassGroup?: boolean): boolean;
     /**
      * Checks if the command is usable for a message
      * @param instances - The instances

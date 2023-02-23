@@ -1,5 +1,4 @@
 import {
-    GuildResolvable,
     Message,
     EmbedBuilder,
     PermissionsString,
@@ -17,17 +16,17 @@ import {
     RESTPostAPIChatInputApplicationCommandsJSONBody as RESTPostAPISlashCommand,
     Awaitable,
     MessageCreateOptions,
-    GuildMember,
 } from 'discord.js';
 import path from 'path';
 import ArgumentCollector, { ArgumentCollectorResult } from './collector';
-import Util, { Commandoify } from '../util';
+import Util from '../util';
 import CommandoClient from '../client';
 import CommandGroup from './group';
 import { ArgumentInfo } from './argument';
 import CommandoMessage from '../extensions/message';
 import CommandoGuild from '../extensions/guild';
 import CommandoInteraction from '../extensions/interaction';
+import { CommandoGuildMember, CommandoGuildResolvable } from '../discord.overrides';
 
 /** Options for throttling usages of the command. */
 export interface ThrottlingOptions {
@@ -524,7 +523,7 @@ export default abstract class Command<InGuild extends boolean = boolean> {
      * @param guild - Guild to enable/disable the command in
      * @param enabled - Whether the command should be enabled or disabled
      */
-    public setEnabledIn(guild: CommandoGuild | GuildResolvable | null, enabled: boolean): void {
+    public setEnabledIn(guild: CommandoGuildResolvable | null, enabled: boolean): void {
         const { client, guarded } = this;
         if (typeof guild === 'undefined') throw new TypeError('Guild must not be undefined.');
         if (typeof enabled === 'undefined') throw new TypeError('Enabled must not be undefined.');
@@ -543,7 +542,7 @@ export default abstract class Command<InGuild extends boolean = boolean> {
      * @param guild - Guild to check in
      * @param bypassGroup - Whether to bypass checking the group's status
      */
-    public isEnabledIn(guild: CommandoGuild | GuildResolvable | null, bypassGroup?: boolean): boolean {
+    public isEnabledIn(guild: CommandoGuildResolvable | null, bypassGroup?: boolean): boolean {
         const { client, group } = this;
         if (this.guarded) return true;
         if (!guild) return group.isEnabledIn(null) && this._globalEnabled;
@@ -948,7 +947,7 @@ const isModConditions: PermissionsString[] = [
     'MuteMembers',
 ];
 
-function isModerator(member: Commandoify<GuildMember>): boolean {
+function isModerator(member: CommandoGuildMember): boolean {
     if (!member) return false;
     const { permissions } = member;
     if (permissions.has('Administrator')) return true;

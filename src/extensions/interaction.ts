@@ -18,14 +18,15 @@ import {
 import CommandoClient from '../client';
 import Command from '../commands/base';
 import FriendlyError from '../errors/friendly';
-import Util, { Commandoify } from '../util';
+import { CommandoGuildMember } from '../discord.overrides';
+import Util from '../util';
 import CommandoGuild from './guild';
 
 /** An extension of the base Discord.js ChatInputCommandInteraction class to add command-related functionality. */
 export default class CommandoInteraction<InGuild extends boolean = boolean> extends ChatInputCommandInteraction {
     /** The client the interaction is for */
     declare public readonly client: CommandoClient<true>;
-    declare public member: Commandoify<GuildMember, true> | null;
+    declare public member: CommandoGuildMember | null;
     /** Command that the interaction triggers */
     protected _command: Command<InGuild>;
 

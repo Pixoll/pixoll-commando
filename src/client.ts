@@ -1,21 +1,16 @@
 import {
-    Client,
-    PermissionsBitField,
-    Collection,
-    ClientOptions,
-    InviteGenerationOptions,
-    CachedManager,
-    Snowflake,
-    GuildResolvable,
-    GuildCreateOptions,
-    FetchGuildOptions,
-    UserResolvable,
-    Guild,
-    User,
-    OAuth2Guild,
-    FetchGuildsOptions,
-    IntentsBitField,
+    Awaitable,
     ChannelType,
+    Client,
+    ClientOptions,
+    Collection,
+    Guild,
+    InviteGenerationOptions,
+    IntentsBitField,
+    Message,
+    PermissionsBitField,
+    User,
+    UserResolvable,
 } from 'discord.js';
 import CommandoRegistry from './registry';
 import CommandDispatcher from './dispatcher';
@@ -27,7 +22,11 @@ import GuildDatabaseManager from './database/GuildDatabaseManager';
 import Util from './util';
 import initializeDB from './database/initializeDB';
 import CommandoInteraction from './extensions/interaction';
-import { CommandoClientEvents } from './events';
+import { CommandoGuildManager, OverwrittenClientEvents } from './discord.overrides';
+import Command, { CommandBlockData, CommandBlockReason, CommandInstances } from './commands/base';
+import { ArgumentCollectorResult } from './commands/collector';
+import ArgumentType from './types/base';
+import CommandGroup from './commands/group';
 
 export interface CommandoClientOptions extends ClientOptions {
     /**
@@ -61,14 +60,42 @@ export interface CommandoClientOptions extends ClientOptions {
     excludeModules?: string[];
 }
 
-declare class CommandoGuildManager extends CachedManager<Snowflake, CommandoGuild, CommandoGuild | GuildResolvable> {
-    public create(options: GuildCreateOptions): Promise<CommandoGuild>;
-    public fetch(options: FetchGuildOptions | Snowflake): Promise<CommandoGuild>;
-    public fetch(options?: FetchGuildsOptions): Promise<Collection<Snowflake, OAuth2Guild>>;
+export interface CommandoClientEvents extends OverwrittenClientEvents {
+    commandBlock: [instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData];
+    commandCancel: [command: Command, reason: string, message: CommandoMessage, result?: ArgumentCollectorResult];
+    commandError: [
+        command: Command,
+        error: Error,
+        instances: CommandInstances,
+        args: Record<string, unknown> | string[] | string,
+        fromPattern?: boolean,
+        result?: ArgumentCollectorResult
+    ];
+    commandoGuildCreate: [guild: CommandoGuild];
+    commandPrefixChange: [guild?: CommandoGuild | null, prefix?: string | null];
+    commandRegister: [command: Command, registry: CommandoRegistry];
+    commandReregister: [newCommand: Command, oldCommand: Command];
+    commandRun: [
+        command: Command,
+        promise: Awaitable<Message | Message[] | null | void>,
+        instances: CommandInstances,
+        args: Record<string, unknown> | string[] | string,
+        fromPattern?: boolean,
+        result?: ArgumentCollectorResult | null
+    ];
+    commandStatusChange: [guild: CommandoGuild | null, command: Command, enabled: boolean];
+    commandUnregister: [command: Command];
+    databaseReady: [client: CommandoClient<true>];
+    groupRegister: [group: CommandGroup, registry: CommandoRegistry];
+    groupStatusChange: [guild: CommandoGuild | null, group: CommandGroup, enabled: boolean];
+    guildsReady: [client: CommandoClient<true>];
+    modulesReady: [client: CommandoClient<true>];
+    typeRegister: [type: ArgumentType, registry: CommandoRegistry];
+    unknownCommand: [message: CommandoMessage];
 }
 
 /** Discord.js Client with a command framework */
-export class CommandoClient<Ready extends boolean = boolean> extends Client<Ready> {
+export default class CommandoClient<Ready extends boolean = boolean> extends Client<Ready> {
     /** Internal global command prefix, controlled by the {@link CommandoClient#prefix} getter/setter */
     protected _prefix?: string | null;
 
@@ -256,5 +283,3 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
     // @ts-expect-error: method type override
     declare public removeAllListeners<K extends keyof CommandoClientEvents>(event?: K): this;
 }
-
-export default CommandoClient;
