@@ -33,12 +33,12 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
      * @param doc - The document to add
      * @returns The added document
      */
-    public async add(doc: T): Promise<T> {
+    public async add(doc: Omit<T, 'createdAt' | 'updatedAt'>): Promise<T> {
         if (typeof doc !== 'object') {
             throw new TypeError('Document must me an object');
         }
 
-        const { guild, Schema: Schema } = this;
+        const { guild, Schema } = this;
         if (guild) doc.guild ??= guild.id;
 
         const added = await new Schema(doc).save() as T;
@@ -53,7 +53,7 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
      * @returns The deleted document
      */
     public async delete(doc: T | string): Promise<T> {
-        const { cache, Schema: schema } = this;
+        const { cache, Schema } = this;
 
         if (typeof doc !== 'string' && typeof doc !== 'object') {
             throw new TypeError('Document must me either an object or a document _id.');
@@ -64,7 +64,7 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
         if (typeof doc === 'string') {
             const fetched = await this.fetch(doc);
             if (!fetched) {
-                throw new Error(`Could not fetch document with _id "${doc}" in schema ""${schema.collection.name}.`);
+                throw new Error(`Could not fetch document with _id "${doc}" in schema "${Schema.collection.name}#.`);
             }
             doc = fetched;
         }
@@ -73,7 +73,7 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
         }
 
         cache.delete(doc._id.toString());
-        await schema.deleteOne({ _id: doc._id });
+        await Schema.deleteOne({ _id: doc._id });
 
         return doc;
     }
@@ -84,8 +84,11 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
      * @param update - The update to apply
      * @returns The updated document
      */
-    public async update(doc: T | string, update: T | UpdateAggregationStage | UpdateQuery<T>): Promise<T> {
-        const { cache, Schema: schema } = this;
+    public async update(
+        doc: T | string,
+        update: Omit<T, 'createdAt' | 'updatedAt'> | UpdateAggregationStage | UpdateQuery<Omit<T, 'createdAt' | 'updatedAt'>>
+    ): Promise<T> {
+        const { cache, Schema } = this;
 
         if (typeof doc !== 'string' && typeof doc !== 'object') {
             throw new TypeError('Document must me either an object or a document _id.');
@@ -99,7 +102,7 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
         if (typeof doc === 'string') {
             const fetched = await this.fetch(doc);
             if (!fetched) {
-                throw new Error(`Could not fetch document with _id "${doc}" in schema ""${schema.collection.name}.`);
+                throw new Error(`Could not fetch document with _id "${doc}" in schema "${Schema.collection.name}".`);
             }
             doc = fetched;
         }
@@ -107,8 +110,8 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
             throw new TypeError('Document cannot be undefined or null.');
         }
 
-        await schema.updateOne({ _id: doc._id }, update);
-        const newDoc = await this.Schema.findById(doc._id.toString());
+        await Schema.updateOne({ _id: doc._id }, update);
+        const newDoc = await Schema.findById(doc._id.toString());
         cache.set(newDoc._id.toString(), newDoc);
 
         return newDoc;
@@ -119,12 +122,12 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
      * @param filter - The ID or fetching filter for this document
      * @returns The fetched document
      */
-    public async fetch(filter: FilterQuery<T> | string = {}): Promise<T | null> {
-        const { cache, guild, Schema: schema } = this;
+    public async fetch(filter: FilterQuery<Omit<T, 'createdAt' | 'updatedAt'>> | string = {}): Promise<T | null> {
+        const { cache, guild, Schema } = this;
         if (typeof filter === 'string') {
             const existing = cache.get(filter);
             if (existing) return existing;
-            const data = await schema.findById(filter);
+            const data = await Schema.findById(filter);
             if (data) cache.set(data._id.toString(), data);
             return data;
         }
@@ -135,7 +138,7 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
         const existing = cache.find(this.filterDocuments(filter));
         if (existing) return existing;
 
-        const doc = await schema.findOne(filter);
+        const doc = await Schema.findOne(filter);
         if (doc) {
             cache.set(doc._id.toString(), doc);
             return doc;
@@ -148,15 +151,15 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
      * @param filter - The fetching filter for the documents
      * @returns The fetched documents
      */
-    public async fetchMany(filter: FilterQuery<T> = {}): Promise<Collection<string, T>> {
-        const { cache, guild, Schema: schema } = this;
+    public async fetchMany(filter: FilterQuery<Omit<T, 'createdAt' | 'updatedAt'>> = {}): Promise<Collection<string, T>> {
+        const { cache, guild, Schema } = this;
         if (cache.size === 0) return cache;
 
         if (guild) filter.guild ??= guild.id;
         const filtered = cache.filter(this.filterDocuments(filter));
         if (filtered.size !== 0) return filtered;
 
-        const data = await schema.find(filter);
+        const data = await Schema.find(filter);
         const fetched: Collection<string, T> = new LimitedCollection({
             maxSize: 200,
         });
@@ -173,7 +176,7 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
     }
 
     /** Filtering function for fetching documents. May only be used in `Array.filter()` or `Collection.filter()` */
-    protected filterDocuments(filter: FilterQuery<T>) {
+    protected filterDocuments(filter: FilterQuery<Omit<T, 'createdAt' | 'updatedAt'>>) {
         return (doc: T): boolean => {
             const objKeys = Object.keys(filter).length;
             if (objKeys === 0) return true;

@@ -35,7 +35,7 @@ export interface ModerationSchema extends Omit<BaseSchemaWithTimestamps, '_id'> 
     modId: string;
     modTag: string;
     reason: string;
-    duration: string;
+    duration?: string | undefined;
 }
 declare const ModerationsModel: import("mongoose").Model<DocumentFrom<ModerationSchema, true>, {}, {}, {}, any>;
 export default ModerationsModel;

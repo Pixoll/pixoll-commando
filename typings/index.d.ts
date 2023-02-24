@@ -1186,7 +1186,7 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
      */
     public constructor(schema: ModelFrom<T, IncludeId>, guild?: CommandoGuild);
     /** Filtering function for fetching documents. May only be used in `Array.filter()` or `Collection.filter()` */
-    protected filterDocuments(filter: FilterQuery<T>): (doc: T) => boolean;
+    protected filterDocuments(filter: FilterQuery<Omit<T, 'createdAt' | 'updatedAt'>>): (doc: T) => boolean;
 
     /** Guild for this database */
     public readonly guild: CommandoGuild | null;
@@ -1200,7 +1200,7 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
      * @param doc - The document to add
      * @returns The added document
      */
-    public add(doc: T): Promise<T>;
+    public add(doc: Omit<T, 'createdAt' | 'updatedAt'>): Promise<T>;
     /**
      * Delete a single document from the database
      * @param doc - The document to delete or its ID
@@ -1213,19 +1213,22 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
      * @param update - The update to apply
      * @returns The updated document
      */
-    public update(doc: T | string, update: T | UpdateAggregationStage | UpdateQuery<T>): Promise<T>;
+    public update(
+        doc: T | string,
+        update: Omit<T, 'createdAt' | 'updatedAt'> | UpdateAggregationStage | UpdateQuery<Omit<T, 'createdAt' | 'updatedAt'>>
+    ): Promise<T>;
     /**
      * Fetch a single document
      * @param filter - The ID or fetching filter for this document
      * @returns The fetched document
      */
-    public fetch(filter?: FilterQuery<T> | string): Promise<T | null>;
+    public fetch(filter?: FilterQuery<Omit<T, 'createdAt' | 'updatedAt'>> | string): Promise<T | null>;
     /**
      * Fetch multiple documents
      * @param filter - The fetching filter for the documents
      * @returns The fetched documents
      */
-    public fetchMany(filter?: FilterQuery<T>): Promise<Collection<string, T>>;
+    public fetchMany(filter?: FilterQuery<Omit<T, 'createdAt' | 'updatedAt'>>): Promise<Collection<string, T>>;
 }
 
 /** A guilds' database manager (MongoDB) */
@@ -2524,7 +2527,7 @@ export interface ModerationSchema extends Omit<BaseSchemaWithTimestamps, '_id'> 
     modId: Snowflake;
     modTag: string;
     reason: string;
-    duration: string;
+    duration?: string | undefined;
 }
 
 export interface McIpSchema extends BaseSchema {

@@ -22,7 +22,7 @@ export interface ModerationSchema extends Omit<BaseSchemaWithTimestamps, '_id'> 
     modId: string;
     modTag: string;
     reason: string;
-    duration: string;
+    duration?: string | undefined;
 }
 
 const ModerationsModel = model<DocumentFrom<ModerationSchema, true>>('moderations', new Schema({
