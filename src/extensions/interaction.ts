@@ -18,7 +18,7 @@ import {
 import CommandoClient from '../client';
 import Command from '../commands/base';
 import FriendlyError from '../errors/friendly';
-import { CommandoGuildMember } from '../discord.overrides';
+import { CommandoChatInputCommandInteraction, CommandoGuildMember } from '../discord.overrides';
 import Util from '../util';
 import CommandoGuild from './guild';
 
@@ -34,7 +34,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
      * @param client - The client the interaction is for
      * @param data - The interaction data
      */
-    public constructor(client: CommandoClient<true>, data: ChatInputCommandInteraction) {
+    public constructor(client: CommandoClient<true>, data: CommandoChatInputCommandInteraction) {
         super(client, interactionToJSON(data));
         Object.assign(this, data);
 
@@ -242,7 +242,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
 }
 
 function interactionToJSON(
-    data: ChatInputCommandInteraction
+    data: CommandoChatInputCommandInteraction
 ): APIChatInputApplicationCommandInteraction {
     /* eslint-disable camelcase */
     return {

@@ -62,6 +62,7 @@ import type {
 import type CommandoClient from './client';
 import type CommandoGuild from './extensions/guild';
 
+// @ts-expect-error: caused by interaction overrides
 export interface OverwrittenClientEvents extends ClientEvents {
     autoModerationActionExecution: [autoModerationActionExecution: CommandoAutoModerationActionExecution];
     autoModerationRuleCreate: [autoModerationRule: CommandoAutoModerationRule];
@@ -429,7 +430,10 @@ export interface PartialCommandoThreadMember extends Partialize<
     CommandoThreadMember, 'flags' | 'joinedAt' | 'joinedTimestamp'
 > { }
 
-export interface InteractionTypeNarrowers<Cached extends CacheType = CacheType> {
+export interface CommandoInteractionOverride<Cached extends CacheType = CacheType> {
+    readonly client: CommandoClient<true>;
+    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+    member: CacheTypeReducer<Cached, CommandoGuildMember, null>;
     isButton(): this is CommandoButtonInteraction<Cached>;
     isAutocomplete(): this is CommandoAutocompleteInteraction<Cached>;
     isChatInputCommand(): this is CommandoChatInputCommandInteraction<Cached>;
@@ -451,9 +455,7 @@ export interface InteractionTypeNarrowers<Cached extends CacheType = CacheType> 
 // @ts-expect-error: Type narrowing methods are being overwritten
 export interface CommandoAutocompleteInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, AutocompleteInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, AutocompleteInteraction<Cached> {
     inGuild(): this is CommandoAutocompleteInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoAutocompleteInteraction<'cached'>;
     inRawGuild(): this is CommandoAutocompleteInteraction<'raw'>;
@@ -462,9 +464,7 @@ export interface CommandoAutocompleteInteraction<
 // @ts-expect-error: Type narrowing methods are being overwritten
 export interface CommandoButtonInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, ButtonInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, ButtonInteraction<Cached> {
     inGuild(): this is CommandoButtonInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoButtonInteraction<'cached'>;
     inRawGuild(): this is CommandoButtonInteraction<'raw'>;
@@ -473,9 +473,7 @@ export interface CommandoButtonInteraction<
 // @ts-expect-error: Type narrowing methods are being overwritten
 export interface CommandoChatInputCommandInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, ChatInputCommandInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, ChatInputCommandInteraction<Cached> {
     inGuild(): this is CommandoChatInputCommandInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoChatInputCommandInteraction<'cached'>;
     inRawGuild(): this is CommandoChatInputCommandInteraction<'raw'>;
@@ -484,9 +482,7 @@ export interface CommandoChatInputCommandInteraction<
 // @ts-expect-error: Type narrowing methods are being overwritten
 export interface CommandoCommandInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, CommandInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, CommandInteraction<Cached> {
     inGuild(): this is CommandoCommandInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoCommandInteraction<'cached'>;
     inRawGuild(): this is CommandoCommandInteraction<'raw'>;
@@ -495,9 +491,7 @@ export interface CommandoCommandInteraction<
 // @ts-expect-error: Type narrowing methods are being overwritten
 export interface CommandoContextMenuCommandInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, ContextMenuCommandInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, ContextMenuCommandInteraction<Cached> {
     inGuild(): this is ContextMenuCommandInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is ContextMenuCommandInteraction<'cached'>;
     inRawGuild(): this is ContextMenuCommandInteraction<'raw'>;
@@ -506,9 +500,7 @@ export interface CommandoContextMenuCommandInteraction<
 // @ts-expect-error: Type narrowing methods are being overwritten
 export interface CommandoMessageComponentInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, MessageComponentInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, MessageComponentInteraction<Cached> {
     inGuild(): this is MessageComponentInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is MessageComponentInteraction<'cached'>;
     inRawGuild(): this is MessageComponentInteraction<'raw'>;
@@ -517,9 +509,7 @@ export interface CommandoMessageComponentInteraction<
 // @ts-expect-error: Type narrowing methods are being overwritten
 export interface CommandoMessageContextMenuCommandInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, MessageContextMenuCommandInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, MessageContextMenuCommandInteraction<Cached> {
     inGuild(): this is CommandoMessageContextMenuCommandInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoMessageContextMenuCommandInteraction<'cached'>;
     inRawGuild(): this is CommandoMessageContextMenuCommandInteraction<'raw'>;
@@ -528,9 +518,7 @@ export interface CommandoMessageContextMenuCommandInteraction<
 // @ts-expect-error: Type narrowing methods are being overwritten
 export interface CommandoModalSubmitInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, ModalSubmitInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, ModalSubmitInteraction<Cached> {
     inGuild(): this is CommandoModalSubmitInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoModalSubmitInteraction<'cached'>;
     inRawGuild(): this is CommandoModalSubmitInteraction<'raw'>;
@@ -540,9 +528,7 @@ export interface CommandoModalSubmitInteraction<
 // @ts-expect-error: Type narrowing methods are being overwritten
 export interface CommandoModalMessageModalSubmitInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, ModalMessageModalSubmitInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, ModalMessageModalSubmitInteraction<Cached> {
     inGuild(): this is CommandoModalMessageModalSubmitInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoModalMessageModalSubmitInteraction<'cached'>;
     inRawGuild(): this is CommandoModalMessageModalSubmitInteraction<'raw'>;
@@ -551,9 +537,7 @@ export interface CommandoModalMessageModalSubmitInteraction<
 // @ts-expect-error: Type narrowing methods are being overwritten
 export interface CommandoUserContextMenuCommandInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, UserContextMenuCommandInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, UserContextMenuCommandInteraction<Cached> {
     inGuild(): this is CommandoUserContextMenuCommandInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoUserContextMenuCommandInteraction<'cached'>;
     inRawGuild(): this is CommandoUserContextMenuCommandInteraction<'raw'>;
@@ -562,9 +546,7 @@ export interface CommandoUserContextMenuCommandInteraction<
 // @ts-expect-error: Type narrowing methods are being overwritten
 export interface CommandoChannelSelectMenuInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, ChannelSelectMenuInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, ChannelSelectMenuInteraction<Cached> {
     inGuild(): this is CommandoChannelSelectMenuInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoChannelSelectMenuInteraction<'cached'>;
     inRawGuild(): this is CommandoChannelSelectMenuInteraction<'raw'>;
@@ -573,9 +555,7 @@ export interface CommandoChannelSelectMenuInteraction<
 // @ts-expect-error: Type narrowing methods are being overwritten
 export interface CommandoMentionableSelectMenuInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, MentionableSelectMenuInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, MentionableSelectMenuInteraction<Cached> {
     inGuild(): this is CommandoMentionableSelectMenuInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoMentionableSelectMenuInteraction<'cached'>;
     inRawGuild(): this is CommandoMentionableSelectMenuInteraction<'raw'>;
@@ -584,9 +564,7 @@ export interface CommandoMentionableSelectMenuInteraction<
 // @ts-expect-error: Type narrowing methods are being overwritten
 export interface CommandoRoleSelectMenuInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, RoleSelectMenuInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, RoleSelectMenuInteraction<Cached> {
     inGuild(): this is CommandoRoleSelectMenuInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoRoleSelectMenuInteraction<'cached'>;
     inRawGuild(): this is CommandoRoleSelectMenuInteraction<'raw'>;
@@ -595,9 +573,7 @@ export interface CommandoRoleSelectMenuInteraction<
 // @ts-expect-error: Type narrowing methods are being overwritten
 export interface CommandoStringSelectMenuInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, StringSelectMenuInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, StringSelectMenuInteraction<Cached> {
     inGuild(): this is CommandoStringSelectMenuInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoStringSelectMenuInteraction<'cached'>;
     inRawGuild(): this is CommandoStringSelectMenuInteraction<'raw'>;
@@ -606,9 +582,7 @@ export interface CommandoStringSelectMenuInteraction<
 // @ts-expect-error: Type narrowing methods are being overwritten
 export interface CommandoUserSelectMenuInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, UserSelectMenuInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, UserSelectMenuInteraction<Cached> {
     inGuild(): this is CommandoUserSelectMenuInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoUserSelectMenuInteraction<'cached'>;
     inRawGuild(): this is CommandoUserSelectMenuInteraction<'raw'>;

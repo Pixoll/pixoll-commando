@@ -120,46 +120,46 @@ export class Argument {
     protected static determineType(client: CommandoClient, id?: string[] | string): ArgumentType | null;
 
     /** Key for the argument */
-    key: string;
+    public key: string;
     /** Label for the argument */
-    label: string;
+    public label: string;
     /** Question prompt for the argument */
-    prompt: string;
+    public prompt: string;
     /**
      * Error message for when a value is invalid
      * @see ArgumentType#validate
      */
-    error: string | null;
+    public error: string | null;
     /** Type of the argument */
-    type: ArgumentType | null;
+    public type: ArgumentType | null;
     /**
      * - If type is `integer` or `float`, this is the maximum value of the number.
      * - If type is `string`, this is the maximum length of the string.
      * - If type is `duration`, this is the maximum duration.
      */
-    max: number | null;
+    public max: number | null;
     /**
      * - If type is `integer` or `float`, this is the minimum value of the number.
      * - If type is `string`, this is the minimum length of the string.
      * - If type is `duration`, this is the minimum duration.
      */
-    min: number | null;
+    public min: number | null;
     /** The default value for the argument */
-    default: ArgumentDefault | null;
+    public default: ArgumentDefault | null;
     /** Whether the argument is required or not */
-    required: boolean;
+    public required: boolean;
     /** Whether the default argument's validation is skipped or not */
-    skipExtraDateValidation: boolean;
+    public skipExtraDateValidation: boolean;
     /**
      * Values the user can choose from.
      * - If type is `string`, this will be case-insensitive.
      * - If type is `channel`, `member`, `role`, or `user`, this will be the IDs.
      */
-    oneOf: Array<number | string> | null;
+    public oneOf: Array<number | string> | null;
     /** Whether the argument accepts an infinite number of values */
-    infinite: boolean;
+    public infinite: boolean;
     /** How long to wait for input (in seconds) */
-    wait: number;
+    public wait: number;
 
     /**
      * Prompts the user and obtains the value for the argument
@@ -167,14 +167,14 @@ export class Argument {
      * @param val - Pre-provided value for the argument
      * @param promptLimit - Maximum number of times to prompt for the argument
      */
-    obtain(msg: CommandoMessage, val: string, promptLimit?: number): Promise<ArgumentResult>;
+    public obtain(msg: CommandoMessage, val: string, promptLimit?: number): Promise<ArgumentResult>;
     /**
      * Checks if a value is valid for the argument
      * @param val - Value to check
      * @param originalMsg - Message that triggered the command
      * @param currentMsg - Current response message
      */
-    validate(val: string, originalMsg: CommandoMessage, currentMsg?: CommandoMessage):
+    public validate(val: string, originalMsg: CommandoMessage, currentMsg?: CommandoMessage):
         Promise<boolean | string> | boolean | string;
     /**
      * Parses a value string into a proper value for the argument
@@ -182,14 +182,14 @@ export class Argument {
      * @param originalMsg - Message that triggered the command
      * @param currentMsg - Current response message
      */
-    parse(val: string, originalMsg: CommandoMessage, currentMsg?: CommandoMessage): unknown;
+    public parse(val: string, originalMsg: CommandoMessage, currentMsg?: CommandoMessage): unknown;
     /**
      * Checks whether a value for the argument is considered to be empty
      * @param val - Value to check for emptiness
      * @param originalMsg - Message that triggered the command
      * @param currentMsg - Current response message
      */
-    isEmpty(val: string[] | string, originalMsg: CommandoMessage, currentMsg?: CommandoMessage): boolean;
+    public isEmpty(val: string[] | string, originalMsg: CommandoMessage, currentMsg?: CommandoMessage): boolean;
 }
 
 /** Obtains, validates, and prompts for argument values */
@@ -199,14 +199,14 @@ export class ArgumentCollector {
      * @param args - Arguments for the collector
      * @param promptLimit - Maximum number of times to prompt for a single argument
      */
-    constructor(client: CommandoClient, args: ArgumentInfo[], promptLimit?: number);
+    public constructor(client: CommandoClient, args: ArgumentInfo[], promptLimit?: number);
 
     /** Client this collector is for */
-    readonly client: CommandoClient;
+    public readonly client: CommandoClient;
     /** Arguments the collector handles */
-    args: Argument[];
+    public args: Argument[];
     /** Maximum number of times to prompt for a single argument */
-    promptLimit: number;
+    public promptLimit: number;
 
     /**
      * Obtains values for the arguments, prompting if necessary.
@@ -214,7 +214,7 @@ export class ArgumentCollector {
      * @param provided - Values that are already available
      * @param promptLimit - Maximum number of times to prompt for a single argument
      */
-    obtain(msg: CommandoMessage, provided?: unknown[], promptLimit?: number): Promise<ArgumentCollectorResult>;
+    public obtain(msg: CommandoMessage, provided?: unknown[], promptLimit?: number): Promise<ArgumentCollectorResult>;
 }
 
 /** A type for command arguments */
@@ -223,12 +223,12 @@ export abstract class ArgumentType {
      * @param client - The client the argument type is for
      * @param id - The argument type ID (this is what you specify in {@link ArgumentInfo#type})
      */
-    constructor(client: CommandoClient, id: string);
+    public constructor(client: CommandoClient, id: string);
 
     /** Client that this argument type is for */
-    readonly client: CommandoClient;
+    public readonly client: CommandoClient;
     /** ID of this argument type (this is what you specify in {@link ArgumentInfo#type}) */
-    id: string;
+    public id: string;
 
     /**
      * Validates a value string against the type
@@ -238,7 +238,7 @@ export abstract class ArgumentType {
      * @param currentMsg - Current response message
      * @return Whether the value is valid, or an error message
      */
-    validate(val: string, originalMsg: CommandoMessage, arg: Argument, currentMsg?: CommandoMessage):
+    public validate(val: string, originalMsg: CommandoMessage, arg: Argument, currentMsg?: CommandoMessage):
         Promise<boolean | string> | boolean | string;
     /**
      * Parses the raw value string into a usable value
@@ -248,7 +248,7 @@ export abstract class ArgumentType {
      * @param currentMsg - Current response message
      * @return Usable value
      */
-    parse(val: string, originalMsg: CommandoMessage, arg: Argument, currentMsg?: CommandoMessage): unknown;
+    public parse(val: string, originalMsg: CommandoMessage, arg: Argument, currentMsg?: CommandoMessage): unknown;
     /**
      * Checks whether a value is considered to be empty. This determines whether the default value for an argument
      * should be used and changes the response to the user under certain circumstances.
@@ -258,19 +258,21 @@ export abstract class ArgumentType {
      * @param currentMsg - Current response message
      * @return Whether the value is empty
      */
-    isEmpty(val: string[] | string, originalMsg: CommandoMessage, arg: Argument, currentMsg?: CommandoMessage): boolean;
+    public isEmpty(
+        val: string[] | string, originalMsg: CommandoMessage, arg: Argument, currentMsg?: CommandoMessage
+    ): boolean;
 }
 
 /** A type for command arguments that handles multiple other types */
 export class ArgumentUnionType extends ArgumentType {
-    constructor(client: CommandoClient, id: string);
+    public constructor(client: CommandoClient, id: string);
 
     /** Types to handle, in order of priority */
-    types: ArgumentType[];
+    public types: ArgumentType[];
 
-    validate(val: string, msg: CommandoMessage, arg: Argument): Promise<boolean | string>;
-    parse(val: string, msg: CommandoMessage, arg: Argument): Promise<unknown>;
-    isEmpty(val: string, msg: CommandoMessage, arg: Argument): boolean;
+    public validate(val: string, msg: CommandoMessage, arg: Argument): Promise<boolean | string>;
+    public parse(val: string, msg: CommandoMessage, arg: Argument): Promise<unknown>;
+    public isEmpty(val: string, msg: CommandoMessage, arg: Argument): boolean;
 }
 
 /** A command that can be run in a client */
@@ -280,7 +282,7 @@ export abstract class Command<InGuild extends boolean = boolean> {
      * @param info - The command information
      * @param slashInfo - The slash command information
      */
-    constructor(client: CommandoClient, info: CommandInfo<InGuild>, slashInfo?: SlashCommandInfo);
+    public constructor(client: CommandoClient, info: CommandInfo<InGuild>, slashInfo?: SlashCommandInfo);
 
     /** Whether the command is enabled globally */
     protected _globalEnabled: boolean;
@@ -306,69 +308,69 @@ export abstract class Command<InGuild extends boolean = boolean> {
     protected static validateAndParseSlashInfo(info: CommandInfo, slashInfo?: SlashCommandInfo): APISlashCommand | null;
 
     /** Client that this command is for */
-    readonly client: CommandoClient;
+    public readonly client: CommandoClient;
     /** Name of this command */
-    name: string;
+    public name: string;
     /** Aliases for this command */
-    aliases: string[];
+    public aliases: string[];
     /** ID of the group the command belongs to */
-    groupId: string;
+    public groupId: string;
     /** The group the command belongs to, assigned upon registration */
-    group: CommandGroup;
+    public group: CommandGroup;
     /** Name of the command within the group */
-    memberName: string;
+    public memberName: string;
     /** Short description of the command */
-    description: string;
+    public description: string;
     /** Usage format string of the command */
-    format: string | null;
+    public format: string | null;
     /** Long description of the command */
-    details: string | null;
+    public details: string | null;
     /** Example usage strings */
-    examples: string[] | null;
+    public examples: string[] | null;
     /** Whether the command can only be run in direct messages */
-    dmOnly: boolean;
+    public dmOnly: boolean;
     /** Whether the command can only be run in a guild channel */
-    guildOnly: InGuild;
+    public guildOnly: InGuild;
     /** Whether the command can only be used by a server owner */
-    guildOwnerOnly: boolean;
+    public guildOwnerOnly: boolean;
     /** Whether the command can only be used by an owner */
-    ownerOnly: boolean;
+    public ownerOnly: boolean;
     /** Permissions required by the client to use the command. */
-    clientPermissions: PermissionsString[] | null;
+    public clientPermissions: PermissionsString[] | null;
     /** Permissions required by the user to use the command. */
-    userPermissions: PermissionsString[] | null;
+    public userPermissions: PermissionsString[] | null;
     /** Whether this command's user permissions are based on "moderator" permissions */
-    modPermissions: boolean;
+    public modPermissions: boolean;
     /** Whether the command can only be used in NSFW channels */
-    nsfw: boolean;
+    public nsfw: boolean;
     /** Whether the default command handling is enabled for the command */
-    defaultHandling: boolean;
+    public defaultHandling: boolean;
     /** Options for throttling command usages */
-    throttling: ThrottlingOptions | null;
+    public throttling: ThrottlingOptions | null;
     /** The argument collector for the command */
-    argsCollector: ArgumentCollector | null;
+    public argsCollector: ArgumentCollector | null;
     /** How the arguments are split when passed to the command's run method */
-    argsType: 'multiple' | 'single';
+    public argsType: 'multiple' | 'single';
     /** Maximum number of arguments that will be split */
-    argsCount: number;
+    public argsCount: number;
     /** Whether single quotes are allowed to encapsulate an argument */
-    argsSingleQuotes: boolean;
+    public argsSingleQuotes: boolean;
     /** Regular expression triggers */
-    patterns: RegExp[] | null;
+    public patterns: RegExp[] | null;
     /** Whether the command is protected from being disabled */
-    guarded: boolean;
+    public guarded: boolean;
     /** Whether the command should be hidden from the help command */
-    hidden: boolean;
+    public hidden: boolean;
     /** Whether the command will be run when an unknown command is used */
-    unknown: boolean;
+    public unknown: boolean;
     /** Whether the command is marked as deprecated */
-    deprecated: boolean;
+    public deprecated: boolean;
     /** The name or alias of the command that is replacing the deprecated command. Required if `deprecated` is `true`. */
-    deprecatedReplacement: string | null;
+    public deprecatedReplacement: string | null;
     /** Whether this command will be registered in the test guild only or not */
-    testEnv: boolean;
+    public testEnv: boolean;
     /** The data for the slash command */
-    slashInfo?: APISlashCommand | null;
+    public slashInfo?: APISlashCommand | null;
 
     /**
      * Runs the command
@@ -381,7 +383,7 @@ export abstract class Command<InGuild extends boolean = boolean> {
      * @param fromPattern - Whether or not the command is being run from a pattern match
      * @param result - Result from obtaining the arguments from the collector (if applicable)
      */
-    abstract run(
+    public abstract run(
         instances: CommandInstances<InGuild>,
         args: Record<string, unknown> | string[] | string,
         fromPattern?: boolean,
@@ -393,7 +395,7 @@ export abstract class Command<InGuild extends boolean = boolean> {
      * @param ownerOverride - Whether the bot owner(s) will always have permission
      * @return Whether the user has permission, or an error message to respond with if they don't
      */
-    hasPermission(
+    public hasPermission(
         instances: CommandInstances<InGuild>, ownerOverride?: boolean
     ): CommandBlockReason | PermissionsString[] | true;
     /**
@@ -406,7 +408,9 @@ export abstract class Command<InGuild extends boolean = boolean> {
      * - throttling: `throttle` ({@link Throttle}), `remaining` (number) time in seconds
      * - userPermissions & clientPermissions: `missing` (Array<string>) permission names
      */
-    onBlock(instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData): Promise<Message | null>;
+    public onBlock(
+        instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData
+    ): Promise<Message | null>;
     /**
      * Called when the command produces an error while running
      * @param err - Error that was thrown
@@ -416,7 +420,7 @@ export abstract class Command<InGuild extends boolean = boolean> {
      * @param result - Result from obtaining the arguments from the collector
      * (if applicable - see {@link Command#run})
      */
-    onError(
+    public onError(
         err: Error,
         instances: CommandInstances,
         args: Record<string, unknown> | string[] | string,
@@ -428,36 +432,36 @@ export abstract class Command<InGuild extends boolean = boolean> {
      * @param guild - Guild to enable/disable the command in
      * @param enabled - Whether the command should be enabled or disabled
      */
-    setEnabledIn(guild: CommandoGuildResolvable | null, enabled: boolean): void;
+    public setEnabledIn(guild: CommandoGuildResolvable | null, enabled: boolean): void;
     /**
      * Checks if the command is enabled in a guild
      * @param guild - Guild to check in
      * @param bypassGroup - Whether to bypass checking the group's status
      */
-    isEnabledIn(guild: CommandoGuildResolvable | null, bypassGroup?: boolean): boolean;
+    public isEnabledIn(guild: CommandoGuildResolvable | null, bypassGroup?: boolean): boolean;
     /**
      * Checks if the command is usable for a message
      * @param instances - The instances
      */
-    isUsable(instances?: CommandInstances<InGuild>): boolean;
+    public isUsable(instances?: CommandInstances<InGuild>): boolean;
     /**
      * Creates a usage string for the command
      * @param argString - A string of arguments for the command
      * @param prefix - Prefix to use for the prefixed command format
      * @param user - User to use for the mention command format
      */
-    usage(argString?: string, prefix?: string | null | undefined, user?: User | null): string;
+    public usage(argString?: string, prefix?: string | null | undefined, user?: User | null): string;
     /** Reloads the command */
-    reload(): void;
+    public reload(): void;
     /** Unloads the command */
-    unload(): void;
+    public unload(): void;
     /**
      * Creates a usage string for a command
      * @param command - A command + arg string
      * @param prefix - Prefix to use for the prefixed command format
      * @param user - User to use for the mention command format
      */
-    static usage(command: string, prefix?: string | null, user?: User | null): string;
+    public static usage(command: string, prefix?: string | null, user?: User | null): string;
 }
 
 /** Handles parsing messages and running commands from them */
@@ -466,7 +470,7 @@ export class CommandDispatcher {
      * @param client - Client the dispatcher is for
      * @param registry - Registry the dispatcher will use
      */
-    constructor(client: CommandoClient, registry: CommandoRegistry);
+    public constructor(client: CommandoClient, registry: CommandoRegistry);
 
     /** Map of {@link RegExp}s that match command messages, mapped by string prefix */
     protected _commandPatterns: Map<string | undefined, RegExp>;
@@ -536,11 +540,11 @@ export class CommandDispatcher {
     protected buildCommandPattern(prefix?: string): RegExp;
 
     /** Client this dispatcher handles messages for */
-    readonly client: CommandoClient;
+    public readonly client: CommandoClient;
     /** Registry this dispatcher uses */
-    registry: CommandoRegistry;
+    public registry: CommandoRegistry;
     /** Functions that can block commands from running */
-    inhibitors: Set<Inhibitor>;
+    public inhibitors: Set<Inhibitor>;
 
     /**
      * Adds an inhibitor
@@ -555,13 +559,13 @@ export class CommandDispatcher {
      *     if (!coolUsers.has(msg.author.id)) return { reason: 'cool', response: msg.reply('You\'re not cool enough!') };
      * });
      */
-    addInhibitor(inhibitor: Inhibitor): boolean;
+    public addInhibitor(inhibitor: Inhibitor): boolean;
     /**
      * Removes an inhibitor
      * @param inhibitor - The inhibitor function to remove
      * @return Whether the removal was successful
      */
-    removeInhibitor(inhibitor: Inhibitor): boolean;
+    public removeInhibitor(inhibitor: Inhibitor): boolean;
 }
 
 /** Has a descriptive message for a command not having proper format */
@@ -569,7 +573,7 @@ export class CommandFormatError extends FriendlyError {
     /**
      * @param msg - The command message the error is for
      */
-    constructor(msg: CommandoMessage);
+    public constructor(msg: CommandoMessage);
 }
 
 /** A group for commands. Whodathunkit? */
@@ -580,36 +584,36 @@ export class CommandGroup {
      * @param name - The name of the group
      * @param guarded - Whether the group should be protected from disabling
      */
-    constructor(client: CommandoClient, id: string, name?: string, guarded?: boolean);
+    public constructor(client: CommandoClient, id: string, name?: string, guarded?: boolean);
 
     /** Whether the group is enabled globally */
     protected _globalEnabled: boolean;
 
     /** Client that this group is for */
-    readonly client: CommandoClient;
+    public readonly client: CommandoClient;
     /** ID of this group */
-    id: string;
+    public id: string;
     /** Name of this group */
-    name: string;
+    public name: string;
     /** The commands in this group (added upon their registration) */
-    commands: Collection<string, Command>;
+    public commands: Collection<string, Command>;
     /** Whether or not this group is protected from being disabled */
-    guarded: boolean;
+    public guarded: boolean;
 
     /**
      * Enables or disables the group in a guild
      * @param guild - Guild to enable/disable the group in
      * @param enabled - Whether the group should be enabled or disabled
      */
-    setEnabledIn(guild: CommandoGuildResolvable | null, enabled: boolean): void;
+    public setEnabledIn(guild: CommandoGuildResolvable | null, enabled: boolean): void;
     /**
      * Checks if the group is enabled in a guild
      * @param guild - Guild to check in
      * @return Whether or not the group is enabled
      */
-    isEnabledIn(guild: CommandoGuildResolvable | null): boolean;
+    public isEnabledIn(guild: CommandoGuildResolvable | null): boolean;
     /** Reloads all of the group's commands */
-    reload(): void;
+    public reload(): void;
 }
 
 /** Discord.js Client with a command framework */
@@ -617,7 +621,7 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
     /**
      * @param options - Options for the client
      */
-    constructor(options: CommandoClientOptions);
+    public constructor(options: CommandoClientOptions);
 
     /** Internal global command prefix, controlled by the {@link CommandoClient#prefix} getter/setter */
     protected _prefix?: string | null;
@@ -633,50 +637,50 @@ export class CommandoClient<Ready extends boolean = boolean> extends Client<Read
     protected parseGuild(guild: Guild): CommandoGuild;
 
     /** Invite for the bot */
-    botInvite: string | null;
+    public botInvite: string | null;
     /** The client's database manager */
-    database: ClientDatabaseManager;
+    public database: ClientDatabaseManager;
     /** The guilds' database manager, mapped by the guilds ids */
-    databases: Collection<string, GuildDatabaseManager>;
+    public databases: Collection<string, GuildDatabaseManager>;
     /** Object containing all the schemas this client uses. */
-    databaseSchemas: SimplifiedSchemas;
+    public databaseSchemas: SimplifiedSchemas;
     /** The client's command dispatcher */
-    dispatcher: CommandDispatcher;
-    guilds: CommandoGuildManager;
+    public dispatcher: CommandDispatcher;
+    public guilds: CommandoGuildManager;
     /** Options for the client */
-    options: CommandoClientOptions;
+    public options: CommandoClientOptions;
     /**
      * Owners of the bot, set by the {@link CommandoClientOptions#owners} option
      * <info>If you simply need to check if a user is an owner of the bot, please instead use
      * {@link CommandoClient#isOwner}.</info>
      */
-    get owners(): User[] | null;
+    public get owners(): User[] | null;
     /**
      * Global command prefix. An empty string indicates that there is no default prefix, and only mentions will be used.
      * Setting to `null` means that the default prefix from {@link CommandoClient#options} will be used instead.
      */
-    prefix: string | undefined;
+    public prefix: string | undefined;
     /** The client's command registry */
-    registry: CommandoRegistry;
+    public registry: CommandoRegistry;
 
-    isReady(): this is CommandoClient<true>;
+    public isReady(): this is CommandoClient<true>;
     /**
      * Checks whether a user is an owner of the bot (in {@link CommandoClientOptions#owners})
      * @param user - User to check for ownership
      */
-    isOwner(user: UserResolvable): boolean;
+    public isOwner(user: UserResolvable): boolean;
 
-    on<K extends keyof CommandoClientEvents>(
+    public on<K extends keyof CommandoClientEvents>(
         event: K, listener: (...args: CommandoClientEvents[K]) => unknown
     ): this;
-    once<K extends keyof CommandoClientEvents>(
+    public once<K extends keyof CommandoClientEvents>(
         event: K, listener: (...args: CommandoClientEvents[K]) => unknown
     ): this;
-    emit<K extends keyof CommandoClientEvents>(event: K, ...args: CommandoClientEvents[K]): boolean;
-    off<K extends keyof CommandoClientEvents>(
+    public emit<K extends keyof CommandoClientEvents>(event: K, ...args: CommandoClientEvents[K]): boolean;
+    public off<K extends keyof CommandoClientEvents>(
         event: K, listener: (...args: CommandoClientEvents[K]) => unknown
     ): this;
-    removeAllListeners<K extends keyof CommandoClientEvents>(event?: K): this;
+    public removeAllListeners<K extends keyof CommandoClientEvents>(event?: K): this;
 }
 
 /** A fancier Guild for fancier people. */
@@ -685,7 +689,7 @@ export class CommandoGuild extends Guild {
      * @param client - The client the guild is for
      * @param data - The guild data
      */
-    constructor(client: CommandoClient<true>, data: Guild);
+    public constructor(client: CommandoClient<true>, data: Guild);
 
     /** Internal command prefix for the guild, controlled by the {@link CommandoGuild#prefix} getter/setter */
     protected _prefix?: string | null;
@@ -695,45 +699,45 @@ export class CommandoGuild extends Guild {
     protected _groupsEnabled: Map<string, boolean>;
 
     /** The client the guild is for */
-    readonly client: CommandoClient<true>;
+    public readonly client: CommandoClient<true>;
     /** The database manager for the guild */
-    database: GuildDatabaseManager;
+    public database: GuildDatabaseManager;
     /**
      * Command prefix in the guild. An empty string indicates that there is no prefix, and only mentions will be used.
      * Setting to `null` means that the prefix from {@link CommandoClient#prefix} will be used instead.
      */
-    prefix: string | undefined;
+    public prefix: string | undefined;
     /** The queued logs for this guild */
-    queuedLogs: EmbedBuilder[];
+    public queuedLogs: EmbedBuilder[];
 
     /**
      * Sets whether a command is enabled in the guild
      * @param command - Command to set status of
      * @param enabled - Whether the command should be enabled
      */
-    setCommandEnabled(command: CommandResolvable, enabled: boolean): void;
+    public setCommandEnabled(command: CommandResolvable, enabled: boolean): void;
     /**
      * Checks whether a command is enabled in the guild (does not take the command's group status into account)
      * @param command - Command to check status of
      */
-    isCommandEnabled(command: CommandResolvable): boolean;
+    public isCommandEnabled(command: CommandResolvable): boolean;
     /**
      * Sets whether a command group is enabled in the guild
      * @param group - Group to set status of
      * @param enabled - Whether the group should be enabled
      */
-    setGroupEnabled(group: CommandGroupResolvable, enabled: boolean): void;
+    public setGroupEnabled(group: CommandGroupResolvable, enabled: boolean): void;
     /**
      * Checks whether a command group is enabled in the guild
      * @param group - Group to check status of
      */
-    isGroupEnabled(group: CommandGroupResolvable): boolean;
+    public isGroupEnabled(group: CommandGroupResolvable): boolean;
     /**
      * Creates a command usage string using the guild's prefix
      * @param command - A command + arg string
      * @param user - User to use for the mention command format
      */
-    commandUsage(command: string, user?: User | null): string;
+    public commandUsage(command: string, user?: User | null): string;
 }
 
 /** An extension of the base Discord.js ChatInputCommandInteraction class to add command-related functionality. */
@@ -742,29 +746,29 @@ export class CommandoInteraction<InGuild extends boolean = boolean> extends Chat
      * @param client - The client the interaction is for
      * @param data - The interaction data
      */
-    constructor(client: CommandoClient<true>, data: ChatInputCommandInteraction);
+    public constructor(client: CommandoClient<true>, data: CommandoChatInputCommandInteraction);
 
     /** Command that the interaction triggers */
     protected _command: Command<InGuild>;
 
-    get author(): User;
+    public get author(): User;
     /** The channel this interaction was used in */
-    get channel(): Exclude<If<InGuild, GuildTextBasedChannel, TextBasedChannel>, StageChannel>;
+    public get channel(): Exclude<If<InGuild, GuildTextBasedChannel, TextBasedChannel>, StageChannel>;
     /** The client the interaction is for */
-    readonly client: CommandoClient<true>;
+    public readonly client: CommandoClient<true>;
     /** Command that the interaction triggers */
-    get command(): Command<InGuild>;
+    public get command(): Command<InGuild>;
     /** The guild this interaction was used in */
-    get guild(): If<InGuild, CommandoGuild>;
-    member: CommandoGuildMember | null;
+    public get guild(): If<InGuild, CommandoGuild>;
+    public member: CommandoGuildMember | null;
 
     /**
      * Parses the options data into usable arguments
      * @see Command#run
      */
-    parseArgs(options: CommandInteractionOption[]): Record<string, unknown>;
+    public parseArgs(options: CommandInteractionOption[]): Record<string, unknown>;
     /** Runs the command */
-    run(): Promise<void>;
+    public run(): Promise<void>;
 }
 
 /** An extension of the base Discord.js Message class to add command-related functionality. */
@@ -773,7 +777,7 @@ export class CommandoMessage<InGuild extends boolean = boolean> extends Message<
      * @param client - The client the message is for
      * @param data - The message data
      */
-    constructor(client: CommandoClient<true>, data: CommandoifiedMessage);
+    public constructor(client: CommandoClient<true>, data: CommandoifiedMessage);
 
     /**
      * Initializes the message for a command
@@ -810,26 +814,26 @@ export class CommandoMessage<InGuild extends boolean = boolean> extends Message<
     protected deleteRemainingResponses(): void;
 
     /** The client the message is for */
-    readonly client: CommandoClient<true>;
-    get member(): CommandoGuildMember | null;
+    public readonly client: CommandoClient<true>;
+    public get member(): CommandoGuildMember | null;
     /** The guild this message was sent in */
-    get guild(): If<InGuild, CommandoGuild>;
+    public get guild(): If<InGuild, CommandoGuild>;
     /** The channel this message was sent in */
-    get channel(): Exclude<If<InGuild, GuildTextBasedChannel, TextBasedChannel>, StageChannel>;
+    public get channel(): Exclude<If<InGuild, GuildTextBasedChannel, TextBasedChannel>, StageChannel>;
     /** Whether the message contains a command (even an unknown one) */
-    isCommand: boolean;
+    public isCommand: boolean;
     /** Command that the message triggers, if any */
-    command: Command | null;
+    public command: Command | null;
     /** Argument string for the command */
-    argString: string | null;
+    public argString: string | null;
     /** Pattern matches (if from a pattern trigger) */
-    patternMatches: string[] | null;
+    public patternMatches: string[] | null;
     /** Response messages sent, mapped by channel ID (set by the dispatcher after running the command) */
-    responses: Map<string, CommandoMessageResponse[]>;
+    public responses: Map<string, CommandoMessageResponse[]>;
     /** Index of the current response that will be edited, mapped by channel ID */
-    responsePositions: Map<string, number>;
+    public responsePositions: Map<string, number>;
 
-    inGuild(): this is CommandoMessage<true>;
+    public inGuild(): this is CommandoMessage<true>;
     /**
      * Creates a usage string for the message's command
      * @param argString - A string of arguments for the command
@@ -837,7 +841,7 @@ export class CommandoMessage<InGuild extends boolean = boolean> extends Message<
      * prefixed command format
      * @param user - User to use for the mention command format
      */
-    usage(argString?: string, prefix?: string | null, user?: User | null): string;
+    public usage(argString?: string, prefix?: string | null, user?: User | null): string;
     /**
      * Creates a usage string for any command
      * @param command - A command + arg string
@@ -845,40 +849,40 @@ export class CommandoMessage<InGuild extends boolean = boolean> extends Message<
      * prefixed command format
      * @param user - User to use for the mention command format
      */
-    anyUsage(command: string, prefix?: string | null, user?: User | null): string;
+    public anyUsage(command: string, prefix?: string | null, user?: User | null): string;
     /**
      * Parses the argString into usable arguments, based on the argsType and argsCount of the command
      * @see Command#run
      */
-    parseArgs(): string[] | string;
+    public parseArgs(): string[] | string;
     /** Runs the command */
-    run(): Promise<CommandoMessageResponse>;
+    public run(): Promise<CommandoMessageResponse>;
     /**
      * Responds with a plain message
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    say(content: StringResolvable, options?: MessageCreateOptions): Promise<CommandoMessageResponse>;
+    public say(content: StringResolvable, options?: MessageCreateOptions): Promise<CommandoMessageResponse>;
     /**
      * Responds with a direct message
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    direct(content: StringResolvable, options?: MessageCreateOptions): Promise<CommandoMessageResponse>;
+    public direct(content: StringResolvable, options?: MessageCreateOptions): Promise<CommandoMessageResponse>;
     /**
      * Responds with a code message
      * @param lang - Language for the code block
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    code(lang: string, content: StringResolvable, options?: MessageCreateOptions): Promise<CommandoMessageResponse>;
+    public code(lang: string, content: StringResolvable, options?: MessageCreateOptions): Promise<CommandoMessageResponse>;
     /**
      * Responds with an embed
      * @param embed - Embed to send
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    embed(embed: EmbedBuilder | EmbedBuilder[], content?: StringResolvable, options?: MessageCreateOptions):
+    public embed(embed: EmbedBuilder | EmbedBuilder[], content?: StringResolvable, options?: MessageCreateOptions):
         Promise<CommandoMessageResponse>;
     /**
      * Responds with a reply + embed
@@ -886,7 +890,7 @@ export class CommandoMessage<InGuild extends boolean = boolean> extends Message<
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    replyEmbed(embed: EmbedBuilder | EmbedBuilder[], content?: StringResolvable, options?: MessageReplyOptions):
+    public replyEmbed(embed: EmbedBuilder | EmbedBuilder[], content?: StringResolvable, options?: MessageReplyOptions):
         Promise<CommandoMessageResponse>;
     /**
      * Parses an argument string into an array of arguments
@@ -896,7 +900,7 @@ export class CommandoMessage<InGuild extends boolean = boolean> extends Message<
      * double quotes
      * @return The array of arguments
      */
-    static parseArgs(argString: string, argCount?: number, allowSingleQuote?: boolean): string[];
+    public static parseArgs(argString: string, argCount?: number, allowSingleQuote?: boolean): string[];
 }
 
 /** Handles registration and searching of commands and groups */
@@ -904,23 +908,23 @@ export class CommandoRegistry {
     /**
      * @param client - Client to use
      */
-    constructor(client: CommandoClient);
+    public constructor(client: CommandoClient);
 
     /** Registers every client and guild slash command available - this may only be called upon startup. */
     protected registerSlashCommands(): Promise<void>;
 
     /** The client this registry is for */
-    readonly client: CommandoClient;
+    public readonly client: CommandoClient;
     /** Registered commands, mapped by their name */
-    commands: Collection<string, Command>;
+    public commands: Collection<string, Command>;
     /** Registered command groups, mapped by their ID */
-    groups: Collection<string, CommandGroup>;
+    public groups: Collection<string, CommandGroup>;
     /** Registered argument types, mapped by their ID */
-    types: Collection<string, ArgumentType>;
+    public types: Collection<string, ArgumentType>;
     /** Fully resolved path to the bot's commands directory */
-    commandsPath: string | null;
+    public commandsPath: string | null;
     /** Command to run when an unknown command is used */
-    unknownCommand: Command | null;
+    public unknownCommand: Command | null;
 
     /**
      * Registers a single group
@@ -928,7 +932,7 @@ export class CommandoRegistry {
      * or the constructor parameters (with ID, name, and guarded properties)
      * @see CommandoRegistry#registerGroups
      */
-    registerGroup(group: CommandGroup | {
+    public registerGroup(group: CommandGroup | {
         id: string;
         name?: string;
         guarded?: boolean;
@@ -943,7 +947,7 @@ export class CommandoRegistry {
      *     { id: 'mod', name: 'Moderation' }
      * ]);
      */
-    registerGroups(groups: Array<CommandGroup | {
+    public registerGroups(groups: Array<CommandGroup | {
         id: string;
         name?: string;
         guarded?: boolean;
@@ -953,13 +957,13 @@ export class CommandoRegistry {
      * @param command - Either a Command instance, or a constructor for one
      * @see CommandoRegistry#registerCommands
      */
-    registerCommand(command: Command): this;
+    public registerCommand(command: Command): this;
     /**
      * Registers multiple commands
      * @param commands - An array of Command instances or constructors
      * @param ignoreInvalid - Whether to skip over invalid objects without throwing an error
      */
-    registerCommands(commands: Command[], ignoreInvalid?: boolean): this;
+    public registerCommands(commands: Command[], ignoreInvalid?: boolean): this;
     /**
      * Registers all commands in a directory. The files must export a Command class constructor or instance.
      * @param options - The path to the directory, or a require-all options object
@@ -967,53 +971,53 @@ export class CommandoRegistry {
      * const path = require('path');
      * registry.registerCommandsIn(path.join(__dirname, 'commands'));
      */
-    registerCommandsIn(options: RequireAllOptions | string): this;
+    public registerCommandsIn(options: RequireAllOptions | string): this;
     /**
      * Registers a single argument type
      * @param type - Either an ArgumentType instance, or a constructor for one
      * @see CommandoRegistry#registerTypes
      */
-    registerType(type: ArgumentType): this;
+    public registerType(type: ArgumentType): this;
     /**
      * Registers multiple argument types
      * @param types - An array of ArgumentType instances or constructors
      * @param ignoreInvalid - Whether to skip over invalid objects without throwing an error
      */
-    registerTypes(types: ArgumentType[], ignoreInvalid?: boolean): this;
+    public registerTypes(types: ArgumentType[], ignoreInvalid?: boolean): this;
     /**
      * Registers all argument types in a directory. The files must export an ArgumentType class constructor or instance.
      * @param options - The path to the directory, or a require-all options object
      */
-    registerTypesIn(options: RequireAllOptions | string): this;
+    public registerTypesIn(options: RequireAllOptions | string): this;
     /**
      * Registers the default argument types to the registry
      * @param types - Object specifying which types to register
      */
-    registerDefaultTypes(types?: DefaultTypesOptions): this;
+    public registerDefaultTypes(types?: DefaultTypesOptions): this;
     /**
      * Reregisters a command (does not support changing name, group, or memberName)
      * @param command - New command
      * @param oldCommand - Old command
      */
-    reregisterCommand(command: Command, oldCommand: Command): void;
+    public reregisterCommand(command: Command, oldCommand: Command): void;
     /**
      * Unregisters a command
      * @param command - Command to unregister
      */
-    unregisterCommand(command: Command): void;
+    public unregisterCommand(command: Command): void;
     /**
      * Finds all groups that match the search string
      * @param searchString - The string to search for
      * @param exact - Whether the search should be exact
      * @return All groups that are found
      */
-    findGroups(searchString?: string | null, exact?: boolean): CommandGroup[];
+    public findGroups(searchString?: string | null, exact?: boolean): CommandGroup[];
     /**
      * Resolves a CommandGroupResolvable to a CommandGroup object
      * @param group - The group to resolve
      * @return The resolved CommandGroup
      */
-    resolveGroup(group: CommandGroupResolvable): CommandGroup;
+    public resolveGroup(group: CommandGroupResolvable): CommandGroup;
     /**
      * Finds all commands that match the search string
      * @param searchString - The string to search for
@@ -1021,20 +1025,20 @@ export class CommandoRegistry {
      * @param instances - The instances to check usability against
      * @return All commands that are found
      */
-    findCommands(searchString?: string | null, exact?: boolean, instances?: CommandInstances): Command[];
+    public findCommands(searchString?: string | null, exact?: boolean, instances?: CommandInstances): Command[];
     /**
      * Resolves a CommandResolvable to a Command object
      * @param command - The command to resolve
      * @return The resolved Command
      */
-    resolveCommand(command: CommandResolvable): Command;
+    public resolveCommand(command: CommandResolvable): Command;
     /**
      * Resolves a command file path from a command's group ID and memberName
      * @param group - ID of the command's group
      * @param memberName - Member name of the command
      * @return Fully-resolved path to the corresponding command file
      */
-    resolveCommandPath(group: string, memberName: string): string;
+    public resolveCommandPath(group: string, memberName: string): string;
 }
 
 /** Has a message that can be considered user-friendly */
@@ -1042,34 +1046,34 @@ export class FriendlyError extends Error {
     /**
      * @param message - The error message
      */
-    constructor(message: string);
+    public constructor(message: string);
 }
 
 /** Contains various general-purpose utility methods and constants. */
 export class Util extends null {
     /** Object that maps every PermissionsString to its representation inside the Discord client. */
-    static get permissions(): Readonly<Record<PermissionsString, string>>;
+    public static get permissions(): Readonly<Record<PermissionsString, string>>;
     /**
      * Escapes the following characters from a string: `|\{}()[]^$+*?.`.
      * @param str - The string to escape.
      */
-    static escapeRegex(str: string): string;
+    public static escapeRegex(str: string): string;
     /**
      * Basic probability function.
      * @param n - The probability percentage, from 0 to 100.
      */
-    static probability(n: number): boolean;
+    public static probability(n: number): boolean;
     /**
      * Checks if the argument is a promise.
      * @param obj - The object of function to check.
      */
-    static isPromise<T, S>(obj: PromiseLike<T> | S): obj is PromiseLike<T>;
+    public static isPromise<T, S>(obj: PromiseLike<T> | S): obj is PromiseLike<T>;
     /**
      * Removes the reply ping from a message if its sent in DMs.
      * @param msg - The message instance.
      * @returns A {@link MessageCreateOptions} object.
      */
-    static noReplyPingInDMs(msg: CommandoMessage | Message): MessageCreateOptions;
+    public static noReplyPingInDMs(msg: CommandoMessage | Message): MessageCreateOptions;
     /**
      * Disambiguate items from an array into a list.
      * @param items - An array of strings or objects.
@@ -1077,57 +1081,57 @@ export class Util extends null {
      * @param property - The property to read from the objects (only usable if `items` is an array of objects).
      * @returns A string with the disambiguated items.
      */
-    static disambiguation(items: Array<Record<string, string> | string>, label: string, property?: string): string;
+    public static disambiguation(items: Array<Record<string, string> | string>, label: string, property?: string): string;
     /**
      * Removes the dashes from a string and capitalizes the characters in front of them.
      * @param str - The string to parse.
      */
-    static removeDashes(str: string): string;
+    public static removeDashes(str: string): string;
     /**
      * Splits a string into multiple chunks at a designated character that do not exceed a specific length.
      * @param text - Content to split
      * @param options - Options controlling the behavior of the split
      */
-    static splitMessage(text: string, options?: SplitOptions): string[];
+    public static splitMessage(text: string, options?: SplitOptions): string[];
     /**
      * **Extremely hacky method. Use at own risk.**
      * Will mutate the first object into an instance of the new one, assigning all of its properties, accessors and methods.
      * @param obj - The object to mutate.
      * @param newObj - The data to assign.
      */
-    static mutateObjectInstance<T extends object>(obj: object, newObj: T): T;
+    public static mutateObjectInstance<T extends object>(obj: object, newObj: T): T;
     /**
      * Gets the last item of an array.
      * @param array - An array.
      */
-    static lastFromArray<T>(array: T[]): T;
+    public static lastFromArray<T>(array: T[]): T;
     /**
      * **For arrays.**
      * Filters all nullish (`undefined` | `null`) items from an array. Mostly useful for TS.
      * @param array - Any array that could contain nullish items.
      * @returns An array with all non-nullish items.
      */
-    static filterNullishItems<T>(array: Array<T | null | undefined>): T[];
+    public static filterNullishItems<T>(array: Array<T | null | undefined>): T[];
     /**
      * **For {@link Collection Collections}.**
      * Filters all nullish (`undefined` | `null`) items from a collection. Mostly useful for TS.
      * @param collection - Any collection that could contain nullish values.
      * @returns An array with all non-nullish values.
      */
-    static filterNullishValues<K, V>(collection: Collection<K, V | null | undefined>): Collection<K, V>;
+    public static filterNullishValues<K, V>(collection: Collection<K, V | null | undefined>): Collection<K, V>;
     /**
      * Checks if a value is undefined.
      * @param val - The value to check.
      * @returns Whether the value is nullish.
      */
-    static isNullish(val: unknown): val is null | undefined;
+    public static isNullish(val: unknown): val is null | undefined;
     /**
      * Get the current instance of a command. Useful if you need to get the same properties from both instances.
      * @param instances - The instances object.
      * @returns The instance of the command.
      */
-    static getInstanceFrom(instances: CommandInstances): CommandoInteraction | CommandoMessage;
-    static equals<T extends number | string>(value: number | string, ...values: T[]): value is T;
+    public static getInstanceFrom(instances: CommandInstances): CommandoInteraction | CommandoMessage;
+    public static equals<T extends number | string>(value: number | string, ...values: T[]): value is T;
     /**
      * Verifies the provided data is a string, otherwise throws provided error.
      * @param data - The string resolvable to resolve
@@ -1156,7 +1160,7 @@ export class ClientDatabaseManager {
     /**
      * @param client - The client this database is for
      */
-    constructor(client: CommandoClient);
+    public constructor(client: CommandoClient);
 
     /**
      * Initializes the caching of this client's data
@@ -1165,13 +1169,13 @@ export class ClientDatabaseManager {
     protected init(data: Collection<string, LimitedCollection<string, AnySchema>>): this;
 
     /** Client for this database */
-    readonly client: CommandoClient;
-    disabled: DatabaseManager<DisabledSchema>;
-    errors: DatabaseManager<ErrorSchema>;
-    faq: DatabaseManager<FaqSchema>;
-    prefixes: DatabaseManager<PrefixSchema>;
-    reminders: DatabaseManager<ReminderSchema>;
-    todo: DatabaseManager<TodoSchema>;
+    public readonly client: CommandoClient;
+    public disabled: DatabaseManager<DisabledSchema>;
+    public errors: DatabaseManager<ErrorSchema>;
+    public faq: DatabaseManager<FaqSchema>;
+    public prefixes: DatabaseManager<PrefixSchema>;
+    public reminders: DatabaseManager<ReminderSchema>;
+    public todo: DatabaseManager<TodoSchema>;
 }
 
 /** A MongoDB database schema manager */
@@ -1180,48 +1184,48 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
      * @param schema - The schema of this manager
      * @param guild - The guild this manager is for
      */
-    constructor(schema: ModelFrom<T, IncludeId>, guild?: CommandoGuild);
+    public constructor(schema: ModelFrom<T, IncludeId>, guild?: CommandoGuild);
     /** Filtering function for fetching documents. May only be used in `Array.filter()` or `Collection.filter()` */
     protected filterDocuments(filter: FilterQuery<T>): (doc: T) => boolean;
 
     /** Guild for this database */
-    readonly guild: CommandoGuild | null;
+    public readonly guild: CommandoGuild | null;
     /** The name of the schema this manager is for */
-    Schema: SimplifiedModel<T>;
+    public Schema: SimplifiedModel<T>;
     /** The cache for this manager */
-    cache: LimitedCollection<string, T>;
+    public cache: LimitedCollection<string, T>;
 
     /**
      * Add a single document to the database
      * @param doc - The document to add
      * @returns The added document
      */
-    add(doc: T): Promise<T>;
+    public add(doc: T): Promise<T>;
     /**
      * Delete a single document from the database
      * @param doc - The document to delete or its ID
      * @returns The deleted document
      */
-    delete(doc: T | string): Promise<T>;
+    public delete(doc: T | string): Promise<T>;
     /**
      * Update a single document of the database
      * @param doc - The document to update or its ID
      * @param update - The update to apply
      * @returns The updated document
      */
-    update(doc: T | string, update: T | UpdateAggregationStage | UpdateQuery<T>): Promise<T>;
+    public update(doc: T | string, update: T | UpdateAggregationStage | UpdateQuery<T>): Promise<T>;
     /**
      * Fetch a single document
      * @param filter - The ID or fetching filter for this document
      * @returns The fetched document
      */
-    fetch(filter?: FilterQuery<T> | string): Promise<T | null>;
+    public fetch(filter?: FilterQuery<T> | string): Promise<T | null>;
     /**
      * Fetch multiple documents
      * @param filter - The fetching filter for the documents
      * @returns The fetched documents
      */
-    fetchMany(filter?: FilterQuery<T>): Promise<Collection<string, T>>;
+    public fetchMany(filter?: FilterQuery<T>): Promise<Collection<string, T>>;
 }
 
 /** A guilds' database manager (MongoDB) */
@@ -1229,7 +1233,7 @@ export class GuildDatabaseManager {
     /**
      * @param guild - The guild this database is for
      */
-    constructor(guild: CommandoGuild);
+    public constructor(guild: CommandoGuild);
 
     /**
      * Initializes the caching of this guild's data
@@ -1238,20 +1242,20 @@ export class GuildDatabaseManager {
     protected init(data: Collection<string, LimitedCollection<string, AnySchema>>): this;
 
     /** Guild for this database */
-    readonly guild: CommandoGuild;
-    active: DatabaseManager<ActiveSchema>;
-    afk: DatabaseManager<AfkSchema>;
-    disabled: DatabaseManager<DisabledSchema>;
-    mcIps: DatabaseManager<McIpSchema>;
-    moderations: DatabaseManager<ModerationSchema>;
-    modules: DatabaseManager<ModuleSchema>;
-    polls: DatabaseManager<PollSchema>;
-    prefixes: DatabaseManager<PrefixSchema>;
-    reactionRoles: DatabaseManager<ReactionRoleSchema>;
-    rules: DatabaseManager<RuleSchema>;
-    setup: DatabaseManager<SetupSchema>;
-    stickyRoles: DatabaseManager<StickyRoleSchema>;
-    welcome: DatabaseManager<WelcomeSchema>;
+    public readonly guild: CommandoGuild;
+    public active: DatabaseManager<ActiveSchema>;
+    public afk: DatabaseManager<AfkSchema>;
+    public disabled: DatabaseManager<DisabledSchema>;
+    public mcIps: DatabaseManager<McIpSchema>;
+    public moderations: DatabaseManager<ModerationSchema>;
+    public modules: DatabaseManager<ModuleSchema>;
+    public polls: DatabaseManager<PollSchema>;
+    public prefixes: DatabaseManager<PrefixSchema>;
+    public reactionRoles: DatabaseManager<ReactionRoleSchema>;
+    public rules: DatabaseManager<RuleSchema>;
+    public setup: DatabaseManager<SetupSchema>;
+    public stickyRoles: DatabaseManager<StickyRoleSchema>;
+    public welcome: DatabaseManager<WelcomeSchema>;
 }
 
 //#endregion
@@ -1389,9 +1393,9 @@ export declare class CommandoGuildMember extends GuildMember {
     };
 }
 
-export interface PartialCommandoGuildMember extends Partialize<
+export type PartialCommandoGuildMember = Partialize<
     CommandoGuildMember, 'joinedAt' | 'joinedTimestamp' | 'pending'
-> { }
+>;
 
 export declare class CommandoInvite extends Invite {
     public guild: CommandoGuild | Exclude<Invite['guild'], Guild>;
@@ -1448,9 +1452,9 @@ export declare class CommandoifiedMessage<InGuild extends boolean = boolean> ext
     public inGuild(): this is CommandoifiedMessage<true>;
 }
 
-export interface PartialCommandoifiedMessage extends Partialize<
+export type PartialCommandoifiedMessage = Partialize<
     CommandoifiedMessage, 'pinned' | 'system' | 'tts' | 'type', 'author' | 'cleanContent' | 'content'
-> { }
+>;
 
 export declare class CommandoCategoryChannel extends CategoryChannel {
     public readonly client: CommandoClient<true>;
@@ -1589,7 +1593,7 @@ export declare class CommandoUser extends User {
     public readonly client: CommandoClient<true>;
 }
 
-export interface PartialCommandoUser extends Partialize<CommandoUser, 'discriminator' | 'tag' | 'username'> { }
+export type PartialCommandoUser = Partialize<CommandoUser, 'discriminator' | 'tag' | 'username'>;
 
 export declare class CommandoMessageReaction extends MessageReaction {
     public readonly client: CommandoClient<true>;
@@ -1599,11 +1603,14 @@ export declare class CommandoThreadMember extends ThreadMember {
     public readonly client: CommandoClient<true>;
 }
 
-export interface PartialCommandoThreadMember extends Partialize<
+export type PartialCommandoThreadMember = Partialize<
     CommandoThreadMember, 'flags' | 'joinedAt' | 'joinedTimestamp'
-> { }
+>;
 
-export interface InteractionTypeNarrowers<Cached extends CacheType = CacheType> {
+export interface CommandoInteractionOverride<Cached extends CacheType = CacheType> {
+    readonly client: CommandoClient<true>;
+    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+    member: CacheTypeReducer<Cached, CommandoGuildMember, null>;
     isButton(): this is CommandoButtonInteraction<Cached>;
     isAutocomplete(): this is CommandoAutocompleteInteraction<Cached>;
     isChatInputCommand(): this is CommandoChatInputCommandInteraction<Cached>;
@@ -1624,9 +1631,7 @@ export interface InteractionTypeNarrowers<Cached extends CacheType = CacheType> 
 
 export interface CommandoAutocompleteInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, AutocompleteInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, AutocompleteInteraction<Cached> {
     inGuild(): this is CommandoAutocompleteInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoAutocompleteInteraction<'cached'>;
     inRawGuild(): this is CommandoAutocompleteInteraction<'raw'>;
@@ -1634,9 +1639,7 @@ export interface CommandoAutocompleteInteraction<
 
 export interface CommandoButtonInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, ButtonInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, ButtonInteraction<Cached> {
     inGuild(): this is CommandoButtonInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoButtonInteraction<'cached'>;
     inRawGuild(): this is CommandoButtonInteraction<'raw'>;
@@ -1644,9 +1647,7 @@ export interface CommandoButtonInteraction<
 
 export interface CommandoChatInputCommandInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, ChatInputCommandInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, ChatInputCommandInteraction<Cached> {
     inGuild(): this is CommandoChatInputCommandInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoChatInputCommandInteraction<'cached'>;
     inRawGuild(): this is CommandoChatInputCommandInteraction<'raw'>;
@@ -1654,9 +1655,7 @@ export interface CommandoChatInputCommandInteraction<
 
 export interface CommandoCommandInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, CommandInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, CommandInteraction<Cached> {
     inGuild(): this is CommandoCommandInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoCommandInteraction<'cached'>;
     inRawGuild(): this is CommandoCommandInteraction<'raw'>;
@@ -1664,9 +1663,7 @@ export interface CommandoCommandInteraction<
 
 export interface CommandoContextMenuCommandInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, ContextMenuCommandInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, ContextMenuCommandInteraction<Cached> {
     inGuild(): this is ContextMenuCommandInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is ContextMenuCommandInteraction<'cached'>;
     inRawGuild(): this is ContextMenuCommandInteraction<'raw'>;
@@ -1674,9 +1671,7 @@ export interface CommandoContextMenuCommandInteraction<
 
 export interface CommandoMessageComponentInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, MessageComponentInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, MessageComponentInteraction<Cached> {
     inGuild(): this is MessageComponentInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is MessageComponentInteraction<'cached'>;
     inRawGuild(): this is MessageComponentInteraction<'raw'>;
@@ -1684,9 +1679,7 @@ export interface CommandoMessageComponentInteraction<
 
 export interface CommandoMessageContextMenuCommandInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, MessageContextMenuCommandInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, MessageContextMenuCommandInteraction<Cached> {
     inGuild(): this is CommandoMessageContextMenuCommandInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoMessageContextMenuCommandInteraction<'cached'>;
     inRawGuild(): this is CommandoMessageContextMenuCommandInteraction<'raw'>;
@@ -1694,9 +1687,7 @@ export interface CommandoMessageContextMenuCommandInteraction<
 
 export interface CommandoModalSubmitInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, ModalSubmitInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, ModalSubmitInteraction<Cached> {
     inGuild(): this is CommandoModalSubmitInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoModalSubmitInteraction<'cached'>;
     inRawGuild(): this is CommandoModalSubmitInteraction<'raw'>;
@@ -1705,9 +1696,7 @@ export interface CommandoModalSubmitInteraction<
 
 export interface CommandoModalMessageModalSubmitInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, ModalMessageModalSubmitInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, ModalMessageModalSubmitInteraction<Cached> {
     inGuild(): this is CommandoModalMessageModalSubmitInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoModalMessageModalSubmitInteraction<'cached'>;
     inRawGuild(): this is CommandoModalMessageModalSubmitInteraction<'raw'>;
@@ -1715,9 +1704,7 @@ export interface CommandoModalMessageModalSubmitInteraction<
 
 export interface CommandoUserContextMenuCommandInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, UserContextMenuCommandInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, UserContextMenuCommandInteraction<Cached> {
     inGuild(): this is CommandoUserContextMenuCommandInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoUserContextMenuCommandInteraction<'cached'>;
     inRawGuild(): this is CommandoUserContextMenuCommandInteraction<'raw'>;
@@ -1725,9 +1712,7 @@ export interface CommandoUserContextMenuCommandInteraction<
 
 export interface CommandoChannelSelectMenuInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, ChannelSelectMenuInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, ChannelSelectMenuInteraction<Cached> {
     inGuild(): this is CommandoChannelSelectMenuInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoChannelSelectMenuInteraction<'cached'>;
     inRawGuild(): this is CommandoChannelSelectMenuInteraction<'raw'>;
@@ -1735,9 +1720,7 @@ export interface CommandoChannelSelectMenuInteraction<
 
 export interface CommandoMentionableSelectMenuInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, MentionableSelectMenuInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, MentionableSelectMenuInteraction<Cached> {
     inGuild(): this is CommandoMentionableSelectMenuInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoMentionableSelectMenuInteraction<'cached'>;
     inRawGuild(): this is CommandoMentionableSelectMenuInteraction<'raw'>;
@@ -1745,9 +1728,7 @@ export interface CommandoMentionableSelectMenuInteraction<
 
 export interface CommandoRoleSelectMenuInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, RoleSelectMenuInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, RoleSelectMenuInteraction<Cached> {
     inGuild(): this is CommandoRoleSelectMenuInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoRoleSelectMenuInteraction<'cached'>;
     inRawGuild(): this is CommandoRoleSelectMenuInteraction<'raw'>;
@@ -1755,9 +1736,7 @@ export interface CommandoRoleSelectMenuInteraction<
 
 export interface CommandoStringSelectMenuInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, StringSelectMenuInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, StringSelectMenuInteraction<Cached> {
     inGuild(): this is CommandoStringSelectMenuInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoStringSelectMenuInteraction<'cached'>;
     inRawGuild(): this is CommandoStringSelectMenuInteraction<'raw'>;
@@ -1765,9 +1744,7 @@ export interface CommandoStringSelectMenuInteraction<
 
 export interface CommandoUserSelectMenuInteraction<
     Cached extends CacheType = CacheType
-> extends InteractionTypeNarrowers<Cached>, UserSelectMenuInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+> extends CommandoInteractionOverride<Cached>, UserSelectMenuInteraction<Cached> {
     inGuild(): this is CommandoUserSelectMenuInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoUserSelectMenuInteraction<'cached'>;
     inRawGuild(): this is CommandoUserSelectMenuInteraction<'raw'>;
@@ -2499,7 +2476,7 @@ export interface BaseSchema {
     readonly updatedAt?: Date;
 }
 
-export interface BaseSchemaWithTimestamps extends Require<BaseSchema, 'createdAt' | 'updatedAt'> { }
+export type BaseSchemaWithTimestamps = Require<BaseSchema, 'createdAt' | 'updatedAt'>;
 
 export interface ActiveSchema extends Omit<BaseSchemaWithTimestamps, '_id'> {
     readonly _id: string;

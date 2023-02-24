@@ -1,7 +1,7 @@
 import { ChatInputCommandInteraction, CommandInteractionOption, GuildTextBasedChannel, If, StageChannel, TextBasedChannel, User } from 'discord.js';
 import CommandoClient from '../client';
 import Command from '../commands/base';
-import { CommandoGuildMember } from '../discord.overrides';
+import { CommandoChatInputCommandInteraction, CommandoGuildMember } from '../discord.overrides';
 import CommandoGuild from './guild';
 /** An extension of the base Discord.js ChatInputCommandInteraction class to add command-related functionality. */
 export default class CommandoInteraction<InGuild extends boolean = boolean> extends ChatInputCommandInteraction {
@@ -14,7 +14,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
      * @param client - The client the interaction is for
      * @param data - The interaction data
      */
-    constructor(client: CommandoClient<true>, data: ChatInputCommandInteraction);
+    constructor(client: CommandoClient<true>, data: CommandoChatInputCommandInteraction);
     get author(): User;
     /** The channel this interaction was used in */
     get channel(): Exclude<If<InGuild, GuildTextBasedChannel, TextBasedChannel>, StageChannel>;

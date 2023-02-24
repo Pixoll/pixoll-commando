@@ -287,7 +287,10 @@ export declare class CommandoThreadMember extends ThreadMember {
 }
 export interface PartialCommandoThreadMember extends Partialize<CommandoThreadMember, 'flags' | 'joinedAt' | 'joinedTimestamp'> {
 }
-export interface InteractionTypeNarrowers<Cached extends CacheType = CacheType> {
+export interface CommandoInteractionOverride<Cached extends CacheType = CacheType> {
+    readonly client: CommandoClient<true>;
+    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+    member: CacheTypeReducer<Cached, CommandoGuildMember, null>;
     isButton(): this is CommandoButtonInteraction<Cached>;
     isAutocomplete(): this is CommandoAutocompleteInteraction<Cached>;
     isChatInputCommand(): this is CommandoChatInputCommandInteraction<Cached>;
@@ -305,108 +308,78 @@ export interface InteractionTypeNarrowers<Cached extends CacheType = CacheType> 
     isChannelSelectMenu(): this is CommandoChannelSelectMenuInteraction<Cached>;
     isRepliable(): this is CommandoRepliableInteraction<Cached>;
 }
-export interface CommandoAutocompleteInteraction<Cached extends CacheType = CacheType> extends InteractionTypeNarrowers<Cached>, AutocompleteInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+export interface CommandoAutocompleteInteraction<Cached extends CacheType = CacheType> extends CommandoInteractionOverride<Cached>, AutocompleteInteraction<Cached> {
     inGuild(): this is CommandoAutocompleteInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoAutocompleteInteraction<'cached'>;
     inRawGuild(): this is CommandoAutocompleteInteraction<'raw'>;
 }
-export interface CommandoButtonInteraction<Cached extends CacheType = CacheType> extends InteractionTypeNarrowers<Cached>, ButtonInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+export interface CommandoButtonInteraction<Cached extends CacheType = CacheType> extends CommandoInteractionOverride<Cached>, ButtonInteraction<Cached> {
     inGuild(): this is CommandoButtonInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoButtonInteraction<'cached'>;
     inRawGuild(): this is CommandoButtonInteraction<'raw'>;
 }
-export interface CommandoChatInputCommandInteraction<Cached extends CacheType = CacheType> extends InteractionTypeNarrowers<Cached>, ChatInputCommandInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+export interface CommandoChatInputCommandInteraction<Cached extends CacheType = CacheType> extends CommandoInteractionOverride<Cached>, ChatInputCommandInteraction<Cached> {
     inGuild(): this is CommandoChatInputCommandInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoChatInputCommandInteraction<'cached'>;
     inRawGuild(): this is CommandoChatInputCommandInteraction<'raw'>;
 }
-export interface CommandoCommandInteraction<Cached extends CacheType = CacheType> extends InteractionTypeNarrowers<Cached>, CommandInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+export interface CommandoCommandInteraction<Cached extends CacheType = CacheType> extends CommandoInteractionOverride<Cached>, CommandInteraction<Cached> {
     inGuild(): this is CommandoCommandInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoCommandInteraction<'cached'>;
     inRawGuild(): this is CommandoCommandInteraction<'raw'>;
 }
-export interface CommandoContextMenuCommandInteraction<Cached extends CacheType = CacheType> extends InteractionTypeNarrowers<Cached>, ContextMenuCommandInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+export interface CommandoContextMenuCommandInteraction<Cached extends CacheType = CacheType> extends CommandoInteractionOverride<Cached>, ContextMenuCommandInteraction<Cached> {
     inGuild(): this is ContextMenuCommandInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is ContextMenuCommandInteraction<'cached'>;
     inRawGuild(): this is ContextMenuCommandInteraction<'raw'>;
 }
-export interface CommandoMessageComponentInteraction<Cached extends CacheType = CacheType> extends InteractionTypeNarrowers<Cached>, MessageComponentInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+export interface CommandoMessageComponentInteraction<Cached extends CacheType = CacheType> extends CommandoInteractionOverride<Cached>, MessageComponentInteraction<Cached> {
     inGuild(): this is MessageComponentInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is MessageComponentInteraction<'cached'>;
     inRawGuild(): this is MessageComponentInteraction<'raw'>;
 }
-export interface CommandoMessageContextMenuCommandInteraction<Cached extends CacheType = CacheType> extends InteractionTypeNarrowers<Cached>, MessageContextMenuCommandInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+export interface CommandoMessageContextMenuCommandInteraction<Cached extends CacheType = CacheType> extends CommandoInteractionOverride<Cached>, MessageContextMenuCommandInteraction<Cached> {
     inGuild(): this is CommandoMessageContextMenuCommandInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoMessageContextMenuCommandInteraction<'cached'>;
     inRawGuild(): this is CommandoMessageContextMenuCommandInteraction<'raw'>;
 }
-export interface CommandoModalSubmitInteraction<Cached extends CacheType = CacheType> extends InteractionTypeNarrowers<Cached>, ModalSubmitInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+export interface CommandoModalSubmitInteraction<Cached extends CacheType = CacheType> extends CommandoInteractionOverride<Cached>, ModalSubmitInteraction<Cached> {
     inGuild(): this is CommandoModalSubmitInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoModalSubmitInteraction<'cached'>;
     inRawGuild(): this is CommandoModalSubmitInteraction<'raw'>;
     isFromMessage(): this is CommandoModalMessageModalSubmitInteraction<Cached>;
 }
-export interface CommandoModalMessageModalSubmitInteraction<Cached extends CacheType = CacheType> extends InteractionTypeNarrowers<Cached>, ModalMessageModalSubmitInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+export interface CommandoModalMessageModalSubmitInteraction<Cached extends CacheType = CacheType> extends CommandoInteractionOverride<Cached>, ModalMessageModalSubmitInteraction<Cached> {
     inGuild(): this is CommandoModalMessageModalSubmitInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoModalMessageModalSubmitInteraction<'cached'>;
     inRawGuild(): this is CommandoModalMessageModalSubmitInteraction<'raw'>;
 }
-export interface CommandoUserContextMenuCommandInteraction<Cached extends CacheType = CacheType> extends InteractionTypeNarrowers<Cached>, UserContextMenuCommandInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+export interface CommandoUserContextMenuCommandInteraction<Cached extends CacheType = CacheType> extends CommandoInteractionOverride<Cached>, UserContextMenuCommandInteraction<Cached> {
     inGuild(): this is CommandoUserContextMenuCommandInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoUserContextMenuCommandInteraction<'cached'>;
     inRawGuild(): this is CommandoUserContextMenuCommandInteraction<'raw'>;
 }
-export interface CommandoChannelSelectMenuInteraction<Cached extends CacheType = CacheType> extends InteractionTypeNarrowers<Cached>, ChannelSelectMenuInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+export interface CommandoChannelSelectMenuInteraction<Cached extends CacheType = CacheType> extends CommandoInteractionOverride<Cached>, ChannelSelectMenuInteraction<Cached> {
     inGuild(): this is CommandoChannelSelectMenuInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoChannelSelectMenuInteraction<'cached'>;
     inRawGuild(): this is CommandoChannelSelectMenuInteraction<'raw'>;
 }
-export interface CommandoMentionableSelectMenuInteraction<Cached extends CacheType = CacheType> extends InteractionTypeNarrowers<Cached>, MentionableSelectMenuInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+export interface CommandoMentionableSelectMenuInteraction<Cached extends CacheType = CacheType> extends CommandoInteractionOverride<Cached>, MentionableSelectMenuInteraction<Cached> {
     inGuild(): this is CommandoMentionableSelectMenuInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoMentionableSelectMenuInteraction<'cached'>;
     inRawGuild(): this is CommandoMentionableSelectMenuInteraction<'raw'>;
 }
-export interface CommandoRoleSelectMenuInteraction<Cached extends CacheType = CacheType> extends InteractionTypeNarrowers<Cached>, RoleSelectMenuInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+export interface CommandoRoleSelectMenuInteraction<Cached extends CacheType = CacheType> extends CommandoInteractionOverride<Cached>, RoleSelectMenuInteraction<Cached> {
     inGuild(): this is CommandoRoleSelectMenuInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoRoleSelectMenuInteraction<'cached'>;
     inRawGuild(): this is CommandoRoleSelectMenuInteraction<'raw'>;
 }
-export interface CommandoStringSelectMenuInteraction<Cached extends CacheType = CacheType> extends InteractionTypeNarrowers<Cached>, StringSelectMenuInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+export interface CommandoStringSelectMenuInteraction<Cached extends CacheType = CacheType> extends CommandoInteractionOverride<Cached>, StringSelectMenuInteraction<Cached> {
     inGuild(): this is CommandoStringSelectMenuInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoStringSelectMenuInteraction<'cached'>;
     inRawGuild(): this is CommandoStringSelectMenuInteraction<'raw'>;
 }
-export interface CommandoUserSelectMenuInteraction<Cached extends CacheType = CacheType> extends InteractionTypeNarrowers<Cached>, UserSelectMenuInteraction<Cached> {
-    readonly client: CommandoClient<true>;
-    get guild(): CacheTypeReducer<Cached, CommandoGuild, null>;
+export interface CommandoUserSelectMenuInteraction<Cached extends CacheType = CacheType> extends CommandoInteractionOverride<Cached>, UserSelectMenuInteraction<Cached> {
     inGuild(): this is CommandoUserSelectMenuInteraction<'cached' | 'raw'>;
     inCachedGuild(): this is CommandoUserSelectMenuInteraction<'cached'>;
     inRawGuild(): this is CommandoUserSelectMenuInteraction<'raw'>;
