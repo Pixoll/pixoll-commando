@@ -1,7 +1,7 @@
 import { model, Schema } from 'mongoose';
-import { BaseSchema, DocumentFrom } from './base';
+import { BaseSchemaWithTimestamps, DocumentFrom } from './base';
 
-export interface ReminderSchema extends BaseSchema {
+export interface ReminderSchema extends BaseSchemaWithTimestamps {
     user: string;
     reminder: string;
     remindAt: number;

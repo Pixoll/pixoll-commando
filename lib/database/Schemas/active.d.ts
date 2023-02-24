@@ -23,9 +23,9 @@
 /// <reference types="mongoose/types/virtuals" />
 /// <reference types="mongoose" />
 /// <reference types="mongoose/types/inferschematype" />
-import { BaseSchema, DocumentFrom } from './base';
+import { BaseSchemaWithTimestamps, DocumentFrom } from './base';
 import { TimeBasedModerationType } from './moderations';
-export interface ActiveSchema extends Omit<BaseSchema, '_id'> {
+export interface ActiveSchema extends Omit<BaseSchemaWithTimestamps, '_id'> {
     readonly _id: string;
     type: TimeBasedModerationType | 'temp-role';
     guild: string;

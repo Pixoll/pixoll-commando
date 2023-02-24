@@ -1,7 +1,7 @@
 import { model, Schema } from 'mongoose';
-import { BaseSchema, DocumentFrom } from './base';
+import { BaseSchemaWithTimestamps, DocumentFrom } from './base';
 
-export interface ErrorSchema extends Omit<BaseSchema, '_id'> {
+export interface ErrorSchema extends Omit<BaseSchemaWithTimestamps, '_id'> {
     readonly _id: string;
     type: string;
     name: string;

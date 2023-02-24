@@ -1,8 +1,11 @@
 import { Types } from 'mongoose';
+import { Require } from '../../util';
 export interface BaseSchema {
     readonly _id: Types.ObjectId;
     readonly createdAt?: Date;
     readonly updatedAt?: Date;
+}
+export interface BaseSchemaWithTimestamps extends Require<BaseSchema, 'createdAt' | 'updatedAt'> {
 }
 export type DocumentFrom<T extends BaseSchema | (Omit<BaseSchema, '_id'> & {
     readonly _id: string;

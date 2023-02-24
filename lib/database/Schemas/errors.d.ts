@@ -23,8 +23,8 @@
 /// <reference types="mongoose/types/virtuals" />
 /// <reference types="mongoose" />
 /// <reference types="mongoose/types/inferschematype" />
-import { BaseSchema, DocumentFrom } from './base';
-export interface ErrorSchema extends Omit<BaseSchema, '_id'> {
+import { BaseSchemaWithTimestamps, DocumentFrom } from './base';
+export interface ErrorSchema extends Omit<BaseSchemaWithTimestamps, '_id'> {
     readonly _id: string;
     type: string;
     name: string;

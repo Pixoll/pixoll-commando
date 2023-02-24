@@ -23,8 +23,8 @@
 /// <reference types="mongoose/types/virtuals" />
 /// <reference types="mongoose" />
 /// <reference types="mongoose/types/inferschematype" />
-import { BaseSchema, DocumentFrom } from './base';
-export interface AfkSchema extends BaseSchema {
+import { BaseSchemaWithTimestamps, DocumentFrom } from './base';
+export interface AfkSchema extends BaseSchemaWithTimestamps {
     guild: string;
     user: string;
     status: string;

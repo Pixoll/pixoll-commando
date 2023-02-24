@@ -5,6 +5,10 @@ import CommandoGuild from './extensions/guild';
 import CommandoInteraction from './extensions/interaction';
 import CommandoMessage from './extensions/message';
 export type Tuple<T, N extends number, R extends T[] = []> = R['length'] extends N ? R : Tuple<T, N, [T, ...R]>;
+export type Require<T extends object, K extends keyof T = keyof T, Expand extends boolean = true> = Expand extends true ? Destructure<Omit<T, K> & Required<Pick<T, K>>> : Omit<T, K> & Required<Pick<T, K>>;
+export type Destructure<T> = {
+    [P in keyof T]: T[P];
+};
 export type Commandoify<T, Ready extends boolean = boolean> = OverrideGuild<OverrideClient<T, Ready>>;
 export type OverrideGuild<T> = T extends {
     guild: Guild | infer R;

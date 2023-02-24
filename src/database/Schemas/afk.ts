@@ -1,7 +1,7 @@
 import { model, Schema } from 'mongoose';
-import { BaseSchema, DocumentFrom } from './base';
+import { BaseSchemaWithTimestamps, DocumentFrom } from './base';
 
-export interface AfkSchema extends BaseSchema {
+export interface AfkSchema extends BaseSchemaWithTimestamps {
     guild: string;
     user: string;
     status: string;

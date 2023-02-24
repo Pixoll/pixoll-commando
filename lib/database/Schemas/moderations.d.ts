@@ -23,10 +23,10 @@
 /// <reference types="mongoose/types/virtuals" />
 /// <reference types="mongoose" />
 /// <reference types="mongoose/types/inferschematype" />
-import { BaseSchema, DocumentFrom } from './base';
+import { BaseSchemaWithTimestamps, DocumentFrom } from './base';
 export type TimeBasedModerationType = 'mute' | 'temp-ban' | 'time-out';
 type ModerationType = TimeBasedModerationType | 'ban' | 'kick' | 'soft-ban' | 'warn';
-export interface ModerationSchema extends Omit<BaseSchema, '_id'> {
+export interface ModerationSchema extends Omit<BaseSchemaWithTimestamps, '_id'> {
     readonly _id: string;
     type: ModerationType;
     guild: string;

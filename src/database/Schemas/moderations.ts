@@ -1,5 +1,5 @@
 import { model, Schema } from 'mongoose';
-import { BaseSchema, DocumentFrom } from './base';
+import { BaseSchemaWithTimestamps, DocumentFrom } from './base';
 
 export type TimeBasedModerationType =
     | 'mute'
@@ -13,7 +13,7 @@ type ModerationType =
     | 'soft-ban'
     | 'warn';
 
-export interface ModerationSchema extends Omit<BaseSchema, '_id'> {
+export interface ModerationSchema extends Omit<BaseSchemaWithTimestamps, '_id'> {
     readonly _id: string;
     type: ModerationType;
     guild: string;

@@ -2374,6 +2374,12 @@ export interface ThrottlingOptions {
 
 export type Tuple<T, N extends number, R extends T[] = []> = R['length'] extends N ? R : Tuple<T, N, [T, ...R]>;
 
+export type Require<T extends object, K extends keyof T = keyof T, Expand extends boolean = true> = Expand extends true
+    ? Destructure<Omit<T, K> & Required<Pick<T, K>>>
+    : Omit<T, K> & Required<Pick<T, K>>;
+
+export type Destructure<T> = { [P in keyof T]: T[P] };
+
 export type Commandoify<T, Ready extends boolean = boolean> = OverrideGuild<OverrideClient<T, Ready>>;
 
 export type OverrideGuild<T> = T extends { guild: Guild | infer R }
@@ -2451,17 +2457,19 @@ export type ModelFrom<
     DocumentFrom<T, IncludeId>
 >;
 
-type TimeBasedModerationType = 'mute' | 'temp-ban' | 'time-out';
+export type TimeBasedModerationType = 'mute' | 'temp-ban' | 'time-out';
 
-type ModerationType = TimeBasedModerationType | 'ban' | 'kick' | 'soft-ban' | 'warn';
+export type ModerationType = TimeBasedModerationType | 'ban' | 'kick' | 'soft-ban' | 'warn';
 
-interface BaseSchema {
+export interface BaseSchema {
     readonly _id: Types.ObjectId;
     readonly createdAt?: Date;
     readonly updatedAt?: Date;
 }
 
-export interface ActiveSchema extends Omit<BaseSchema, '_id'> {
+export interface BaseSchemaWithTimestamps extends Require<BaseSchema, 'createdAt' | 'updatedAt'> { }
+
+export interface ActiveSchema extends Omit<BaseSchemaWithTimestamps, '_id'> {
     readonly _id: string;
     type: TimeBasedModerationType | 'temp-role';
     guild: Snowflake;
@@ -2471,7 +2479,7 @@ export interface ActiveSchema extends Omit<BaseSchema, '_id'> {
     duration: number;
 }
 
-export interface AfkSchema extends BaseSchema {
+export interface AfkSchema extends BaseSchemaWithTimestamps {
     guild: Snowflake;
     user: Snowflake;
     status: string;
@@ -2484,7 +2492,7 @@ export interface DisabledSchema extends BaseSchema {
     groups: string[];
 }
 
-export interface ErrorSchema extends Omit<BaseSchema, '_id'> {
+export interface ErrorSchema extends Omit<BaseSchemaWithTimestamps, '_id'> {
     readonly _id: string;
     type: string;
     name: string;
@@ -2498,7 +2506,7 @@ export interface FaqSchema extends BaseSchema {
     answer: string;
 }
 
-export interface ModerationSchema extends Omit<BaseSchema, '_id'> {
+export interface ModerationSchema extends Omit<BaseSchemaWithTimestamps, '_id'> {
     readonly _id: string;
     type: ModerationType;
     guild: Snowflake;
@@ -2566,7 +2574,8 @@ export interface ReactionRoleSchema extends BaseSchema {
     roles: Snowflake[];
     emojis: Array<Snowflake | string>;
 }
-export interface ReminderSchema extends BaseSchema {
+
+export interface ReminderSchema extends BaseSchemaWithTimestamps {
     user: Snowflake;
     reminder: string;
     remindAt: number;

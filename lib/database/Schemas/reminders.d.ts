@@ -23,8 +23,8 @@
 /// <reference types="mongoose/types/virtuals" />
 /// <reference types="mongoose" />
 /// <reference types="mongoose/types/inferschematype" />
-import { BaseSchema, DocumentFrom } from './base';
-export interface ReminderSchema extends BaseSchema {
+import { BaseSchemaWithTimestamps, DocumentFrom } from './base';
+export interface ReminderSchema extends BaseSchemaWithTimestamps {
     user: string;
     reminder: string;
     remindAt: number;
