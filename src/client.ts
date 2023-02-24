@@ -72,6 +72,9 @@ export interface CommandoClientEvents extends OverwrittenClientEvents {
         result?: ArgumentCollectorResult
     ];
     commandoGuildCreate: [guild: CommandoGuild];
+    commandoMessageCreate: [message: CommandoMessage];
+    commandoMessageDelete: [message: CommandoMessage];
+    commandoMessageUpdate: [oldMessage: CommandoMessage, newMessage: CommandoMessage];
     commandPrefixChange: [guild?: CommandoGuild | null, prefix?: string | null];
     commandRegister: [command: Command, registry: CommandoRegistry];
     commandReregister: [newCommand: Command, oldCommand: Command];
@@ -232,6 +235,13 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
             // @ts-expect-error: handleMessage is protected in CommandDispatcher
             await this.dispatcher.handleMessage(newCommando, oldMessage).catch(catchErr);
         });
+        this.on('messageDelete', message => {
+            if (message.partial) return;
+            const commando = new CommandoMessage(this as CommandoClient<true>, message);
+            // @ts-expect-error: parseMessage is protected in CommandDispatcher
+            const parsedMessage = this.dispatcher.parseMessage(commando) ?? commando;
+            this.emit('commandoMessageDelete', parsedMessage);
+        });
 
         // Set up slash command handling
         this.once('ready', () =>
@@ -270,7 +280,7 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
      * @param guild - The Guild to parse
      */
     protected parseGuild(guild: Guild): CommandoGuild {
-        const commandoGuild = new CommandoGuild(this, guild);
+        const commandoGuild = new CommandoGuild(this as CommandoClient<true>, guild);
         return Util.mutateObjectInstance(guild, commandoGuild);
     }
 

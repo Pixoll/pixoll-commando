@@ -20,7 +20,7 @@ export default class CommandoGuild extends Guild {
      * @param client - The client the guild is for
      * @param data - The guild data
      */
-    constructor(client: CommandoClient, data: Guild);
+    constructor(client: CommandoClient<true>, data: Guild);
     /**
      * Command prefix in the guild. An empty string indicates that there is no prefix, and only mentions will be used.
      * Setting to `null` means that the prefix from {@link CommandoClient#prefix} will be used instead.

@@ -54,6 +54,9 @@ export interface CommandoClientEvents extends OverwrittenClientEvents {
         result?: ArgumentCollectorResult
     ];
     commandoGuildCreate: [guild: CommandoGuild];
+    commandoMessageCreate: [message: CommandoMessage];
+    commandoMessageDelete: [message: CommandoMessage];
+    commandoMessageUpdate: [oldMessage: CommandoMessage, newMessage: CommandoMessage];
     commandPrefixChange: [guild?: CommandoGuild | null, prefix?: string | null];
     commandRegister: [command: Command, registry: CommandoRegistry];
     commandReregister: [newCommand: Command, oldCommand: Command];

@@ -111,9 +111,11 @@ export default class CommandDispatcher {
             if (cmdMsg && oldCmdMsg) {
                 cmdMsg.responses = oldCmdMsg.responses;
                 cmdMsg.responsePositions = oldCmdMsg.responsePositions;
+                this.client.emit('commandoMessageUpdate', oldCmdMsg, cmdMsg);
             }
         } else {
             cmdMsg = this.parseMessage(message);
+            this.client.emit('commandoMessageCreate', cmdMsg ?? message);
         }
 
         // Run the command, or reply with an error

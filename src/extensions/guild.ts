@@ -24,7 +24,7 @@ export default class CommandoGuild extends Guild {
      * @param client - The client the guild is for
      * @param data - The guild data
      */
-    public constructor(client: CommandoClient, data: Guild) {
+    public constructor(client: CommandoClient<true>, data: Guild) {
         // @ts-expect-error: data.toJSON() does not work
         super(client, { id: data.id });
         Object.assign(this, data);

@@ -685,7 +685,7 @@ export class CommandoGuild extends Guild {
      * @param client - The client the guild is for
      * @param data - The guild data
      */
-    constructor(client: CommandoClient, data: Guild);
+    constructor(client: CommandoClient<true>, data: Guild);
 
     /** Internal command prefix for the guild, controlled by the {@link CommandoGuild#prefix} getter/setter */
     protected _prefix?: string | null;
@@ -695,7 +695,7 @@ export class CommandoGuild extends Guild {
     protected _groupsEnabled: Map<string, boolean>;
 
     /** The client the guild is for */
-    readonly client: CommandoClient;
+    readonly client: CommandoClient<true>;
     /** The database manager for the guild */
     database: GuildDatabaseManager;
     /**
@@ -2117,6 +2117,9 @@ export interface CommandoClientEvents extends OverwrittenClientEvents {
         result?: ArgumentCollectorResult
     ];
     commandoGuildCreate: [guild: CommandoGuild];
+    commandoMessageCreate: [message: CommandoMessage];
+    commandoMessageDelete: [message: CommandoMessage];
+    commandoMessageUpdate: [oldMessage: CommandoMessage, newMessage: CommandoMessage];
     commandPrefixChange: [guild?: CommandoGuild | null, prefix?: string | null];
     commandRegister: [command: Command, registry: CommandoRegistry];
     commandReregister: [newCommand: Command, oldCommand: Command];
