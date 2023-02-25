@@ -1,10 +1,11 @@
 import { model, Schema } from 'mongoose';
 import { BaseSchema, DocumentFrom } from './base';
+import { Snowflake } from 'discord.js';
 
 export interface StickyRoleSchema extends BaseSchema {
-    guild: string;
-    user: string;
-    roles: string[];
+    guild: Snowflake;
+    user: Snowflake;
+    roles: Snowflake[];
 }
 
 const StickyRolesModel = model<DocumentFrom<StickyRoleSchema>>('sticky-roles', new Schema({

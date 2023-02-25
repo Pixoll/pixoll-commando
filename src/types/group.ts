@@ -4,13 +4,13 @@ import { escapeMarkdown } from 'discord.js';
 import CommandoClient from '../client';
 import CommandGroup from '../commands/group';
 
-export default class GroupArgumentType extends ArgumentType {
+export default class GroupArgumentType extends ArgumentType<'group'> {
     public constructor(client: CommandoClient) {
         super(client, 'group');
     }
 
-    public validate(val: string): boolean | string {
-        const groups = this.client.registry.findGroups(val);
+    public validate(value: string): boolean | string {
+        const groups = this.client.registry.findGroups(value);
         if (groups.length === 1) return true;
         if (groups.length === 0) return false;
         return groups.length <= 15
@@ -18,7 +18,7 @@ export default class GroupArgumentType extends ArgumentType {
             : 'Multiple groups found. Please be more specific.';
     }
 
-    public parse(val: string): CommandGroup {
-        return this.client.registry.findGroups(val)[0];
+    public parse(value: string): CommandGroup {
+        return this.client.registry.findGroups(value)[0];
     }
 }

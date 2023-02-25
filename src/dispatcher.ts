@@ -13,7 +13,7 @@ import CommandoMessage, { CommandoMessageResponse } from './extensions/message';
 import CommandoRegistry from './registry';
 import Util from './util';
 
-interface Inhibition {
+export interface Inhibition {
     /** Identifier for the reason the command is being blocked */
     reason: string;
     /** Response being sent to the user */

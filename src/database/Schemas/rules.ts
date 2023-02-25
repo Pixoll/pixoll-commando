@@ -1,8 +1,9 @@
 import { model, Schema } from 'mongoose';
 import { BaseSchema, DocumentFrom } from './base';
+import { Snowflake } from 'discord.js';
 
 export interface RuleSchema extends BaseSchema {
-    guild: string;
+    guild: Snowflake;
     rules: string[];
 }
 

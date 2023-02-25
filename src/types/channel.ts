@@ -1,34 +1,35 @@
 import ArgumentType from './base';
 import Util from '../util';
-import { escapeMarkdown, GuildBasedChannel } from 'discord.js';
+import { escapeMarkdown } from 'discord.js';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 import Argument from '../commands/argument';
+import { CommandoGuildBasedChannel } from '../discord.overrides';
 
-export default class ChannelArgumentType extends ArgumentType {
+export default class ChannelArgumentType extends ArgumentType<'channel'> {
     public constructor(client: CommandoClient) {
         super(client, 'channel');
     }
 
-    public validate(val: string, msg: CommandoMessage, arg: Argument): boolean | string {
-        if (!msg.guild) return false;
+    public validate(value: string, message: CommandoMessage, argument: Argument<'channel'>): boolean | string {
+        if (!message.inGuild()) return false;
 
-        const matches = val.match(/^(?:<#)?(\d+)>?$/);
-        if (matches) return msg.guild.channels.cache.has(matches[1]);
+        const matches = value.match(/^(?:<#)?(\d+)>?$/);
+        if (matches) return message.guild.channels.cache.has(matches[1]);
 
-        const search = val.toLowerCase();
-        let channels = msg.guild.channels.cache.filter(nameFilterInexact(search));
+        const search = value.toLowerCase();
+        let channels = message.guild.channels.cache.filter(nameFilterInexact(search));
         const first = channels.first();
         if (!first) return false;
         if (channels.size === 1) {
-            if (arg.oneOf && !arg.oneOf.includes(first.id)) return false;
+            if (argument.oneOf && !argument.oneOf.includes(first.id)) return false;
             return true;
         }
 
         const exactChannels = channels.filter(nameFilterExact(search));
         const exact = exactChannels.first();
         if (exactChannels.size === 1 && exact) {
-            if (arg.oneOf && !arg.oneOf.includes(exact.id)) return false;
+            if (argument.oneOf && !argument.oneOf.includes(exact.id)) return false;
             return true;
         }
         if (exactChannels.size > 0) channels = exactChannels;
@@ -38,14 +39,14 @@ export default class ChannelArgumentType extends ArgumentType {
             : 'Multiple channels found. Please be more specific.';
     }
 
-    public parse(val: string, msg: CommandoMessage): GuildBasedChannel | null {
-        if (!msg.guild) return null;
+    public parse(value: string, message: CommandoMessage): CommandoGuildBasedChannel | null {
+        if (!message.inGuild()) return null;
 
-        const matches = val.match(/^(?:<#)?(\d+)>?$/);
-        if (matches) return msg.guild.channels.resolve(matches[1]);
+        const matches = value.match(/^(?:<#)?(\d+)>?$/);
+        if (matches) return message.guild.channels.resolve(matches[1]);
 
-        const search = val.toLowerCase();
-        const channels = msg.guild.channels.cache.filter(nameFilterInexact(search));
+        const search = value.toLowerCase();
+        const channels = message.guild.channels.cache.filter(nameFilterInexact(search));
         if (channels.size === 0) return null;
         if (channels.size === 1) return channels.first() ?? null;
 
@@ -57,9 +58,9 @@ export default class ChannelArgumentType extends ArgumentType {
 }
 
 function nameFilterExact(search: string) {
-    return (chan: GuildBasedChannel): boolean => chan.name.toLowerCase() === search;
+    return (channel: CommandoGuildBasedChannel): boolean => channel.name.toLowerCase() === search;
 }
 
 function nameFilterInexact(search: string) {
-    return (chan: GuildBasedChannel): boolean => chan.name.toLowerCase().includes(search);
+    return (channel: CommandoGuildBasedChannel): boolean => channel.name.toLowerCase().includes(search);
 }

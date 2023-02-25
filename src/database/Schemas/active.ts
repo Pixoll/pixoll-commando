@@ -1,14 +1,15 @@
 import { model, Schema } from 'mongoose';
 import { BaseSchemaWithTimestamps, DocumentFrom } from './base';
 import { TimeBasedModerationType } from './moderations';
+import { Snowflake } from 'discord.js';
 
 export interface ActiveSchema extends Omit<BaseSchemaWithTimestamps, '_id'> {
     readonly _id: string;
     type: TimeBasedModerationType | 'temp-role';
-    guild: string;
-    userId: string;
+    guild: Snowflake;
+    userId: Snowflake;
     userTag: string;
-    role: string;
+    role?: Snowflake | undefined;
     duration: number;
 }
 

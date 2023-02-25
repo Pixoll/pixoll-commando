@@ -1,13 +1,14 @@
 import { model, Schema } from 'mongoose';
 import { BaseSchema, DocumentFrom } from './base';
+import { Snowflake } from 'discord.js';
 
 export interface SetupSchema extends BaseSchema {
-    guild: string;
-    logsChannel: string;
-    memberRole: string;
-    botRole: string;
-    mutedRole: string;
-    lockChannels: string[];
+    guild: Snowflake;
+    logsChannel: Snowflake;
+    memberRole: Snowflake;
+    botRole: Snowflake;
+    mutedRole: Snowflake;
+    lockChannels: Snowflake[];
 }
 
 const SetupModel = model<DocumentFrom<SetupSchema>>('setup', new Schema({

@@ -1,12 +1,13 @@
 import { model, Schema } from 'mongoose';
 import { BaseSchemaWithTimestamps, DocumentFrom } from './base';
+import { Snowflake } from 'discord.js';
 
 export type TimeBasedModerationType =
     | 'mute'
     | 'temp-ban'
     | 'time-out';
 
-type ModerationType =
+export type ModerationType =
     | TimeBasedModerationType
     | 'ban'
     | 'kick'
@@ -16,10 +17,10 @@ type ModerationType =
 export interface ModerationSchema extends Omit<BaseSchemaWithTimestamps, '_id'> {
     readonly _id: string;
     type: ModerationType;
-    guild: string;
-    userId: string;
+    guild: Snowflake;
+    userId: Snowflake;
     userTag: string;
-    modId: string;
+    modId: Snowflake;
     modTag: string;
     reason: string;
     duration?: string | undefined;

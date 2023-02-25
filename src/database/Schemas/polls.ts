@@ -1,10 +1,11 @@
 import { model, Schema } from 'mongoose';
 import { BaseSchema, DocumentFrom } from './base';
+import { Snowflake } from 'discord.js';
 
 export interface PollSchema extends BaseSchema {
-    guild: string;
-    channel: string;
-    message: string;
+    guild: Snowflake;
+    channel: Snowflake;
+    message: Snowflake;
     emojis: string[];
     duration: number;
 }

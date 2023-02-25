@@ -18,7 +18,7 @@ import {
     MessageCreateOptions,
 } from 'discord.js';
 import path from 'path';
-import ArgumentCollector, { ArgumentCollectorResult } from './collector';
+import ArgumentCollector, { ArgumentCollectorResult, MapArguments } from './collector';
 import Util from '../util';
 import CommandoClient from '../client';
 import CommandGroup from './group';
@@ -37,7 +37,7 @@ export interface ThrottlingOptions {
 }
 
 /** The command information */
-export interface CommandInfo<InGuild extends boolean = boolean> {
+export interface CommandInfo<InGuild extends boolean = boolean, Args extends ArgumentInfo[] = ArgumentInfo[]> {
     /** The name of the command (must be lowercase). */
     name: string;
     /** Alternative names for the command (all must be lowercase). */
@@ -110,7 +110,7 @@ export interface CommandInfo<InGuild extends boolean = boolean> {
      */
     testEnv?: boolean;
     /** Arguments for the command. */
-    args?: ArgumentInfo[];
+    args?: Args;
     /**
      * Maximum number of times to prompt a user for a single argument. Only applicable if `args` is specified.
      * @default Infinity
@@ -227,7 +227,7 @@ export interface SlashCommandInfo extends Omit<
 export type APISlashCommand = Required<Pick<SlashCommandInfo, 'deferEphemeral'>> & RESTPostAPISlashCommand;
 
 /** A command that can be run in a client */
-export default abstract class Command<InGuild extends boolean = boolean> {
+export default abstract class Command<InGuild extends boolean = boolean, Args extends ArgumentInfo[] = ArgumentInfo[]> {
     /** Client that this command is for */
     declare public readonly client: CommandoClient;
     /** Name of this command */
@@ -269,7 +269,7 @@ export default abstract class Command<InGuild extends boolean = boolean> {
     /** Options for throttling command usages */
     public throttling: ThrottlingOptions | null;
     /** The argument collector for the command */
-    public argsCollector: ArgumentCollector | null;
+    public argsCollector: ArgumentCollector<Args> | null;
     /** How the arguments are split when passed to the command's run method */
     public argsType: 'multiple' | 'single';
     /** Maximum number of arguments that will be split */
@@ -302,7 +302,7 @@ export default abstract class Command<InGuild extends boolean = boolean> {
      * @param info - The command information
      * @param slashInfo - The slash command information
      */
-    public constructor(client: CommandoClient, info: CommandInfo<InGuild>, slashInfo?: SlashCommandInfo) {
+    public constructor(client: CommandoClient, info: CommandInfo<InGuild, Args>, slashInfo?: SlashCommandInfo) {
         Command.validateInfo(client, info);
         const parsedSlashInfo = Command.validateAndParseSlashInfo(info, slashInfo);
 
@@ -335,7 +335,7 @@ export default abstract class Command<InGuild extends boolean = boolean> {
         this.defaultHandling = info.defaultHandling ?? true;
         this.throttling = info.throttling ?? null;
         this.argsCollector = info.args?.length
-            ? new ArgumentCollector(client, info.args, info.argsPromptLimit)
+            ? new ArgumentCollector<Args>(client, info.args, info.argsPromptLimit)
             : null;
         if (this.argsCollector && !info.format) {
             this.format = this.argsCollector.args.reduce((prev, arg) => {
@@ -373,7 +373,7 @@ export default abstract class Command<InGuild extends boolean = boolean> {
      */
     public abstract run(
         instances: CommandInstances<InGuild>,
-        args: Record<string, unknown> | string[] | string,
+        args: MapArguments<Args> | string[] | string,
         fromPattern?: boolean,
         result?: ArgumentCollectorResult | null
     ): Awaitable<Message | Message[] | null | void>;
@@ -402,7 +402,7 @@ export default abstract class Command<InGuild extends boolean = boolean> {
             return 'guildOwnerOnly';
         }
 
-        if (!channel.isDMBased()) {
+        if (channel && !channel.isDMBased()) {
             if (member && modPermissions && !isModerator(member)) {
                 return 'modPermissions';
             }
@@ -558,7 +558,7 @@ export default abstract class Command<InGuild extends boolean = boolean> {
         if (!instances) return this._globalEnabled;
         const instance = Util.getInstanceFrom(instances);
         const { guild } = instance;
-        if (this.guildOnly && !guild) return false;
+        if (this.guildOnly && !instance.inGuild()) return false;
         const hasPermission = this.hasPermission(instances);
         return this.isEnabledIn(guild) && hasPermission === true;
     }
@@ -740,7 +740,7 @@ export default abstract class Command<InGuild extends boolean = boolean> {
             descriptionLocalizations = null,
             options,
         } = slashInfo;
-        const memberPermissions = dmOnly ? 0n : (userPermissions && PermissionsBitField.resolve(userPermissions));
+        const memberPermissions = dmOnly ? '0' : (userPermissions && PermissionsBitField.resolve(userPermissions));
 
         const slash = new SlashCommandBuilder()
             .setName(name)
@@ -802,7 +802,7 @@ function createBaseSlashOption(option: ApplicationCommandOptionData): <T extends
         if (
             option.type !== ApplicationCommandOptionType.Subcommand
             && option.type !== ApplicationCommandOptionType.SubcommandGroup
-            && builder instanceof ApplicationCommandOptionBase
+            && 'setRequired' in builder
         ) builder.setRequired(option.required ?? false);
         return builder;
     };
@@ -830,8 +830,8 @@ function addBasicOptions<T extends SharedSlashCommandOptions<boolean>>(
         }
         if (optionType === ApplicationCommandOptionType.Integer) {
             builder.addIntegerOption(optBuilder => {
-                createBaseSlashOption(option)(optBuilder)
-                    .setAutocomplete(option.autocomplete ?? false);
+                createBaseSlashOption(option)(optBuilder);
+                if (option.autocomplete) optBuilder.setAutocomplete(option.autocomplete);
 
                 if (!option.autocomplete && option.choices) {
                     optBuilder.addChoices(...option.choices as Array<APIApplicationCommandOptionChoice<number>>);
@@ -851,8 +851,8 @@ function addBasicOptions<T extends SharedSlashCommandOptions<boolean>>(
         }
         if (optionType === ApplicationCommandOptionType.Number) {
             builder.addNumberOption(optBuilder => {
-                createBaseSlashOption(option)(optBuilder)
-                    .setAutocomplete(option.autocomplete ?? false);
+                createBaseSlashOption(option)(optBuilder);
+                if (option.autocomplete) optBuilder.setAutocomplete(option.autocomplete);
 
                 if (!option.autocomplete && option.choices) {
                     optBuilder.addChoices(...option.choices as Array<APIApplicationCommandOptionChoice<number>>);
@@ -872,8 +872,8 @@ function addBasicOptions<T extends SharedSlashCommandOptions<boolean>>(
         }
         if (optionType === ApplicationCommandOptionType.String) {
             builder.addStringOption(optBuilder => {
-                createBaseSlashOption(option)(optBuilder)
-                    .setAutocomplete(option.autocomplete ?? false);
+                createBaseSlashOption(option)(optBuilder);
+                if (option.autocomplete) optBuilder.setAutocomplete(option.autocomplete);
 
                 if (!option.autocomplete && option.choices) {
                     optBuilder.addChoices(...option.choices as Array<APIApplicationCommandOptionChoice<string>>);
@@ -952,10 +952,10 @@ function isModerator(member: CommandoGuildMember): boolean {
     const { permissions } = member;
     if (permissions.has('Administrator')) return true;
 
-    const values = [];
+    const values: boolean[] = [];
     for (const condition of isModConditions) {
         values.push(permissions.has(condition));
     }
 
-    return !!values.find(b => b === true);
+    return values.some(b => b === true);
 }

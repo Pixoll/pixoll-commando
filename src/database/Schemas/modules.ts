@@ -1,8 +1,9 @@
 import { model, Schema } from 'mongoose';
 import { BaseSchema, DocumentFrom } from './base';
+import { Snowflake } from 'discord.js';
 
 export interface ModuleSchema extends BaseSchema {
-    guild: string;
+    guild: Snowflake;
     // chatFilter: boolean
     // scamDetector: boolean
     stickyRoles: boolean;
@@ -26,6 +27,10 @@ export interface ModuleSchema extends BaseSchema {
         voice: boolean;
     };
 }
+
+export type GuildModule = 'audit-logs' | 'sticky-roles' | 'welcome';
+
+export type GuildAuditLog = keyof ModuleSchema['auditLogs'];
 
 const ModulesModel = model<DocumentFrom<ModuleSchema>>('modules', new Schema({
     guild: String,

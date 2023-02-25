@@ -1,30 +1,52 @@
 import type {
+    AddGuildMemberOptions,
+    AddOrRemoveGuildMemberRoleOptions,
     AutocompleteInteraction,
     AutoModerationActionExecution,
     AutoModerationRule,
+    BanOptions,
+    BaseFetchOptions,
     ButtonInteraction,
     CachedManager,
     CacheType,
     CacheTypeReducer,
     CategoryChannel,
+    ChannelPosition,
     ChannelSelectMenuInteraction,
+    ChannelType,
     ChatInputCommandInteraction,
     ClientEvents,
     Collection,
     CommandInteraction,
     ContextMenuCommandInteraction,
+    CreateRoleOptions,
     DMChannel,
+    EditRoleOptions,
+    FetchChannelOptions,
     FetchGuildOptions,
     FetchGuildsOptions,
+    FetchMemberOptions,
+    FetchMembersOptions,
     ForumChannel,
     Guild,
     GuildBan,
+    GuildChannel,
+    GuildChannelCreateOptions,
+    GuildChannelEditOptions,
+    GuildChannelTypes,
     GuildCreateOptions,
     GuildEmoji,
+    GuildEmojiCreateOptions,
+    GuildEmojiEditData,
+    GuildListMembersOptions,
     GuildMember,
+    GuildMemberEditData,
+    GuildMemberResolvable,
+    GuildPruneMembersOptions,
     GuildResolvable,
     GuildScheduledEvent,
     GuildScheduledEventStatus,
+    GuildSearchMembersOptions,
     If,
     Invite,
     MentionableSelectMenuInteraction,
@@ -41,8 +63,12 @@ import type {
     Presence,
     PrivateThreadChannel,
     PublicThreadChannel,
+    ReactionEmoji,
     Role,
+    RolePosition,
     RoleSelectMenuInteraction,
+    SetChannelPositionOptions,
+    SetRolePositionOptions,
     Snowflake,
     StageChannel,
     StageInstance,
@@ -55,12 +81,16 @@ import type {
     Typing,
     User,
     UserContextMenuCommandInteraction,
+    UserResolvable,
     UserSelectMenuInteraction,
     VoiceChannel,
     VoiceState,
+    Webhook,
+    WebhookCreateOptions,
 } from 'discord.js';
 import type CommandoClient from './client';
 import type CommandoGuild from './extensions/guild';
+import CommandoMessage from './extensions/message';
 
 // @ts-expect-error: caused by interaction overrides
 export interface OverwrittenClientEvents extends ClientEvents {
@@ -165,6 +195,129 @@ export declare class CommandoGuildManager extends CachedManager<Snowflake, Comma
     public fetch(options?: FetchGuildsOptions): Promise<Collection<Snowflake, OAuth2Guild>>;
 }
 
+export declare class CommandoChannelManager extends CachedManager<Snowflake, CommandoChannel, CommandoChannelResolvable> {
+    public fetch(id: Snowflake, options?: FetchChannelOptions): Promise<CommandoChannel | null>;
+}
+
+export declare class CommandoGuildChannelManager extends CachedManager<
+    Snowflake, CommandoGuildBasedChannel, CommandoGuildChannelResolvable
+> {
+    public get channelCountWithoutThreads(): number;
+    public guild: CommandoGuild;
+
+    public addFollower(
+        channel: CommandoNewsChannel | Snowflake,
+        targetChannel: CommandoTextChannelResolvable,
+        reason?: string,
+    ): Promise<Snowflake>;
+    public create<T extends GuildChannelTypes>(
+        options: GuildChannelCreateOptions & { type: T },
+    ): Promise<CommandoMappedChannelCategoryTypes[T]>;
+    public create(options: GuildChannelCreateOptions): Promise<CommandoTextChannel>;
+    public createWebhook(options: WebhookCreateOptions): Promise<Webhook>;
+    public edit(channel: CommandoGuildChannelResolvable, data: GuildChannelEditOptions): Promise<CommandoGuildChannel>;
+    public fetch(id: Snowflake, options?: BaseFetchOptions): Promise<CommandoGuildBasedChannel | null>;
+    public fetch(
+        id?: undefined,
+        options?: BaseFetchOptions,
+    ): Promise<Collection<Snowflake, NonThreadCommandoGuildBasedChannel | null>>;
+    public fetchWebhooks(channel: CommandoGuildChannelResolvable): Promise<Collection<Snowflake, Webhook>>;
+    public setPosition(
+        channel: CommandoGuildChannelResolvable,
+        position: number,
+        options?: SetChannelPositionOptions,
+    ): Promise<CommandoGuildChannel>;
+    public setPositions(channelPositions: readonly ChannelPosition[]): Promise<CommandoGuild>;
+    public fetchActiveThreads(cache?: boolean): Promise<FetchedCommandoThreads>;
+    public delete(channel: CommandoGuildChannelResolvable, reason?: string): Promise<void>;
+}
+
+export declare class BaseCommandoGuildEmojiManager extends CachedManager<
+    Snowflake, CommandoGuildEmoji, CommandoEmojiResolvable
+> {
+    public resolveIdentifier(emoji: CommandoEmojiResolvable): string | null;
+}
+
+export declare class CommandoGuildEmojiManager extends BaseCommandoGuildEmojiManager {
+    public guild: CommandoGuild;
+    public create(options: GuildEmojiCreateOptions): Promise<CommandoGuildEmoji>;
+    public fetch(id: Snowflake, options?: BaseFetchOptions): Promise<CommandoGuildEmoji>;
+    public fetch(id?: undefined, options?: BaseFetchOptions): Promise<Collection<Snowflake, CommandoGuildEmoji>>;
+    public fetchAuthor(emoji: CommandoEmojiResolvable): Promise<CommandoUser>;
+    public delete(emoji: CommandoEmojiResolvable, reason?: string): Promise<void>;
+    public edit(emoji: CommandoEmojiResolvable, data: GuildEmojiEditData): Promise<CommandoGuildEmoji>;
+}
+
+export type CommandoEmojiResolvable = CommandoGuildEmoji | ReactionEmoji | string;
+
+export declare class CommandoGuildMemberManager extends CachedManager<
+    Snowflake, CommandoGuildMember, CommandoGuildMemberResolvable
+> {
+    public guild: CommandoGuild;
+    public get me(): CommandoGuildMember | null;
+    public add(
+        user: CommandoUserResolvable,
+        options: AddGuildMemberOptions & { fetchWhenExisting: false },
+    ): Promise<CommandoGuildMember | null>;
+    public add(user: CommandoUserResolvable, options: AddGuildMemberOptions): Promise<CommandoGuildMember>;
+    public ban(user: CommandoUserResolvable, options?: BanOptions): Promise<CommandoGuildMember | CommandoUser | Snowflake>;
+    public edit(user: CommandoUserResolvable, data: GuildMemberEditData): Promise<CommandoGuildMember>;
+    public fetch(
+        options: CommandoUserResolvable
+            | FetchCommandoMemberOptions
+            | (FetchMembersOptions & { user: CommandoUserResolvable }),
+    ): Promise<CommandoGuildMember>;
+    public fetch(options?: FetchMembersOptions): Promise<Collection<Snowflake, CommandoGuildMember>>;
+    public fetchMe(options?: BaseFetchOptions): Promise<CommandoGuildMember>;
+    public kick(user: CommandoUserResolvable, reason?: string): Promise<CommandoGuildMember | CommandoUser | Snowflake>;
+    public list(options?: GuildListMembersOptions): Promise<Collection<Snowflake, CommandoGuildMember>>;
+    public prune(options: GuildPruneMembersOptions & { dry?: false; count: false }): Promise<null>;
+    public prune(options?: GuildPruneMembersOptions): Promise<number>;
+    public search(options: GuildSearchMembersOptions): Promise<Collection<Snowflake, CommandoGuildMember>>;
+    public unban(user: CommandoUserResolvable, reason?: string): Promise<CommandoUser | null>;
+    public addRole(options: AddOrRemoveGuildMemberRoleOptions): Promise<CommandoGuildMember | CommandoUser | Snowflake>;
+    public removeRole(options: AddOrRemoveGuildMemberRoleOptions): Promise<CommandoGuildMember | CommandoUser | Snowflake>;
+}
+
+export type CommandoUserResolvable =
+    | CommandoGuildMember
+    | CommandoifiedMessage
+    | CommandoMessage
+    | CommandoThreadMember
+    | CommandoUser
+    | Snowflake
+    | UserResolvable;
+
+export type CommandoGuildMemberResolvable = CommandoGuildMember | CommandoUserResolvable | GuildMemberResolvable;
+
+export interface FetchCommandoMemberOptions extends FetchMemberOptions {
+    user: CommandoUserResolvable;
+}
+
+export interface FetchCommandoMembersOptions extends FetchMembersOptions {
+    user?: CommandoUserResolvable | CommandoUserResolvable[];
+}
+
+export declare class CommandoRoleManager extends CachedManager<Snowflake, CommandoRole, CommandoRoleResolvable> {
+    public get everyone(): CommandoRole;
+    public get highest(): CommandoRole;
+    public guild: CommandoGuild;
+    public get premiumSubscriberRole(): CommandoRole | null;
+    public botRoleFor(user: CommandoUserResolvable): CommandoRole | null;
+    public fetch(id: Snowflake, options?: BaseFetchOptions): Promise<CommandoRole | null>;
+    public fetch(id?: undefined, options?: BaseFetchOptions): Promise<Collection<Snowflake, CommandoRole>>;
+    public create(options?: CreateRoleOptions): Promise<CommandoRole>;
+    public edit(role: CommandoRoleResolvable, options: EditRoleOptions): Promise<CommandoRole>;
+    public delete(role: CommandoRoleResolvable, reason?: string): Promise<void>;
+    public setPosition(
+        role: CommandoRoleResolvable, position: number, options?: SetRolePositionOptions
+    ): Promise<CommandoRole>;
+    public setPositions(rolePositions: readonly RolePosition[]): Promise<CommandoGuild>;
+    public comparePositions(role1: CommandoRoleResolvable, role2: CommandoRoleResolvable): number;
+}
+
+export type CommandoRoleResolvable = CommandoRole | Role | Snowflake;
+
 // @ts-expect-error: private constructor
 export declare class CommandoAutoModerationActionExecution extends AutoModerationActionExecution {
     public guild: CommandoGuild;
@@ -193,6 +346,7 @@ export declare class CommandoGuildBan extends GuildBan {
 export declare class CommandoGuildMember extends GuildMember {
     public readonly client: CommandoClient<true>;
     public guild: CommandoGuild;
+    public user: CommandoUser;
     public isCommunicationDisabled(): this is CommandoGuildMember & {
         communicationDisabledUntilTimestamp: number;
         readonly communicationDisabledUntil: Date;
@@ -380,6 +534,20 @@ export interface CommandoPrivateThreadChannel extends PrivateThreadChannel {
     isVoiceBased(): this is CommandoVoiceBasedChannel;
 }
 
+export declare class CommandoGuildChannel extends GuildChannel {
+    public readonly client: CommandoClient<true>;
+    public guild: CommandoGuild;
+    public isThread(): this is AnyCommandoThreadChannel;
+    public isTextBased(): this is CommandoGuildBasedChannel & CommandoTextBasedChannel;
+    public isDMBased(): this is CommandoDMChannel | PartialCommandoDMChannel | PartialCommandoGroupDMChannel;
+    public isVoiceBased(): this is CommandoVoiceBasedChannel;
+}
+
+export interface FetchedCommandoThreads {
+    threads: Collection<Snowflake, AnyCommandoThreadChannel>;
+    hasMore?: boolean;
+}
+
 export type CommandoChannel =
     | AnyCommandoThreadChannel
     | CommandoCategoryChannel
@@ -392,6 +560,8 @@ export type CommandoChannel =
     | PartialCommandoDMChannel
     | PartialCommandoGroupDMChannel;
 
+export type CommandoChannelResolvable = CommandoChannel | Snowflake;
+
 export type CommandoTextBasedChannel = Exclude<
     Extract<CommandoChannel, { type: TextChannelType }>,
     CommandoForumChannel | PartialCommandoGroupDMChannel
@@ -401,12 +571,25 @@ export type CommandoVoiceBasedChannel = Extract<CommandoChannel, { bitrate: numb
 
 export type CommandoGuildBasedChannel = Extract<CommandoChannel, { guild: CommandoGuild }>;
 
+export type CommandoGuildChannelResolvable = CommandoGuildBasedChannel | Snowflake;
+
+export type CommandoTextChannelResolvable = CommandoTextChannel | Snowflake;
+
 export type NonThreadCommandoGuildBasedChannel = Exclude<CommandoGuildBasedChannel, AnyCommandoThreadChannel>;
 
 export type CommandoGuildTextBasedChannel = Exclude<
     Extract<CommandoGuildBasedChannel, CommandoTextBasedChannel>,
     CommandoForumChannel
 >;
+
+export interface CommandoMappedChannelCategoryTypes {
+    [ChannelType.GuildAnnouncement]: CommandoNewsChannel;
+    [ChannelType.GuildVoice]: CommandoVoiceChannel;
+    [ChannelType.GuildText]: CommandoTextChannel;
+    [ChannelType.GuildStageVoice]: CommandoStageChannel;
+    [ChannelType.GuildForum]: CommandoForumChannel;
+    [ChannelType.GuildCategory]: CommandoCategoryChannel;
+}
 
 export declare class CommandoUser extends User {
     public readonly client: CommandoClient<true>;

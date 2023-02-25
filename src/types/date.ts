@@ -1,26 +1,27 @@
 import { ms } from 'better-ms';
 import CommandoClient from '../client';
 import Argument from '../commands/argument';
-import CommandoMessage from '../extensions/message';
 import Util, { Tuple } from '../util';
 import ArgumentType from './base';
 
-export default class DateArgumentType extends ArgumentType {
-    protected dateRegex: RegExp;
+const dateRegex = new RegExp(
+    '^(?<date>[0-3]?\\d[\\/\\-\\.,][01]?\\d(?:[\\/\\-\\.,]\\d{2})?(?:\\d{2})?)?\\s*' // date
+    + '(?<time>[0-2]?\\d(?::[0-5]?\\d)?)?\\s*' // time/hour
+    + '(?<ampm>[aApP]\\.?[mM]\\.?)?\\s*' // am pm
+    + '(?<tz>[+-]\\d\\d?)?$' // time zone offset
+);
 
+export default class DateArgumentType extends ArgumentType<'date'> {
     public constructor(client: CommandoClient) {
         super(client, 'date');
-
-        this.dateRegex = new RegExp(
-            '^(?<date>[0-3]?\\d[\\/\\-\\.,][01]?\\d(?:[\\/\\-\\.,]\\d{2})?(?:\\d{2})?)?\\s*' // date
-            + '(?<time>[0-2]?\\d(?::[0-5]?\\d)?)?\\s*' // time/hour
-            + '(?<ampm>[aApP]\\.?[mM]\\.?)?\\s*' // am pm
-            + '(?<tz>[+-]\\d\\d?)?$' // time zone offset
-        );
     }
 
-    public validate(val: string, _: CommandoMessage, arg: Argument): boolean | string {
-        const date = this._parseDate(val.match(this.dateRegex), val);
+    public get dateRegex(): RegExp {
+        return dateRegex;
+    }
+
+    public validate(val: string, _: unknown, arg: Argument<'date'>): boolean | string {
+        const date = this.parseDate(val.match(this.dateRegex), val);
         if (!date) {
             return 'Please enter a valid date format. Use the `help` command for more information.';
         }
@@ -38,16 +39,16 @@ export default class DateArgumentType extends ArgumentType {
     }
 
     public parse(val: string): Date | null {
-        return this._parseDate(val.match(this.dateRegex), val);
+        return this.parseDate(val.match(this.dateRegex), val);
     }
 
     /**
      * Parses the string value into a valid Date object, if possible.
      * @param matches - Matches given by the regex.
-     * @param val - The value to parse.
+     * @param value - The value to parse.
      */
-    protected _parseDate(matches: RegExpMatchArray | null, val: string): Date | null {
-        if (val.toLowerCase() === 'now') return new Date();
+    public parseDate(matches: RegExpMatchArray | null, value: string): Date | null {
+        if (value.toLowerCase() === 'now') return new Date();
         if (!matches || !matches.groups || Object.values(matches.groups).filter(v => v).length === 0) return null;
 
         const { date: matchDate, time, ampm: matchAmPm, tz } = matches.groups;

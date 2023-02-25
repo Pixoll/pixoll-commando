@@ -2,6 +2,12 @@ import { Guild, User, EmbedBuilder } from 'discord.js';
 import CommandoClient from '../client';
 import Command from '../commands/base';
 import GuildDatabaseManager from '../database/GuildDatabaseManager';
+import {
+    CommandoGuildChannelManager,
+    CommandoGuildEmojiManager,
+    CommandoGuildMemberManager,
+    CommandoRoleManager,
+} from '../discord.overrides';
 import { CommandGroupResolvable, CommandResolvable } from '../registry';
 
 /** A fancier Guild for fancier people. */
@@ -9,6 +15,11 @@ import { CommandGroupResolvable, CommandResolvable } from '../registry';
 export default class CommandoGuild extends Guild {
     /** The client the guild is for */
     declare public readonly client: CommandoClient<true>;
+    /** The client the guild is for */
+    declare public channels: CommandoGuildChannelManager;
+    declare public emojis: CommandoGuildEmojiManager;
+    declare public members: CommandoGuildMemberManager;
+    declare public roles: CommandoRoleManager;
     /** The database manager for the guild */
     public database: GuildDatabaseManager;
     /** The queued logs for this guild */

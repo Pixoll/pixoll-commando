@@ -1,10 +1,10 @@
-import { Invite } from 'discord.js';
 import CommandoClient from '../client';
+import { CommandoInvite } from '../discord.overrides';
 import ArgumentType from './base';
 
-export default class InviteArgumentType extends ArgumentType {
+export default class InviteArgumentType extends ArgumentType<'invite'> {
     /** The fetched invite */
-    protected fetchedInvite: Invite | null;
+    protected fetchedInvite: CommandoInvite | null;
 
     public constructor(client: CommandoClient) {
         super(client, 'invite');
@@ -12,18 +12,18 @@ export default class InviteArgumentType extends ArgumentType {
         this.fetchedInvite = null;
     }
 
-    public async validate(val: string): Promise<boolean> {
-        const invite = await this.client.fetchInvite(val).catch(() => null);
+    public async validate(value: string): Promise<boolean> {
+        const invite = await this.client.fetchInvite(value).catch(() => null);
         this.fetchedInvite = invite;
         return !!invite;
     }
 
-    public async parse(val: string): Promise<Invite> {
+    public async parse(value: string): Promise<CommandoInvite> {
         const { fetchedInvite } = this;
         if (fetchedInvite) {
             this.fetchedInvite = null;
             return fetchedInvite;
         }
-        return await this.client.fetchInvite(val);
+        return await this.client.fetchInvite(value);
     }
 }

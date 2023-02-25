@@ -4,15 +4,18 @@
         "target": "ES2022",
         "rootDir": "src",
         "outDir": "lib",
+        "declarationDir": "types",
         "strict": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "removeComments": false,
         "declaration": true,
-        "sourceMap": true,
+        "inlineSourceMap": true,
         "noErrorTruncation": true,
         "resolveJsonModule": true,
+        "incremental": true,
+        "tsBuildInfoFile": ".tsbuildinfo",
     },
     "include": [
         "src",
@@ -21,6 +24,6 @@
         "node_modules",
     ],
     "files": [
-        "package.json"
-    ]
+        "package.json",
+    ],
 }

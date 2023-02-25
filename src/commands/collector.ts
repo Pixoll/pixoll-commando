@@ -1,6 +1,12 @@
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
-import Argument, { ArgumentInfo, ArgumentResponse } from './argument';
+import Argument, {
+    ArgumentInfo,
+    ArgumentResponse,
+    ArgumentResult,
+    ArgumentTypeString,
+    ArgumentTypeStringMap,
+} from './argument';
 
 /** Result object from obtaining argument values from an {@link ArgumentCollector} */
 export interface ArgumentCollectorResult<T = Record<string, unknown>> {
@@ -19,8 +25,17 @@ export interface ArgumentCollectorResult<T = Record<string, unknown>> {
     answers: ArgumentResponse[];
 }
 
+export type MapArguments<Args extends ArgumentInfo[] = ArgumentInfo[]> = {
+    [A in Args[number]as A['key']]: (A['required'] extends false ? null : never)
+    | (A['type'] extends ArgumentTypeString ? ArgumentTypeStringMap[A['type']] : (
+        A['type'] extends ArgumentTypeString[]
+        ? ArgumentTypeStringMap[A['type'][number]]
+        : unknown
+    ));
+};
+
 /** Obtains, validates, and prompts for argument values */
-export default class ArgumentCollector {
+export default class ArgumentCollector<Args extends ArgumentInfo[]> {
     /** Client this collector is for */
     declare public readonly client: CommandoClient;
     /** Arguments the collector handles */
@@ -33,7 +48,7 @@ export default class ArgumentCollector {
      * @param args - Arguments for the collector
      * @param promptLimit - Maximum number of times to prompt for a single argument
      */
-    public constructor(client: CommandoClient, args: ArgumentInfo[], promptLimit = Infinity) {
+    public constructor(client: CommandoClient, args: Args, promptLimit = Infinity) {
         if (!client) throw new TypeError('Collector client must be specified.');
         if (!args || !Array.isArray(args)) throw new TypeError('Collector args must be an array.');
         if (promptLimit === null) promptLimit = Infinity;
@@ -62,7 +77,7 @@ export default class ArgumentCollector {
      */
     public async obtain(
         msg: CommandoMessage, provided: unknown[] = [], promptLimit = this.promptLimit
-    ): Promise<ArgumentCollectorResult> {
+    ): Promise<ArgumentCollectorResult<MapArguments<Args>>> {
         const { author, channelId } = msg;
         // @ts-expect-error: _awaiting should not be used outside of class CommandDispatcher
         const { _awaiting } = this.client.dispatcher;
@@ -71,7 +86,7 @@ export default class ArgumentCollector {
 
         _awaiting.add(id);
         const values: Record<string, unknown> = {};
-        const results = [];
+        const results: ArgumentResult[] = [];
 
         try {
             for (let i = 0; i < args.length; i++) {
@@ -101,7 +116,7 @@ export default class ArgumentCollector {
 
         _awaiting.delete(id);
         return {
-            values,
+            values: values as MapArguments<Args>,
             cancelled: null,
             prompts: results.map(res => res.prompts).flat(),
             answers: results.map(res => res.answers).flat(),

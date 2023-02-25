@@ -1,9 +1,9 @@
-import { Message } from 'discord.js';
 import CommandoClient from '../client';
+import { CommandoifiedMessage } from '../discord.overrides';
 import CommandoMessage from '../extensions/message';
 import ArgumentType from './base';
 
-export default class MessageArgumentType extends ArgumentType {
+export default class MessageArgumentType extends ArgumentType<'message'> {
     protected msgRegex: RegExp;
 
     public constructor(client: CommandoClient) {
@@ -12,14 +12,14 @@ export default class MessageArgumentType extends ArgumentType {
         this.msgRegex = /^(\d+)$|discord\.com\/channels\/\d+\/\d+\/(\d+)$/;
     }
 
-    public async validate(val: string, msg: CommandoMessage): Promise<boolean | string> {
-        const matches = val.match(this.msgRegex);
+    public async validate(value: string, message: CommandoMessage): Promise<boolean | string> {
+        const matches = value.match(this.msgRegex);
         if (!matches) return 'Please enter a valid message id or URL.';
-        const message = await msg.channel.messages.fetch(matches[1] ?? matches[2]).catch(() => null);
-        return !!message;
+        const msg = await message.channel.messages.fetch(matches[1] ?? matches[2]).catch(() => null);
+        return !!msg;
     }
 
-    public parse(val: string, msg: CommandoMessage): Message | null {
-        return msg.channel.messages.resolve(val);
+    public parse(value: string, message: CommandoMessage): CommandoifiedMessage | null {
+        return message.channel.messages.resolve(value) as CommandoifiedMessage | null;
     }
 }

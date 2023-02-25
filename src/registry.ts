@@ -1,13 +1,10 @@
 /* eslint-disable new-cap */
-import {
-    ApplicationCommand,
-    ApplicationCommandData,
-    Collection,
-} from 'discord.js';
+import { Collection } from 'discord.js';
 import path from 'path';
 import requireAll from 'require-all';
 import CommandoClient from './client';
-import Command, { CommandInstances } from './commands/base';
+import { ArgumentTypeString } from './commands/argument';
+import Command, { APISlashCommand, CommandInstances } from './commands/base';
 import CommandGroup from './commands/group';
 import CommandoMessage from './extensions/message';
 import ArgumentType from './types/base';
@@ -15,7 +12,7 @@ import Util from './util';
 
 declare function require<T>(id: string): T;
 
-interface RequireAllOptions {
+export interface RequireAllOptions {
     dirname: string;
     filter?: RegExp | ((name: string, path: string) => string | false);
     excludeDirs?: RegExp;
@@ -24,119 +21,10 @@ interface RequireAllOptions {
     recursive?: boolean;
 }
 
-/** Object specifying which types to register */
-interface DefaultTypesOptions {
-    /**
-     * Whether to register the built-in string type
-     * @default true
-     */
-    string?: boolean;
-    /**
-     * Whether to register the built-in integer type
-     * @default true
-     */
-    integer?: boolean;
-    /**
-     * Whether to register the built-in float type
-     * @default true
-     */
-    float?: boolean;
-    /**
-     * Whether to register the built-in boolean type
-     * @default true
-     */
-    boolean?: boolean;
-    /**
-     * Whether to register the built-in duration type
-     * @default true
-     */
-    duration?: boolean;
-    /**
-     * Whether to register the built-in date type
-     * @default true
-     */
-    date?: boolean;
-    /**
-     * Whether to register the built-in time type
-     * @default true
-     */
-    time?: boolean;
-    /**
-     * Whether to register the built-in user type
-     * @default true
-     */
-    user?: boolean;
-    /**
-     * Whether to register the built-in member type
-     * @default true
-     */
-    member?: boolean;
-    /**
-     * Whether to register the built-in role type
-     * @default true
-     */
-    role?: boolean;
-    /**
-     * Whether to register the built-in channel type
-     * @default true
-     */
-    channel?: boolean;
-    /**
-     * Whether to register the built-in text-channel type
-     * @default true
-     */
-    textChannel?: boolean;
-    /**
-     * Whether to register the built-in thread-channel type
-     * @default true
-     */
-    threadChannel?: boolean;
-    /**
-     * Whether to register the built-in voice-channel type
-     * @default true
-     */
-    voiceChannel?: boolean;
-    /**
-     * Whether to register the built-in stage-channel type
-     * @default true
-     */
-    stageChannel?: boolean;
-    /**
-     * Whether to register the built-in category-channel type
-     * @default true
-     */
-    categoryChannel?: boolean;
-    /**
-     * Whether to register the built-in message type
-     * @default true
-     */
-    message?: boolean;
-    /**
-     * Whether to register the built-in invite type
-     * @default true
-     */
-    invite?: boolean;
-    /**
-     * Whether to register the built-in custom-emoji type
-     * @default true
-     */
-    customEmoji?: boolean;
-    /**
-     * Whether to register the built-in default-emoji type
-     * @default true
-     */
-    defaultEmoji?: boolean;
-    /**
-     * Whether to register the built-in command type
-     * @default true
-     */
-    command?: boolean;
-    /**
-     * Whether to register the built-in group type
-     * @default true
-     */
-    group?: boolean;
-}
+/** Object specifying which types to register. All default to `true` */
+export type DefaultTypesOptions = {
+    [T in ArgumentTypeString]?: boolean;
+};
 
 /**
  * A CommandResolvable can be:
@@ -157,6 +45,11 @@ export type CommandResolvable =
 export type CommandGroupResolvable =
     | CommandGroup
     | string;
+
+interface SlashCommandEntry {
+    command: APISlashCommand;
+    global: boolean;
+}
 
 /** Handles registration and searching of commands and groups */
 export default class CommandoRegistry {
@@ -188,65 +81,61 @@ export default class CommandoRegistry {
 
     /** Registers every client and guild slash command available - this may only be called upon startup. */
     protected async registerSlashCommands(): Promise<void> {
-        const { commands, client } = this;
-        const { application, options, guilds }: CommandoClient<true> = client;
+        const { client, commands } = this;
 
-        const testCommands = Util.filterNullishValues(
-            commands
-                .filter(cmd => cmd.testEnv)
-                .mapValues(cmd => cmd.slashInfo)
+        const slashCommands = Util.filterNullishValues(commands.mapValues(command => ({
+            command: command.slashInfo,
+            global: !command.testEnv,
+        }))).filter((command): command is SlashCommandEntry =>
+            !Util.isNullish(command.command)
         );
 
-        if (testCommands.size !== 0) {
-            if (typeof options.testGuild !== 'string') throw new TypeError('Client testGuild must be a string.');
+        await Promise.all(slashCommands.map(({ command, global }) =>
+            this.registerSlashCommand(Util.omit(command, ['deferEphemeral']), global)
+        ));
+        await this.deleteUnusedSlashCommands(slashCommands);
 
-            const guild = guilds.resolve(options.testGuild);
-            if (!guild) throw new TypeError('Client testGuild must be a valid Guild ID.');
+        const guildOnlyAmount = slashCommands.filter(command => !command.global).size;
+        const globalAmount = slashCommands.filter(command => command.global).size;
 
-            const manager = guild.commands;
-            const current = await manager.fetch();
-            const { created, updated, removed } = getUpdatedSlashCommands(current.toJSON(), testCommands);
-            const promises: Array<Promise<ApplicationCommand | null>> = [];
+        if (guildOnlyAmount) client.emit('debug', `Loaded ${guildOnlyAmount} guild slash commands`);
+        if (globalAmount) client.emit('debug', `Loaded ${globalAmount} global slash commands`);
+    }
 
-            for (const command of created) {
-                promises.push(manager.create(command));
-            }
-            for (const [id, command] of updated) {
-                promises.push(manager.edit(id, command));
-            }
-            for (const command of removed) {
-                promises.push(manager.delete(command));
-            }
+    /** Registers a slash command. */
+    protected async registerSlashCommand(command: Omit<APISlashCommand, 'deferEphemeral'>, global: boolean): Promise<void> {
+        const { application, options, guilds } = this.client as CommandoClient<true>;
 
-            await Promise.all(promises);
-            client.emit('debug', `Loaded ${testCommands.size} guild slash commands`);
+        const guild = !global && options.testGuild ? await guilds.fetch(options.testGuild) : null;
+        const commandManager = !global && guild ? guild.commands : application.commands;
+        const allCommands = await commandManager.fetch({});
+        const registeredCommand = allCommands.find(cmd => cmd.name === command.name);
+
+        if (!registeredCommand) {
+            await commandManager.create(command);
+            return;
         }
 
-        const globalCommands = Util.filterNullishValues(
-            commands
-                .filter(cmd => !cmd.testEnv)
-                .mapValues(cmd => cmd.slashInfo)
-        );
-
-        if (globalCommands.size === 0) return;
-
-        const manager = application.commands;
-        const current = await manager.fetch();
-        const { created, updated, removed } = getUpdatedSlashCommands(current.toJSON(), globalCommands);
-        const promises: Array<Promise<ApplicationCommand | null>> = [];
-
-        for (const command of created) {
-            promises.push(manager.create(command));
+        if (!registeredCommand.equals(command)) {
+            await registeredCommand.edit(command);
+            return;
         }
-        for (const [id, command] of updated) {
-            promises.push(manager.edit(id, command));
-        }
-        for (const command of removed) {
-            promises.push(manager.delete(command));
-        }
+    }
 
-        await Promise.all(promises);
-        client.emit('debug', `Loaded ${globalCommands.size} global slash commands`);
+    /** Deletes any slash commands that have been removed from the program. */
+    protected async deleteUnusedSlashCommands(currentCommands: Collection<string, SlashCommandEntry>): Promise<void> {
+        const client = this.client as CommandoClient<true>;
+        const { application, options, guilds } = client as CommandoClient<true>;
+
+        const guild = !global && options.testGuild ? await guilds.fetch(options.testGuild) : null;
+        const registeredCommands = await Promise.all([
+            guild?.commands.fetch(),
+            application.commands.fetch(),
+        ]).then(commands => commands[1].concat(commands[0] ?? new Collection()));
+
+        const removedCommands = registeredCommands.filter(command => !currentCommands.has(command.name));
+        await Promise.all(removedCommands.map(command => command.delete()));
+        client.emit('debug', `Deleted ${removedCommands.size} unused slash commands`);
     }
 
     /**
@@ -436,8 +325,8 @@ export default class CommandoRegistry {
      * @param options - The path to the directory, or a require-all options object
      */
     public registerTypesIn(options: RequireAllOptions | string): this {
-        const obj = requireAll(options);
-        const types = [];
+        const obj = requireAll(options) as Record<string, ArgumentType>;
+        const types: ArgumentType[] = [];
         for (const type of Object.values(obj)) types.push(type);
         return this.registerTypes(types, true);
     }
@@ -646,40 +535,4 @@ function isConstructor(func: { new(): unknown }, _class: () => unknown): boolean
     } catch (err) {
         return false;
     }
-}
-
-/**
- * Compares old and new slash commands
- * @param oldCommands - The old commands
- * @param newCommands - The new commands
- * @returns `[updated, removed]`
- */
-function getUpdatedSlashCommands(
-    oldCommands: ApplicationCommand[], newCommands: Collection<string, ApplicationCommandData>
-): {
-    created: ApplicationCommandData[];
-    /** Updated commands mapped by their ids */
-    updated: Map<string, ApplicationCommandData>;
-    removed: ApplicationCommand[];
-} {
-    const created: ApplicationCommandData[] = [];
-    const updated = new Map<string, ApplicationCommandData>();
-    for (const [, newCommand] of newCommands) {
-        const appCommand = oldCommands.find(cmd => cmd.name === newCommand.name);
-        if (!appCommand) {
-            created.push(newCommand);
-            continue;
-        }
-        if (!appCommand.equals(newCommand)) {
-            updated.set(appCommand.id, newCommand);
-        }
-    }
-
-    const removed = oldCommands.filter(cmd => !newCommands.has(cmd.name));
-
-    return {
-        created,
-        updated,
-        removed,
-    };
 }

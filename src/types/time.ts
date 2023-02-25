@@ -3,21 +3,23 @@ import CommandoClient from '../client';
 import Util, { Tuple } from '../util';
 import ArgumentType from './base';
 
-export default class TimeArgumentType extends ArgumentType {
-    protected timeRegex: RegExp;
+const timeRegex = new RegExp(
+    '(?<time>[0-2]?\\d(?::[0-5]?\\d)?)?\\s*' // time/hour
+    + '(?<ampm>[aApP]\\.?[mM]\\.?)?\\s*' // am pm
+    + '(?<tz>[+-]\\d\\d?)?$' // time zone offset
+);
 
+export default class TimeArgumentType extends ArgumentType<'time'> {
     public constructor(client: CommandoClient) {
         super(client, 'time');
-
-        this.timeRegex = new RegExp(
-            '(?<time>[0-2]?\\d(?::[0-5]?\\d)?)?\\s*' // time/hour
-            + '(?<ampm>[aApP]\\.?[mM]\\.?)?\\s*' // am pm
-            + '(?<tz>[+-]\\d\\d?)?$' // time zone offset
-        );
     }
 
-    public validate(val: string): boolean | string {
-        const date = this._parseDate(val.match(this.timeRegex), val);
+    public get timeRegex(): RegExp {
+        return timeRegex;
+    }
+
+    public validate(value: string): boolean | string {
+        const date = this.parseDate(value.match(this.timeRegex), value);
         if (!date) {
             return 'Please enter a valid date format. Use the `help` command for more information.';
         }
@@ -33,17 +35,17 @@ export default class TimeArgumentType extends ArgumentType {
         return true;
     }
 
-    public parse(val: string): Date | null {
-        return this._parseDate(val.match(this.timeRegex), val);
+    public parse(value: string): Date | null {
+        return this.parseDate(value.match(this.timeRegex), value);
     }
 
     /**
      * Parses the string value into a valid Date object, if possible.
      * @param matches - Matches given by the regex.
-     * @param val - The value to parse.
+     * @param value - The value to parse.
      */
-    protected _parseDate(matches: RegExpMatchArray | null, val: string): Date | null {
-        if (val.toLowerCase() === 'now') return new Date();
+    public parseDate(matches: RegExpMatchArray | null, value: string): Date | null {
+        if (value.toLowerCase() === 'now') return new Date();
         if (!matches || !matches.groups || Object.values(matches.groups).filter(v => v).length === 0) return null;
 
         const { time, ampm: matchAmPm, tz } = matches.groups;

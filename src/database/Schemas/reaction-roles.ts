@@ -1,11 +1,12 @@
 import { model, Schema } from 'mongoose';
 import { BaseSchema, DocumentFrom } from './base';
+import { Snowflake } from 'discord.js';
 
 export interface ReactionRoleSchema extends BaseSchema {
-    guild: string;
-    channel: string;
-    message: string;
-    roles: string[];
+    guild: Snowflake;
+    channel: Snowflake;
+    message: Snowflake;
+    roles: Snowflake[];
     emojis: string[];
 }
 

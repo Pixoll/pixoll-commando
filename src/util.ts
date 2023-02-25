@@ -14,6 +14,15 @@ export type Require<T extends object, K extends keyof T = keyof T, Expand extend
 
 export type Destructure<T> = { [P in keyof T]: T[P] };
 
+/** Does not preserve {@link Tuple tuples} */
+export type Mutable<T> = T extends Array<infer U> | ReadonlyArray<infer U>
+    ? (U extends object ? Array<Mutable<U>> : U[])
+    : T extends object
+    ? { -readonly [P in keyof T]: Mutable<T[P]> }
+    : T;
+
+export type PropertiesOf<T> = T[keyof T];
+
 export type Commandoify<T, Ready extends boolean = boolean> = OverrideGuild<OverrideClient<T, Ready>>;
 
 export type OverrideGuild<T> = T extends { guild: Guild | infer R }
@@ -48,6 +57,8 @@ export interface SplitOptions {
     /** Text to append to every piece except the last. */
     append?: string;
 }
+
+type ReadonlyArguments = ReadonlyArray<Readonly<Record<string, unknown>>>;
 
 /** Contains various general-purpose utility methods and constants. */
 export default class Util extends null {
@@ -280,6 +291,42 @@ export default class Util extends null {
             if (val === value) return true;
         }
         return false;
+    }
+
+    public static removeReadonlyFromArguments<T extends ReadonlyArguments>(args: T): Mutable<T> {
+        return args.map(a => Object.fromEntries(Object.entries(a))) as Mutable<T>;
+    }
+
+    public static getEnumEntries<T extends object>(obj: T): Array<[Extract<keyof T, string>, PropertiesOf<T>]> {
+        return Object.entries(obj).filter((entry): entry is [Extract<keyof T, string>, PropertiesOf<T>] =>
+            typeof entry[1] === 'number'
+        );
+    }
+
+    public static deepCopy<T>(value: T): T {
+        return JSON.parse(JSON.stringify(value));
+    }
+
+    public static pick<T extends object, K extends keyof T>(object: T, keys: K[]): Pick<T, K> {
+        return Util.omitOrPick('pick', object, keys);
+    }
+
+    public static omit<T extends object, K extends keyof T>(object: T, keys: K[]): Omit<T, K> {
+        return Util.omitOrPick('omit', object, keys);
+    }
+
+    protected static omitOrPick<Kind extends 'omit' | 'pick', T extends object, K extends keyof T>(
+        kind: Kind, object: T, keys: K[]
+    ): Kind extends 'omit' ? Omit<T, K> : Pick<T, K> {
+        const finalObject: Record<string, unknown> = {};
+        const validEntires = Object.entries(object as Record<string, unknown>)
+            .filter(([k]) =>
+                kind === 'omit' ? !keys.includes(k as K) : keys.includes(k as K)
+            );
+        for (const [key, value] of validEntires) {
+            finalObject[key] = value;
+        }
+        return finalObject as Kind extends 'omit' ? Omit<T, K> : Pick<T, K>;
     }
 
     /**

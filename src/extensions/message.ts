@@ -23,17 +23,17 @@ import CommandoGuild from './guild';
 import { CommandoGuildMember, CommandoifiedMessage } from '../discord.overrides';
 
 /** Type of the response */
-type ResponseType =
+export type ResponseType =
     | 'code'
     | 'direct'
     | 'plain'
     | 'reply';
 
-type StringResolvable =
+export type StringResolvable =
     | MessageCreateOptions
     | string;
 
-interface ResponseOptions {
+export interface ResponseOptions {
     /** Type of the response */
     type?: ResponseType;
     /** Content of the response */
@@ -533,7 +533,7 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
     public static parseArgs(argString: string, argCount?: number, allowSingleQuote = true): string[] {
         const argStringModified = removeSmartQuotes(argString, allowSingleQuote);
         const regex = allowSingleQuote ? /\s*(?:("|')([^]*?)\1|(\S+))\s*/g : /\s*(?:(")([^]*?)"|(\S+))\s*/g;
-        const result = [];
+        const result: string[] = [];
         let match: string[] | null = [];
 
         // Large enough to get all items

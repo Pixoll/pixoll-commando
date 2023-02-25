@@ -1,9 +1,10 @@
 import { model, Schema } from 'mongoose';
 import { BaseSchemaWithTimestamps, DocumentFrom } from './base';
+import { Snowflake } from 'discord.js';
 
 export interface AfkSchema extends BaseSchemaWithTimestamps {
-    guild: string;
-    user: string;
+    guild: Snowflake;
+    user: Snowflake;
     status: string;
 }
 

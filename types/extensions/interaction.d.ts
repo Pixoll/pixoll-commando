@@ -1,0 +1,52 @@
+import { APIApplicationCommandOption as APISlashCommandOption, ApplicationCommandOptionType as SlashCommandOptionType, Attachment, ChatInputCommandInteraction, GuildTextBasedChannel, If, StageChannel, TextBasedChannel, User } from 'discord.js';
+import CommandoClient from '../client';
+import Command from '../commands/base';
+import { CommandoChannel, CommandoChatInputCommandInteraction, CommandoGuildMember, CommandoRole, CommandoUser } from '../discord.overrides';
+import CommandoGuild from './guild';
+export type SlashCommandBasicOptionsParser<O extends APISlashCommandOption[]> = {
+    [A in O[number] as A['name']]: A['required'] extends true ? SlashCommandOptionTypeMap[A['type']] : (SlashCommandOptionTypeMap[A['type']] extends never ? never : SlashCommandOptionTypeMap[A['type']] | null);
+};
+interface SlashCommandOptionTypeMap {
+    [SlashCommandOptionType.Attachment]: Attachment;
+    [SlashCommandOptionType.Boolean]: boolean;
+    [SlashCommandOptionType.Channel]: CommandoChannel;
+    [SlashCommandOptionType.Integer]: number;
+    [SlashCommandOptionType.Mentionable]: CommandoChannel | CommandoRole | CommandoUser;
+    [SlashCommandOptionType.Number]: number;
+    [SlashCommandOptionType.Role]: CommandoRole;
+    [SlashCommandOptionType.String]: string;
+    [SlashCommandOptionType.User]: CommandoUser;
+    [SlashCommandOptionType.Subcommand]: never;
+    [SlashCommandOptionType.SubcommandGroup]: never;
+}
+type InteractionChannel<InGuild extends boolean = boolean> = Exclude<If<InGuild, GuildTextBasedChannel, TextBasedChannel | null>, StageChannel>;
+/** An extension of the base Discord.js ChatInputCommandInteraction class to add command-related functionality. */
+export default class CommandoInteraction<InGuild extends boolean = boolean> extends ChatInputCommandInteraction {
+    /** The client the interaction is for */
+    readonly client: CommandoClient<true>;
+    member: CommandoGuildMember | null;
+    /** Command that the interaction triggers */
+    protected _command: Command<InGuild>;
+    /**
+     * @param client - The client the interaction is for
+     * @param data - The interaction data
+     */
+    constructor(client: CommandoClient<true>, data: CommandoChatInputCommandInteraction);
+    get author(): User;
+    /** The channel this interaction was used in */
+    get channel(): InteractionChannel<InGuild>;
+    /** Command that the interaction triggers */
+    get command(): Command<InGuild>;
+    /** The guild this interaction was used in */
+    get guild(): If<InGuild, CommandoGuild>;
+    /** Whether this interaction is able to been edited (has been previously deferred or replied to) */
+    isEditable(): boolean;
+    /**
+     * Parses the options data into usable arguments
+     * @see Command#run
+     */
+    parseArgs<O extends APISlashCommandOption[]>(options?: O): SlashCommandBasicOptionsParser<O>;
+    /** Runs the command */
+    run(): Promise<void>;
+}
+export {};

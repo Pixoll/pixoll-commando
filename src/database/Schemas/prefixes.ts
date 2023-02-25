@@ -1,9 +1,10 @@
 import { model, Schema } from 'mongoose';
 import { BaseSchema, DocumentFrom } from './base';
+import { Snowflake } from 'discord.js';
 
 export interface PrefixSchema extends BaseSchema {
     global: boolean;
-    guild?: string;
+    guild?: Snowflake | undefined;
     prefix: string;
 }
 

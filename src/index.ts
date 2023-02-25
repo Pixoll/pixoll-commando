@@ -1,20 +1,180 @@
-export { default as CommandoClient } from './client';
-export { default as CommandoRegistry } from './registry';
-export { default as CommandDispatcher } from './dispatcher';
-export { default as CommandoInteraction } from './extensions/interaction';
+export {
+    default as CommandoClient,
+    CommandoClientEvents,
+    CommandoClientOptions,
+} from './client';
+export {
+    default as CommandoRegistry,
+    CommandGroupResolvable,
+    CommandResolvable,
+    DefaultTypesOptions,
+    RequireAllOptions,
+} from './registry';
+export { default as CommandDispatcher, Inhibition } from './dispatcher';
+export { default as CommandoInteraction, SlashCommandBasicOptionsParser } from './extensions/interaction';
 export { default as CommandoGuild } from './extensions/guild';
-export { default as CommandoMessage } from './extensions/message';
-export { default as Command } from './commands/base';
+export {
+    default as CommandoMessage,
+    CommandoMessageResponse,
+    ResponseOptions,
+    ResponseType,
+    StringResolvable,
+} from './extensions/message';
+export {
+    default as Command,
+    APISlashCommand,
+    CommandBlockData,
+    CommandBlockReason,
+    CommandInfo,
+    CommandInstances,
+    SlashCommandInfo,
+    Throttle,
+    ThrottlingOptions,
+} from './commands/base';
 export { default as CommandGroup } from './commands/group';
-export { default as ArgumentCollector } from './commands/collector';
-export { default as Argument } from './commands/argument';
+export { default as ArgumentCollector, ArgumentCollectorResult, MapArguments } from './commands/collector';
+export {
+    default as Argument,
+    ArgumentDefault,
+    ArgumentInfo,
+    ArgumentResponse,
+    ArgumentResult,
+    ArgumentTypeString,
+    ArgumentTypeStringMap,
+} from './commands/argument';
 export { default as ArgumentType } from './types/base';
+export { default as ArgumentUnionType } from './types/union';
 export { default as FriendlyError } from './errors/friendly';
 export { default as CommandFormatError } from './errors/command-format';
 export { default as ClientDatabaseManager } from './database/ClientDatabaseManager';
-export { default as DatabaseManager } from './database/DatabaseManager';
+export { default as DatabaseManager, QuerySchema } from './database/DatabaseManager';
 export { default as GuildDatabaseManager } from './database/GuildDatabaseManager';
-export { default as Util } from './util';
+export {
+    ActiveSchema,
+    AfkSchema,
+    AnySchema,
+    BaseSchema,
+    BaseSchemaWithTimestamps,
+    DisabledSchema,
+    DocumentFrom,
+    ErrorSchema,
+    FaqSchema,
+    GuildAuditLog,
+    GuildModule,
+    McIpSchema,
+    ModelFrom,
+    ModerationSchema,
+    ModerationType,
+    ModuleSchema,
+    PollSchema,
+    PrefixSchema,
+    ReactionRoleSchema,
+    ReminderSchema,
+    RuleSchema,
+    SetupSchema,
+    SimplifiedModel,
+    SimplifiedSchemas,
+    StickyRoleSchema,
+    TimeBasedModerationType,
+    TodoSchema,
+    WelcomeSchema,
+} from './database/Schemas';
+export {
+    default as Util,
+    Commandoify,
+    CommandoifyMessage,
+    Destructure,
+    Mutable,
+    OverrideClient,
+    OverrideGuild,
+    PropertiesOf,
+    Require,
+    SplitOptions,
+    Tuple,
+} from './util';
+export type {
+    AnyCommandoSelectMenuInteraction,
+    AnyCommandoThreadChannel,
+    BaseCommandoGuildEmojiManager,
+    CommandoAutoModerationActionExecution,
+    CommandoAutoModerationRule,
+    CommandoAutocompleteInteraction,
+    CommandoButtonInteraction,
+    CommandoCategoryChannel,
+    CommandoChannel,
+    CommandoChannelManager,
+    CommandoChannelResolvable,
+    CommandoChannelSelectMenuInteraction,
+    CommandoChatInputCommandInteraction,
+    CommandoCommandInteraction,
+    CommandoContextMenuCommandInteraction,
+    CommandoDMChannel,
+    CommandoEmojiResolvable,
+    CommandoForumChannel,
+    CommandoGuildBan,
+    CommandoGuildBasedChannel,
+    CommandoGuildChannel,
+    CommandoGuildChannelManager,
+    CommandoGuildChannelResolvable,
+    CommandoGuildEmoji,
+    CommandoGuildEmojiManager,
+    CommandoGuildManager,
+    CommandoGuildMember,
+    CommandoGuildMemberManager,
+    CommandoGuildMemberResolvable,
+    CommandoGuildResolvable,
+    CommandoGuildScheduledEvent,
+    CommandoGuildTextBasedChannel,
+    CommandoInteractionOverride,
+    CommandoInvite,
+    CommandoMappedChannelCategoryTypes,
+    CommandoMentionableSelectMenuInteraction,
+    CommandoMessageComponentInteraction,
+    CommandoMessageContextMenuCommandInteraction,
+    CommandoMessageReaction,
+    CommandoModalMessageModalSubmitInteraction,
+    CommandoModalSubmitInteraction,
+    CommandoNewsChannel,
+    CommandoPresence,
+    CommandoPrivateThreadChannel,
+    CommandoPublicThreadChannel,
+    CommandoRepliableInteraction,
+    CommandoRole,
+    CommandoRoleManager,
+    CommandoRoleResolvable,
+    CommandoRoleSelectMenuInteraction,
+    CommandoStageChannel,
+    CommandoStageInstance,
+    CommandoSticker,
+    CommandoStringSelectMenuInteraction,
+    CommandoTextBasedChannel,
+    CommandoTextChannel,
+    CommandoTextChannelResolvable,
+    CommandoThreadChannel,
+    CommandoThreadMember,
+    CommandoTyping,
+    CommandoUser,
+    CommandoUserContextMenuCommandInteraction,
+    CommandoUserResolvable,
+    CommandoUserSelectMenuInteraction,
+    CommandoVoiceBasedChannel,
+    CommandoVoiceChannel,
+    CommandoVoiceState,
+    CommandoifiedInteraction,
+    CommandoifiedMessage,
+    FetchCommandoMemberOptions,
+    FetchCommandoMembersOptions,
+    FetchedCommandoThreads,
+    NonThreadCommandoGuildBasedChannel,
+    OverwrittenClientEvents,
+    PartialCommandoDMChannel,
+    PartialCommandoGroupDMChannel,
+    PartialCommandoGuildMember,
+    PartialCommandoThreadMember,
+    PartialCommandoUser,
+    PartialCommandoifiedMessage,
+} from './discord.overrides';
+
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: @ts-expect-error throws "unused directive". File is in program as specified under 'files' in tsconfig.json
 export { version } from '../package.json';

@@ -1,20 +1,21 @@
 import ArgumentType from './base';
 import Util from '../util';
-import { CategoryChannel, ChannelType, escapeMarkdown, GuildBasedChannel } from 'discord.js';
+import { ChannelType, escapeMarkdown } from 'discord.js';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 import Argument from '../commands/argument';
+import { CommandoCategoryChannel, CommandoGuildBasedChannel } from '../discord.overrides';
 
-export default class CategoryChannelArgumentType extends ArgumentType {
+export default class CategoryChannelArgumentType extends ArgumentType<'category-channel'> {
     public constructor(client: CommandoClient) {
         super(client, 'category-channel');
     }
 
-    public validate(val: string, msg: CommandoMessage, arg: Argument): boolean | string {
-        const { client, guild } = msg;
-        const { oneOf } = arg;
+    public validate(value: string, message: CommandoMessage, argument: Argument<'category-channel'>): boolean | string {
+        const { client, guild } = message;
+        const { oneOf } = argument;
 
-        const matches = val.match(/^(?:<#)?(\d+)>?$/);
+        const matches = value.match(/^(?:<#)?(\d+)>?$/);
         if (matches) {
             try {
                 const channel = client.channels.resolve(matches[1]);
@@ -28,19 +29,19 @@ export default class CategoryChannelArgumentType extends ArgumentType {
 
         if (!guild) return false;
 
-        const search = val.toLowerCase();
+        const search = value.toLowerCase();
         let channels = guild.channels.cache.filter(channelFilterInexact(search));
         const first = channels.first();
         if (!first) return false;
         if (channels.size === 1) {
-            if (arg.oneOf && !arg.oneOf.includes(first.id)) return false;
+            if (argument.oneOf && !argument.oneOf.includes(first.id)) return false;
             return true;
         }
 
         const exactChannels = channels.filter(channelFilterExact(search));
         const exact = exactChannels.first();
         if (exactChannels.size === 1 && exact) {
-            if (arg.oneOf && !arg.oneOf.includes(exact.id)) return false;
+            if (argument.oneOf && !argument.oneOf.includes(exact.id)) return false;
             return true;
         }
         if (exactChannels.size > 0) channels = exactChannels;
@@ -50,14 +51,14 @@ export default class CategoryChannelArgumentType extends ArgumentType {
             : 'Multiple categories found. Please be more specific.';
     }
 
-    public parse(val: string, msg: CommandoMessage): CategoryChannel | null {
-        const matches = val.match(/^(?:<#)?(\d+)>?$/);
-        if (matches) return msg.client.channels.resolve(matches[1]) as CategoryChannel;
+    public parse(value: string, message: CommandoMessage): CommandoCategoryChannel | null {
+        const matches = value.match(/^(?:<#)?(\d+)>?$/);
+        if (matches) return message.client.channels.resolve(matches[1]) as CommandoCategoryChannel | null;
 
-        if (!msg.guild) return null;
+        if (!message.guild) return null;
 
-        const search = val.toLowerCase();
-        const channels = msg.guild.channels.cache.filter(channelFilterInexact(search));
+        const search = value.toLowerCase();
+        const channels = message.guild.channels.cache.filter(channelFilterInexact(search));
         if (channels.size === 0) return null;
         if (channels.size === 1) return channels.first() ?? null;
 
@@ -69,11 +70,11 @@ export default class CategoryChannelArgumentType extends ArgumentType {
 }
 
 function channelFilterExact(search: string) {
-    return (chan: GuildBasedChannel): chan is CategoryChannel =>
-        chan.type === ChannelType.GuildCategory && chan.name.toLowerCase() === search;
+    return (channel: CommandoGuildBasedChannel): channel is CommandoCategoryChannel =>
+        channel.type === ChannelType.GuildCategory && channel.name.toLowerCase() === search;
 }
 
 function channelFilterInexact(search: string) {
-    return (chan: GuildBasedChannel): chan is CategoryChannel =>
-        chan.type === ChannelType.GuildCategory && chan.name.toLowerCase().includes(search);
+    return (channel: CommandoGuildBasedChannel): channel is CommandoCategoryChannel =>
+        channel.type === ChannelType.GuildCategory && channel.name.toLowerCase().includes(search);
 }

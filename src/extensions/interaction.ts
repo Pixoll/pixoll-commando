@@ -1,14 +1,14 @@
 import { stripIndent } from 'common-tags';
 import {
+    APIApplicationCommandOption as APISlashCommandOption,
     APIChatInputApplicationCommandInteraction,
     APIUser,
-    ApplicationCommandOptionType,
+    ApplicationCommandOptionType as SlashCommandOptionType,
     ApplicationCommandType,
+    Attachment,
     ChatInputCommandInteraction,
     Colors,
-    CommandInteractionOption,
     EmbedBuilder,
-    GuildMember,
     GuildTextBasedChannel,
     If,
     StageChannel,
@@ -18,9 +18,52 @@ import {
 import CommandoClient from '../client';
 import Command from '../commands/base';
 import FriendlyError from '../errors/friendly';
-import { CommandoChatInputCommandInteraction, CommandoGuildMember } from '../discord.overrides';
-import Util from '../util';
+import {
+    CommandoChannel,
+    CommandoChatInputCommandInteraction,
+    CommandoGuildMember,
+    CommandoRole,
+    CommandoUser,
+} from '../discord.overrides';
+import Util, { PropertiesOf } from '../util';
 import CommandoGuild from './guild';
+
+export type SlashCommandBasicOptionsParser<O extends APISlashCommandOption[]> = {
+    [A in O[number]as A['name']]: A['required'] extends true
+    ? SlashCommandOptionTypeMap[A['type']]
+    : (
+        SlashCommandOptionTypeMap[A['type']] extends never
+        ? never
+        : SlashCommandOptionTypeMap[A['type']] | null
+    );
+};
+
+interface SlashCommandOptionTypeMap {
+    [SlashCommandOptionType.Attachment]: Attachment;
+    [SlashCommandOptionType.Boolean]: boolean;
+    [SlashCommandOptionType.Channel]: CommandoChannel;
+    [SlashCommandOptionType.Integer]: number;
+    [SlashCommandOptionType.Mentionable]: CommandoChannel | CommandoRole | CommandoUser;
+    [SlashCommandOptionType.Number]: number;
+    [SlashCommandOptionType.Role]: CommandoRole;
+    [SlashCommandOptionType.String]: string;
+    [SlashCommandOptionType.User]: CommandoUser;
+    [SlashCommandOptionType.Subcommand]: never;
+    [SlashCommandOptionType.SubcommandGroup]: never;
+}
+
+const APISlashCommandOptionTypeMap = Object.fromEntries(Util.getEnumEntries(SlashCommandOptionType)
+    .map<[SlashCommandOptionType, keyof typeof SlashCommandOptionType | false]>(([key, value]) =>
+        [value, Util.equals(key, ['Subcommand', 'SubcommandGroup']) ? false : key]
+    )) as Record<
+        Exclude<SlashCommandOptionType, SlashCommandOptionType.Subcommand | SlashCommandOptionType.SubcommandGroup>,
+        Exclude<keyof typeof SlashCommandOptionType, 'Subcommand' | 'SubcommandGroup'>
+    > & Record<SlashCommandOptionType.Subcommand | SlashCommandOptionType.SubcommandGroup, false>;
+
+type InteractionChannel<InGuild extends boolean = boolean> = Exclude<
+    If<InGuild, GuildTextBasedChannel, TextBasedChannel | null>,
+    StageChannel
+>;
 
 /** An extension of the base Discord.js ChatInputCommandInteraction class to add command-related functionality. */
 export default class CommandoInteraction<InGuild extends boolean = boolean> extends ChatInputCommandInteraction {
@@ -46,8 +89,8 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
     }
 
     /** The channel this interaction was used in */
-    public get channel(): Exclude<If<InGuild, GuildTextBasedChannel, TextBasedChannel>, StageChannel> {
-        return super.channel as Exclude<If<InGuild, GuildTextBasedChannel, TextBasedChannel>, StageChannel>;
+    public get channel(): InteractionChannel<InGuild> {
+        return super.channel as InteractionChannel<InGuild>;
     }
 
     /** Command that the interaction triggers */
@@ -70,69 +113,31 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
      * Parses the options data into usable arguments
      * @see Command#run
      */
-    public parseArgs(options: CommandInteractionOption[]): Record<string, unknown> {
+    public parseArgs<O extends APISlashCommandOption[]>(options?: O): SlashCommandBasicOptionsParser<O> {
+        const optionsManager = this.options;
         const args: Record<string, unknown> = {};
-        const { client, guild } = this;
-        const { channels } = client;
-        let members = null, roles = null;
-        if (guild) {
-            members = guild.members;
-            roles = guild.roles;
+        if (!options) {
+            return args as SlashCommandBasicOptionsParser<O>;
         }
 
-        for (const option of options) {
-            const { name, value, type, channel, member, user, role, attachment } = option;
-            if (name && Util.isNullish(value)) {
-                args.subCommand = name;
-                if (option.options) {
-                    Object.assign(args, this.parseArgs(option.options));
-                }
-                continue;
-            }
-
-            const optionName = Util.removeDashes(name);
-            switch (type) {
-                case ApplicationCommandOptionType.Boolean:
-                case ApplicationCommandOptionType.Integer:
-                case ApplicationCommandOptionType.Number:
-                case ApplicationCommandOptionType.String:
-                case ApplicationCommandOptionType.Subcommand:
-                    args[optionName] = value ?? null;
-                    break;
-                case ApplicationCommandOptionType.Channel:
-                    args[optionName] = channel ? channels.resolve(channel.id) : null;
-                    break;
-                case ApplicationCommandOptionType.Mentionable: {
-                    const resolvedMember = member instanceof GuildMember && members ? members.resolve(member) : null;
-                    const resolvedChannel = channel ? channels.resolve(channel.id) : null;
-                    const resolvedRole = role && roles ? roles.resolve(role.id) : null;
-                    args[optionName] = resolvedMember ?? user ?? resolvedChannel ?? resolvedRole ?? null;
-                    break;
-                }
-                case ApplicationCommandOptionType.Role:
-                    args[optionName] = role && roles ? roles.resolve(role.id) : null;
-                    break;
-                case ApplicationCommandOptionType.User: {
-                    const resolvedMember = member instanceof GuildMember && members ? members.resolve(member) : null;
-                    args[optionName] = resolvedMember ?? user ?? null;
-                    break;
-                }
-                case ApplicationCommandOptionType.Attachment:
-                    args[optionName] = attachment ?? null;
-                    break;
-                default:
-                    throw new RangeError(`Unsupported option type "${type}".`);
-            }
+        for (const { name, type } of options) {
+            const getOptionName = `get${APISlashCommandOptionTypeMap[type]}` as `get${Exclude<PropertiesOf<
+                typeof APISlashCommandOptionTypeMap
+            >, false>}`;
+            const apiName = name.replace(/[A-Z]/g, '-$&').toLowerCase();
+            const value = optionsManager[getOptionName](apiName);
+            args[name] = value;
         }
 
-        return args;
+        return args as SlashCommandBasicOptionsParser<O>;
     }
 
     /** Runs the command */
     public async run(): Promise<void> {
-        const { command, channelId, channel, guild, author, guildId, client, options } = this;
+        const { command, channelId, channel: tempChannel, guild, author, guildId, client } = this;
         const { groupId, memberName } = command;
-        const { user: clientUser } = client;
+        const clientUser = client.user;
+        const channel = tempChannel ?? await client.channels.fetch(channelId) as NonNullable<InteractionChannel>;
 
         if (guild && !channel.isDMBased()) {
             const { members } = guild;
@@ -173,7 +178,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
         }
 
         // Ensure the channel is a NSFW one if required
-        if (command.nsfw && 'nsfw' in channel && !channel.nsfw) {
+        if (command.nsfw && !channel.isDMBased() && channel.isTextBased() && !channel.isThread() && !channel.nsfw) {
             client.emit('commandBlock', { interaction: this }, 'nsfw');
             await command.onBlock({ interaction: this }, 'nsfw');
             return;
@@ -216,7 +221,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
         }
 
         // Parses the options into an arguments object. Array.from to prevent "readonly" error.
-        const args = this.parseArgs(Array.from(options.data));
+        const args = this.parseArgs(this.command.slashInfo?.options);
 
         // Run the command
         try {

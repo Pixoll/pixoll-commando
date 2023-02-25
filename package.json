@@ -1,6 +1,6 @@
 {
 	"name": "pixoll-commando",
-	"version": "1.0.0-dev.21",
+	"version": "1.0.0-dev.22",
 	"description": "Original work is not mine. You can find the original repository here: https://github.com/discordjs/Commando.",
 	"license": "Apache-2.0",
 	"author": "Pixoll",
@@ -23,7 +23,7 @@
 		"lint:fix": "eslint --fix src"
 	},
 	"main": "./lib/index.js",
-	"types": "./typings/index.d.ts",
+	"types": "./types/index.d.ts",
 	"dependencies": {
 		"better-ms": "^1.1.7",
 		"common-tags": "^1.8.2",
@@ -41,7 +41,7 @@
 		"@typescript-eslint/eslint-plugin": "^5.45.0",
 		"@typescript-eslint/parser": "^5.45.0",
 		"eslint": "^8.29.0",
-		"typescript": "^4.9.3"
+		"typescript": "^4.9.5"
 	},
 	"engines": {
 		"node": ">=16.9.0"

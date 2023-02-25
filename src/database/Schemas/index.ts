@@ -1,13 +1,13 @@
 import { Model, FilterQuery, UpdateQuery, UpdateWriteOpResult } from 'mongoose';
-import { BaseSchema, DocumentFrom } from './base';
+import { BaseSchema, DocumentFrom, BaseSchemaWithTimestamps } from './base';
 import ActiveModel, { ActiveSchema } from './active';
 import AfkModel, { AfkSchema } from './afk';
 import DisabledModel, { DisabledSchema } from './disabled';
 import ErrorsModel, { ErrorSchema } from './errors';
 import FaqModel, { FaqSchema } from './faq';
 import McIpsModel, { McIpSchema } from './mc-ips';
-import ModerationsModel, { ModerationSchema } from './moderations';
-import ModulesModel, { ModuleSchema } from './modules';
+import ModerationsModel, { ModerationSchema, ModerationType, TimeBasedModerationType } from './moderations';
+import ModulesModel, { GuildAuditLog, GuildModule, ModuleSchema } from './modules';
 import PollsModel, { PollSchema } from './polls';
 import PrefixesModel, { PrefixSchema } from './prefixes';
 import ReactionRolesModel, { ReactionRoleSchema } from './reaction-roles';
@@ -17,6 +17,15 @@ import SetupModel, { SetupSchema } from './setup';
 import StickyRolesModel, { StickyRoleSchema } from './sticky-roles';
 import TodoModel, { TodoSchema } from './todo';
 import WelcomeModel, { WelcomeSchema } from './welcome';
+
+export {
+    BaseSchemaWithTimestamps,
+    DocumentFrom,
+    GuildAuditLog,
+    GuildModule,
+    ModerationType,
+    TimeBasedModerationType,
+};
 
 // @ts-expect-error: incompatible methods between interfaces
 export interface SimplifiedModel<T> extends Model<T> {

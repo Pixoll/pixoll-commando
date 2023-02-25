@@ -9,8 +9,9 @@ import {
     IntentsBitField,
     Message,
     PermissionsBitField,
-    User,
     UserResolvable,
+    ClientFetchInviteOptions,
+    User,
 } from 'discord.js';
 import CommandoRegistry from './registry';
 import CommandDispatcher from './dispatcher';
@@ -22,7 +23,13 @@ import GuildDatabaseManager from './database/GuildDatabaseManager';
 import Util from './util';
 import initializeDB from './database/initializeDB';
 import CommandoInteraction from './extensions/interaction';
-import { CommandoGuildManager, OverwrittenClientEvents } from './discord.overrides';
+import {
+    BaseCommandoGuildEmojiManager,
+    CommandoChannelManager,
+    CommandoGuildManager,
+    CommandoInvite,
+    OverwrittenClientEvents,
+} from './discord.overrides';
 import Command, { CommandBlockData, CommandBlockReason, CommandInstances } from './commands/base';
 import { ArgumentCollectorResult } from './commands/collector';
 import ArgumentType from './types/base';
@@ -113,6 +120,7 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
     /** The client's command dispatcher */
     public dispatcher: CommandDispatcher;
     declare public guilds: CommandoGuildManager;
+    declare public channels: CommandoChannelManager;
     /** Options for the client */
     declare public options: Omit<CommandoClientOptions, 'intents'> & { intents: IntentsBitField };
     /** The client's command registry */
@@ -158,6 +166,14 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
         })));
     }
 
+    public get emojis(): BaseCommandoGuildEmojiManager {
+        return super.emojis as BaseCommandoGuildEmojiManager;
+    }
+
+    public async fetchInvite(invite: string, options?: ClientFetchInviteOptions): Promise<CommandoInvite> {
+        return await super.fetchInvite(invite, options) as CommandoInvite;
+    }
+
     /**
      * Global command prefix. An empty string indicates that there is no default prefix, and only mentions will be used.
      * Setting to `null` means that the default prefix from {@link CommandoClient#options} will be used instead.
@@ -184,7 +200,7 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
         const { options, users } = this;
         const owners = options.owners && Array.from(options.owners);
         if (!owners) return null;
-        return Util.filterNullishItems(owners.map(users.resolve));
+        return Util.filterNullishItems(owners.map(user => users.resolve(user)));
     }
 
     /**

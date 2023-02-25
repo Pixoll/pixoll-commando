@@ -1,13 +1,14 @@
 import { model, Schema } from 'mongoose';
 import { BaseSchemaWithTimestamps, DocumentFrom } from './base';
+import { Snowflake } from 'discord.js';
 
 export interface ReminderSchema extends BaseSchemaWithTimestamps {
-    user: string;
+    user: Snowflake;
     reminder: string;
     remindAt: number;
-    message: string;
+    message: Snowflake;
     msgURL: string;
-    channel: string;
+    channel: Snowflake;
 }
 
 const RemindersModel = model<DocumentFrom<ReminderSchema>>('reminders', new Schema({

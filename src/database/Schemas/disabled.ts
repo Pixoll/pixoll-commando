@@ -1,8 +1,9 @@
 import { model, Schema } from 'mongoose';
 import { BaseSchema, DocumentFrom } from './base';
+import { Snowflake } from 'discord.js';
 
 export interface DisabledSchema extends BaseSchema {
-    guild?: string;
+    guild?: Snowflake | undefined;
     global: boolean;
     commands: string[];
     groups: string[];

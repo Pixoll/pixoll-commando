@@ -5,6 +5,10 @@ import CommandoGuild from '../extensions/guild';
 import Util from '../util';
 import { ModelFrom, SimplifiedModel, AnySchema } from './Schemas';
 
+export type QuerySchema<T extends AnySchema> = T extends { _id: string }
+    ? Omit<T, 'createdAt' | 'updatedAt'>
+    : Omit<T, '_id' |'createdAt' | 'updatedAt'>;
+
 /** A MongoDB database schema manager */
 export default class DatabaseManager<T extends AnySchema, IncludeId extends boolean = boolean> {
     /** Guild for this database */
@@ -33,7 +37,7 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
      * @param doc - The document to add
      * @returns The added document
      */
-    public async add(doc: Omit<T, 'createdAt' | 'updatedAt'>): Promise<T> {
+    public async add(doc: QuerySchema<T>): Promise<T> {
         if (typeof doc !== 'object') {
             throw new TypeError('Document must me an object');
         }
@@ -86,7 +90,7 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
      */
     public async update(
         doc: T | string,
-        update: Omit<T, 'createdAt' | 'updatedAt'> | UpdateAggregationStage | UpdateQuery<Omit<T, 'createdAt' | 'updatedAt'>>
+        update: QuerySchema<T> | UpdateAggregationStage | UpdateQuery<QuerySchema<T>>
     ): Promise<T> {
         const { cache, Schema } = this;
 
@@ -122,7 +126,7 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
      * @param filter - The ID or fetching filter for this document
      * @returns The fetched document
      */
-    public async fetch(filter: FilterQuery<Omit<T, 'createdAt' | 'updatedAt'>> | string = {}): Promise<T | null> {
+    public async fetch(filter: FilterQuery<QuerySchema<T>> | string = {}): Promise<T | null> {
         const { cache, guild, Schema } = this;
         if (typeof filter === 'string') {
             const existing = cache.get(filter);
@@ -151,7 +155,7 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
      * @param filter - The fetching filter for the documents
      * @returns The fetched documents
      */
-    public async fetchMany(filter: FilterQuery<Omit<T, 'createdAt' | 'updatedAt'>> = {}): Promise<Collection<string, T>> {
+    public async fetchMany(filter: FilterQuery<QuerySchema<T>> = {}): Promise<Collection<string, T>> {
         const { cache, guild, Schema } = this;
         if (cache.size === 0) return cache;
 
@@ -180,11 +184,11 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
         return (doc: T): boolean => {
             const objKeys = Object.keys(filter).length;
             if (objKeys === 0) return true;
-            const found = [];
+            const found: boolean[] = [];
             for (const p of Object.keys(filter) as Array<keyof typeof filter>) {
                 found.push(isEqual(doc[p as keyof T], filter[p]));
             }
-            const matchesAll = found.filter((b): b is true => b === true).length === objKeys;
+            const matchesAll = found.filter(b => b === true).length === objKeys;
             return matchesAll;
         };
     }

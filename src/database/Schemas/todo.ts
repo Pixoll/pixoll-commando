@@ -1,8 +1,9 @@
 import { model, Schema } from 'mongoose';
 import { BaseSchema, DocumentFrom } from './base';
+import { Snowflake } from 'discord.js';
 
 export interface TodoSchema extends BaseSchema {
-    user: string;
+    user: Snowflake;
     list: string[];
 }
 

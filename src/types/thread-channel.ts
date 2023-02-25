@@ -1,43 +1,44 @@
 import ArgumentType from './base';
 import Util from '../util';
-import { AnyThreadChannel, escapeMarkdown, GuildBasedChannel } from 'discord.js';
+import { escapeMarkdown } from 'discord.js';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 import Argument from '../commands/argument';
+import { AnyCommandoThreadChannel, CommandoGuildBasedChannel } from '../discord.overrides';
 
-export default class ThreadChannelArgumentType extends ArgumentType {
+export default class ThreadChannelArgumentType extends ArgumentType<'thread-channel'> {
     public constructor(client: CommandoClient) {
         super(client, 'thread-channel');
     }
 
-    public validate(val: string, msg: CommandoMessage, arg: Argument): boolean | string {
-        const matches = val.match(/^(?:<#)?(\d+)>?$/);
+    public validate(value: string, message: CommandoMessage, argument: Argument<'thread-channel'>): boolean | string {
+        const matches = value.match(/^(?:<#)?(\d+)>?$/);
         if (matches) {
             try {
-                const channel = msg.client.channels.resolve(matches[1]);
+                const channel = message.client.channels.resolve(matches[1]);
                 if (!channel || channel.isThread()) return false;
-                if (arg.oneOf && !arg.oneOf.includes(channel.id)) return false;
+                if (argument.oneOf && !argument.oneOf.includes(channel.id)) return false;
                 return true;
             } catch (err) {
                 return false;
             }
         }
 
-        if (!msg.guild) return false;
+        if (!message.inGuild()) return false;
 
-        const search = val.toLowerCase();
-        let channels = msg.guild.channels.cache.filter(channelFilterInexact(search));
+        const search = value.toLowerCase();
+        let channels = message.guild.channels.cache.filter(channelFilterInexact(search));
         const first = channels.first();
         if (!first) return false;
         if (channels.size === 1) {
-            if (arg.oneOf && !arg.oneOf.includes(first.id)) return false;
+            if (argument.oneOf && !argument.oneOf.includes(first.id)) return false;
             return true;
         }
 
         const exactChannels = channels.filter(channelFilterExact(search));
         const exact = exactChannels.first();
         if (exactChannels.size === 1 && exact) {
-            if (arg.oneOf && !arg.oneOf.includes(exact.id)) return false;
+            if (argument.oneOf && !argument.oneOf.includes(exact.id)) return false;
             return true;
         }
         if (exactChannels.size > 0) channels = exactChannels;
@@ -47,14 +48,14 @@ export default class ThreadChannelArgumentType extends ArgumentType {
             : 'Multiple thread channels found. Please be more specific.';
     }
 
-    public parse(val: string, msg: CommandoMessage): AnyThreadChannel | null {
-        const matches = val.match(/^(?:<#)?(\d+)>?$/);
-        if (matches) return msg.client.channels.resolve(matches[1]) as AnyThreadChannel;
+    public parse(value: string, message: CommandoMessage): AnyCommandoThreadChannel | null {
+        const matches = value.match(/^(?:<#)?(\d+)>?$/);
+        if (matches) return message.client.channels.resolve(matches[1]) as AnyCommandoThreadChannel | null;
 
-        if (!msg.guild) return null;
+        if (!message.inGuild()) return null;
 
-        const search = val.toLowerCase();
-        const channels = msg.guild.channels.cache.filter(channelFilterInexact(search));
+        const search = value.toLowerCase();
+        const channels = message.guild.channels.cache.filter(channelFilterInexact(search));
         if (channels.size === 0) return null;
         if (channels.size === 1) return channels.first() ?? null;
 
@@ -66,11 +67,11 @@ export default class ThreadChannelArgumentType extends ArgumentType {
 }
 
 function channelFilterExact(search: string) {
-    return (chan: GuildBasedChannel): chan is AnyThreadChannel =>
+    return (chan: CommandoGuildBasedChannel): chan is AnyCommandoThreadChannel =>
         chan.isThread() && chan.name.toLowerCase() === search;
 }
 
 function channelFilterInexact(search: string) {
-    return (chan: GuildBasedChannel): chan is AnyThreadChannel =>
+    return (chan: CommandoGuildBasedChannel): chan is AnyCommandoThreadChannel =>
         chan.isThread() && chan.name.toLowerCase().includes(search);
 }
