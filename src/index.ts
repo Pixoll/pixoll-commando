@@ -11,7 +11,11 @@ export {
     RequireAllOptions,
 } from './registry';
 export { default as CommandDispatcher, Inhibition } from './dispatcher';
-export { default as CommandoInteraction, SlashCommandBasicOptionsParser } from './extensions/interaction';
+export {
+    default as CommandoInteraction,
+    SlashCommandBasicOptionsParser,
+    SlashCommandOptionTypeMap,
+} from './extensions/interaction';
 export { default as CommandoGuild } from './extensions/guild';
 export {
     default as CommandoMessage,
@@ -125,6 +129,7 @@ export type {
     CommandoGuildResolvable,
     CommandoGuildScheduledEvent,
     CommandoGuildTextBasedChannel,
+    CommandoInstanceChannel,
     CommandoInteractionOverride,
     CommandoInvite,
     CommandoMappedChannelCategoryTypes,

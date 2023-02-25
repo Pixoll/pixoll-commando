@@ -9,10 +9,7 @@ import {
     ChatInputCommandInteraction,
     Colors,
     EmbedBuilder,
-    GuildTextBasedChannel,
     If,
-    StageChannel,
-    TextBasedChannel,
     User,
 } from 'discord.js';
 import CommandoClient from '../client';
@@ -22,6 +19,7 @@ import {
     CommandoChannel,
     CommandoChatInputCommandInteraction,
     CommandoGuildMember,
+    CommandoInstanceChannel,
     CommandoRole,
     CommandoUser,
 } from '../discord.overrides';
@@ -38,7 +36,7 @@ export type SlashCommandBasicOptionsParser<O extends APISlashCommandOption[]> = 
     );
 };
 
-interface SlashCommandOptionTypeMap {
+export interface SlashCommandOptionTypeMap {
     [SlashCommandOptionType.Attachment]: Attachment;
     [SlashCommandOptionType.Boolean]: boolean;
     [SlashCommandOptionType.Channel]: CommandoChannel;
@@ -60,16 +58,11 @@ const APISlashCommandOptionTypeMap = Object.fromEntries(Util.getEnumEntries(Slas
         Exclude<keyof typeof SlashCommandOptionType, 'Subcommand' | 'SubcommandGroup'>
     > & Record<SlashCommandOptionType.Subcommand | SlashCommandOptionType.SubcommandGroup, false>;
 
-type InteractionChannel<InGuild extends boolean = boolean> = Exclude<
-    If<InGuild, GuildTextBasedChannel, TextBasedChannel | null>,
-    StageChannel
->;
-
 /** An extension of the base Discord.js ChatInputCommandInteraction class to add command-related functionality. */
 export default class CommandoInteraction<InGuild extends boolean = boolean> extends ChatInputCommandInteraction {
     /** The client the interaction is for */
     declare public readonly client: CommandoClient<true>;
-    declare public member: CommandoGuildMember | null;
+    declare public member: If<InGuild, CommandoGuildMember>;
     /** Command that the interaction triggers */
     protected _command: Command<InGuild>;
 
@@ -89,8 +82,8 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
     }
 
     /** The channel this interaction was used in */
-    public get channel(): InteractionChannel<InGuild> {
-        return super.channel as InteractionChannel<InGuild>;
+    public get channel(): CommandoInstanceChannel<true, InGuild> {
+        return super.channel as CommandoInstanceChannel<true, InGuild>;
     }
 
     /** Command that the interaction triggers */
@@ -102,6 +95,11 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
     /** The guild this interaction was used in */
     public get guild(): If<InGuild, CommandoGuild> {
         return super.guild as If<InGuild, CommandoGuild>;
+    }
+
+    // @ts-expect-error: This is meant to narrow this extension's types
+    public inGuild(): this is CommandoInteraction<true> {
+        return super.inGuild();
     }
 
     /** Whether this interaction is able to been edited (has been previously deferred or replied to) */
@@ -137,7 +135,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
         const { command, channelId, channel: tempChannel, guild, author, guildId, client } = this;
         const { groupId, memberName } = command;
         const clientUser = client.user;
-        const channel = tempChannel ?? await client.channels.fetch(channelId) as NonNullable<InteractionChannel>;
+        const channel = tempChannel ?? await client.channels.fetch(channelId) as CommandoInstanceChannel<false>;
 
         if (guild && !channel.isDMBased()) {
             const { members } = guild;

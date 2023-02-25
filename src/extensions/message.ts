@@ -8,8 +8,6 @@ import {
     Colors,
     MessageReplyOptions,
     If,
-    GuildTextBasedChannel,
-    StageChannel,
     APIMessage,
     APIUser,
 } from 'discord.js';
@@ -20,7 +18,7 @@ import CommandFormatError from '../errors/command-format';
 import Util from '../util';
 import CommandoClient from '../client';
 import CommandoGuild from './guild';
-import { CommandoGuildMember, CommandoifiedMessage } from '../discord.overrides';
+import { CommandoGuildMember, CommandoifiedMessage, CommandoInstanceChannel } from '../discord.overrides';
 
 /** Type of the response */
 export type ResponseType =
@@ -99,8 +97,8 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
     }
 
     /** The channel this message was sent in */
-    public get channel(): Exclude<If<InGuild, GuildTextBasedChannel, TextBasedChannel>, StageChannel> {
-        return super.channel as Exclude<If<InGuild, GuildTextBasedChannel, TextBasedChannel>, StageChannel>;
+    public get channel(): CommandoInstanceChannel<false, InGuild> {
+        return super.channel as CommandoInstanceChannel<false, InGuild>;
     }
 
     public inGuild(): this is CommandoMessage<true> {

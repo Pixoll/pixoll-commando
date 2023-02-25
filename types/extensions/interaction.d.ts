@@ -1,12 +1,12 @@
-import { APIApplicationCommandOption as APISlashCommandOption, ApplicationCommandOptionType as SlashCommandOptionType, Attachment, ChatInputCommandInteraction, GuildTextBasedChannel, If, StageChannel, TextBasedChannel, User } from 'discord.js';
+import { APIApplicationCommandOption as APISlashCommandOption, ApplicationCommandOptionType as SlashCommandOptionType, Attachment, ChatInputCommandInteraction, If, User } from 'discord.js';
 import CommandoClient from '../client';
 import Command from '../commands/base';
-import { CommandoChannel, CommandoChatInputCommandInteraction, CommandoGuildMember, CommandoRole, CommandoUser } from '../discord.overrides';
+import { CommandoChannel, CommandoChatInputCommandInteraction, CommandoGuildMember, CommandoInstanceChannel, CommandoRole, CommandoUser } from '../discord.overrides';
 import CommandoGuild from './guild';
 export type SlashCommandBasicOptionsParser<O extends APISlashCommandOption[]> = {
     [A in O[number] as A['name']]: A['required'] extends true ? SlashCommandOptionTypeMap[A['type']] : (SlashCommandOptionTypeMap[A['type']] extends never ? never : SlashCommandOptionTypeMap[A['type']] | null);
 };
-interface SlashCommandOptionTypeMap {
+export interface SlashCommandOptionTypeMap {
     [SlashCommandOptionType.Attachment]: Attachment;
     [SlashCommandOptionType.Boolean]: boolean;
     [SlashCommandOptionType.Channel]: CommandoChannel;
@@ -19,12 +19,11 @@ interface SlashCommandOptionTypeMap {
     [SlashCommandOptionType.Subcommand]: never;
     [SlashCommandOptionType.SubcommandGroup]: never;
 }
-type InteractionChannel<InGuild extends boolean = boolean> = Exclude<If<InGuild, GuildTextBasedChannel, TextBasedChannel | null>, StageChannel>;
 /** An extension of the base Discord.js ChatInputCommandInteraction class to add command-related functionality. */
 export default class CommandoInteraction<InGuild extends boolean = boolean> extends ChatInputCommandInteraction {
     /** The client the interaction is for */
     readonly client: CommandoClient<true>;
-    member: CommandoGuildMember | null;
+    member: If<InGuild, CommandoGuildMember>;
     /** Command that the interaction triggers */
     protected _command: Command<InGuild>;
     /**
@@ -34,11 +33,12 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
     constructor(client: CommandoClient<true>, data: CommandoChatInputCommandInteraction);
     get author(): User;
     /** The channel this interaction was used in */
-    get channel(): InteractionChannel<InGuild>;
+    get channel(): CommandoInstanceChannel<true, InGuild>;
     /** Command that the interaction triggers */
     get command(): Command<InGuild>;
     /** The guild this interaction was used in */
     get guild(): If<InGuild, CommandoGuild>;
+    inGuild(): this is CommandoInteraction<true>;
     /** Whether this interaction is able to been edited (has been previously deferred or replied to) */
     isEditable(): boolean;
     /**
@@ -49,4 +49,3 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
     /** Runs the command */
     run(): Promise<void>;
 }
-export {};

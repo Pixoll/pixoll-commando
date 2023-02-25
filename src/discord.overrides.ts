@@ -791,3 +791,8 @@ export type CommandoRepliableInteraction<Cached extends CacheType = CacheType> =
     CommandoifiedInteraction<Cached>,
     CommandoAutocompleteInteraction<Cached>
 >;
+
+export type CommandoInstanceChannel<CanBeNull extends boolean, InGuild extends boolean = boolean> = Exclude<
+    If<InGuild, CommandoGuildTextBasedChannel, CommandoTextBasedChannel | If<CanBeNull, null, never>>,
+    CommandoStageChannel
+>;
