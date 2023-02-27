@@ -51,12 +51,7 @@ export interface SlashCommandOptionTypeMap {
 }
 
 const APISlashCommandOptionTypeMap = Object.fromEntries(Util.getEnumEntries(SlashCommandOptionType)
-    .map<[SlashCommandOptionType, keyof typeof SlashCommandOptionType | false]>(([key, value]) =>
-        [value, Util.equals(key, ['Subcommand', 'SubcommandGroup']) ? false : key]
-    )) as Record<
-        Exclude<SlashCommandOptionType, SlashCommandOptionType.Subcommand | SlashCommandOptionType.SubcommandGroup>,
-        Exclude<keyof typeof SlashCommandOptionType, 'Subcommand' | 'SubcommandGroup'>
-    > & Record<SlashCommandOptionType.Subcommand | SlashCommandOptionType.SubcommandGroup, false>;
+    .map(([key, value]) => [value, key]));
 
 /** An extension of the base Discord.js ChatInputCommandInteraction class to add command-related functionality. */
 export default class CommandoInteraction<InGuild extends boolean = boolean> extends ChatInputCommandInteraction {
@@ -118,13 +113,28 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
             return args as SlashCommandBasicOptionsParser<O>;
         }
 
-        for (const { name, type } of options) {
-            const getOptionName = `get${APISlashCommandOptionTypeMap[type]}` as `get${Exclude<PropertiesOf<
+        for (let i = 0; i < options.length; i++) {
+            const option = options[i];
+            const { name, type } = option;
+            const getOptionName = `get${APISlashCommandOptionTypeMap[type]}` as `get${PropertiesOf<
                 typeof APISlashCommandOptionTypeMap
-            >, false>}`;
+            >}`;
+
+            const isSubCommand = Util.equals(getOptionName, ['getSubcommand', 'getSubcommandGroup']);
+            const argName = getOptionName === 'getSubcommand' ? 'subCommand'
+                : getOptionName === 'getSubcommandGroup' ? 'subCommandGroup'
+                    : name;
             const apiName = name.replace(/[A-Z]/g, '-$&').toLowerCase();
-            const value = optionsManager[getOptionName](apiName);
-            args[name] = value;
+            const value = isSubCommand
+                ? optionsManager[getOptionName]()
+                : optionsManager[getOptionName](apiName);
+
+            if (args[argName] || (isSubCommand && name !== value)) continue;
+            args[argName] = value;
+            if (value && 'options' in option) {
+                const nestedValues = this.parseArgs(option.options);
+                Object.assign(args, nestedValues);
+            }
         }
 
         return args as SlashCommandBasicOptionsParser<O>;
