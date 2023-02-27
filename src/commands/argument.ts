@@ -123,7 +123,14 @@ export interface ArgumentInfo<T extends ArgumentTypeString = ArgumentTypeString>
     wait?: number;
 }
 
-export type ArgumentInfoResolvable = ArgumentInfo | Readonly<ArgumentInfo>;
+type ReadonlyArgumentInfo = Readonly<Omit<ArgumentInfo, 'oneOf' | 'type'> & {
+    [P in keyof Pick<ArgumentInfo, 'oneOf' | 'type'>]:
+    Pick<ArgumentInfo, 'oneOf' | 'type'>[P] extends Array<infer U> | infer S
+    ? S | readonly U[]
+    : Pick<ArgumentInfo, 'oneOf' | 'type'>[P];
+}>;
+
+export type ArgumentInfoResolvable = ArgumentInfo | ReadonlyArgumentInfo;
 
 export type ArgumentResponse =
     | CommandoMessage
