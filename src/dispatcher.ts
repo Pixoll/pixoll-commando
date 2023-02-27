@@ -247,7 +247,7 @@ export default class CommandDispatcher {
                     );
                 }
 
-                client.emit('commandBlock', { message }, inhibit.reason as CommandBlockReason);
+                client.emit('commandBlock', message, inhibit.reason as CommandBlockReason);
                 return inhibit;
             }
         }

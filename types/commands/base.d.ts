@@ -1,9 +1,9 @@
 /// <reference types="node" />
 import { Message, PermissionsString, User, ChatInputApplicationCommandData, RESTPostAPIChatInputApplicationCommandsJSONBody as RESTPostAPISlashCommand, Awaitable } from 'discord.js';
-import ArgumentCollector, { ArgumentCollectorResult, MapArguments } from './collector';
+import ArgumentCollector, { ArgumentCollectorResult, ParseRawArguments } from './collector';
 import CommandoClient from '../client';
 import CommandGroup from './group';
-import { ArgumentInfo } from './argument';
+import { ArgumentInfo, ArgumentInfoResolvable } from './argument';
 import CommandoMessage from '../extensions/message';
 import CommandoInteraction from '../extensions/interaction';
 import { CommandoGuildResolvable } from '../discord.overrides';
@@ -14,8 +14,9 @@ export interface ThrottlingOptions {
     /** Amount of time to count the usages of the command within (in seconds). */
     duration: number;
 }
+export type CommandArgumentsResolvable = ArgumentInfoResolvable[] | readonly ArgumentInfoResolvable[];
 /** The command information */
-export interface CommandInfo<InGuild extends boolean = boolean, Args extends ArgumentInfo[] = ArgumentInfo[]> {
+export interface CommandInfo<InGuild extends boolean = boolean, Args extends CommandArgumentsResolvable = ArgumentInfo[]> {
     /** The name of the command (must be lowercase). */
     name: string;
     /** Alternative names for the command (all must be lowercase). */
@@ -151,14 +152,8 @@ export interface Throttle {
     /** Timeout function for this throttle */
     timeout: NodeJS.Timeout;
 }
-/** The instances the command is being run for */
-export type CommandInstances<InGuild extends boolean = boolean> = {
-    /** The interaction the command is being run for */
-    interaction: CommandoInteraction<InGuild>;
-} | {
-    /** The message the command is being run for */
-    message: CommandoMessage<InGuild>;
-};
+/** The context that ran the command */
+export type CommandContext<InGuild extends boolean = boolean> = CommandoInteraction<InGuild> | CommandoMessage<InGuild>;
 /** The reason of {@link Command#onBlock} */
 export type CommandBlockReason = 'clientPermissions' | 'dmOnly' | 'guildOnly' | 'guildOwnerOnly' | 'modPermissions' | 'nsfw' | 'ownerOnly' | 'throttling' | 'userPermissions';
 /** Additional data associated with the block */
@@ -184,8 +179,60 @@ export interface SlashCommandInfo extends Omit<ChatInputApplicationCommandData, 
     deferEphemeral?: boolean;
 }
 export type APISlashCommand = Required<Pick<SlashCommandInfo, 'deferEphemeral'>> & RESTPostAPISlashCommand;
-/** A command that can be run in a client */
-export default abstract class Command<InGuild extends boolean = boolean, Args extends ArgumentInfo[] = ArgumentInfo[]> {
+/**
+ * A command that can be run in a client
+ * @example
+ * ```ts
+ * import { ApplicationCommandOptionType } from 'discord.js';
+ * import { CommandoClient, Command, CommandContext, ParseRawArguments } from 'pixoll-commando';
+ *
+ * const args = [{
+ *     key: 'first',
+ *     prompt: 'First argument.',
+ *     type: 'user',
+ * }, {
+ *     key: 'optional',
+ *     prompt: 'Optional argument.',
+ *     type: 'string',
+ *     required: false,
+ * }] as const;
+ *
+ * type RawArgs = typeof args;
+ * type ParsedArgs = ParseRawArguments<RawArgs>;
+ *
+ * export default class TestCommand extends Command<boolean, RawArgs> {
+ *     public constructor(client: CommandoClient) {
+ *         super(client, {
+ *             name: 'test',
+ *             description: 'Test command.',
+ *             group: 'commands',
+ *             args,
+ *         }, {
+ *             options: [{
+ *                 name: 'first',
+ *                 description: 'First argument.',
+ *                 type: ApplicationCommandOptionType.User,
+ *                 required: true,
+ *             }, {
+ *                 name: 'optional',
+ *                 description: 'Optional argument.',
+ *                 type: ApplicationCommandOptionType.String,
+ *             }],
+ *         });
+ *     }
+ *
+ *     public async run(context: CommandContext, args: ParsedArgs): Promise<void> {
+ *         const content = `\`${context.toString()}\`: ${args.first}, ${args.optional}`;
+ *         if ('isEditable' in context && context.isEditable()) {
+ *             await context.editReply(content);
+ *             return;
+ *         }
+ *         await context.reply(content);
+ *     }
+ * }
+ * ```
+ */
+export default abstract class Command<InGuild extends boolean = boolean, Args extends CommandArgumentsResolvable = ArgumentInfo[]> {
     /** Client that this command is for */
     readonly client: CommandoClient;
     /** Name of this command */
@@ -262,7 +309,7 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
     constructor(client: CommandoClient, info: CommandInfo<InGuild, Args>, slashInfo?: SlashCommandInfo);
     /**
      * Runs the command
-     * @param instances - The message the command is being run for
+     * @param context - The context of the command
      * @param args - The arguments for the command, or the matches from a pattern.
      * If args is specified on the command, this will be the argument values object. If argsType is single, then only
      * one string will be passed. If multiple, an array of strings will be passed. When fromPattern is true, this is the
@@ -271,17 +318,17 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
      * @param fromPattern - Whether or not the command is being run from a pattern match
      * @param result - Result from obtaining the arguments from the collector (if applicable)
      */
-    abstract run(instances: CommandInstances<InGuild>, args: MapArguments<Args> | string[] | string, fromPattern?: boolean, result?: ArgumentCollectorResult | null): Awaitable<Message | Message[] | null | void>;
+    abstract run(context: CommandContext<InGuild>, args: ParseRawArguments<Args> | string[] | string, fromPattern?: boolean, result?: ArgumentCollectorResult | null): Awaitable<Message | Message[] | null | void>;
     /**
      * Checks whether the user has permission to use the command
-     * @param instances - The triggering command instances
+     * @param context - The triggering command context
      * @param ownerOverride - Whether the bot owner(s) will always have permission
      * @return Whether the user has permission, or an error message to respond with if they don't
      */
-    hasPermission(instances: CommandInstances<InGuild>, ownerOverride?: boolean): CommandBlockReason | PermissionsString[] | true;
+    hasPermission(context: CommandContext<InGuild>, ownerOverride?: boolean): CommandBlockReason | PermissionsString[] | true;
     /**
      * Called when the command is prevented from running
-     * @param instances - The instances the command is being run for
+     * @param context - The context og the command
      * @param reason - Reason that the command was blocked
      * @param data - Additional data associated with the block. Built-in reason data properties:
      * - guildOnly: none
@@ -289,17 +336,17 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
      * - throttling: `throttle` ({@link Throttle}), `remaining` (number) time in seconds
      * - userPermissions & clientPermissions: `missing` (Array<string>) permission names
      */
-    onBlock(instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData): Promise<Message | null>;
+    onBlock(context: CommandContext, reason: CommandBlockReason, data?: CommandBlockData): Promise<Message | null>;
     /**
      * Called when the command produces an error while running
      * @param err - Error that was thrown
-     * @param instances - The instances the command is being run for
+     * @param context - The context the command is being run for
      * @param args - Arguments for the command (see {@link Command#run})
      * @param fromPattern - Whether the args are pattern matches (see {@link Command#run})
      * @param result - Result from obtaining the arguments from the collector
      * (if applicable - see {@link Command#run})
      */
-    onError(err: Error, instances: CommandInstances, args: Record<string, unknown> | string[] | string, fromPattern?: boolean, result?: ArgumentCollectorResult | null): Promise<Message | Message[] | null>;
+    onError(err: Error, context: CommandContext, args: Record<string, unknown> | string[] | string, fromPattern?: boolean, result?: ArgumentCollectorResult | null): Promise<Message | Message[] | null>;
     /**
      * Creates/obtains the throttle object for a user, if necessary (owners are excluded)
      * @param userId - ID of the user to throttle for
@@ -319,9 +366,9 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
     isEnabledIn(guild: CommandoGuildResolvable | null, bypassGroup?: boolean): boolean;
     /**
      * Checks if the command is usable for a message
-     * @param instances - The instances
+     * @param context - The command context
      */
-    isUsable(instances?: CommandInstances<InGuild>): boolean;
+    isUsable(context?: CommandContext<InGuild>): boolean;
     /**
      * Creates a usage string for the command
      * @param argString - A string of arguments for the command

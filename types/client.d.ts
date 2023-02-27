@@ -7,7 +7,7 @@ import ClientDatabaseManager from './database/ClientDatabaseManager';
 import { SimplifiedSchemas } from './database/Schemas';
 import GuildDatabaseManager from './database/GuildDatabaseManager';
 import { BaseCommandoGuildEmojiManager, CommandoChannelManager, CommandoGuildManager, CommandoInvite, OverwrittenClientEvents } from './discord.overrides';
-import Command, { CommandBlockData, CommandBlockReason, CommandInstances } from './commands/base';
+import Command, { CommandBlockData, CommandBlockReason, CommandContext } from './commands/base';
 import { ArgumentCollectorResult } from './commands/collector';
 import ArgumentType from './types/base';
 import CommandGroup from './commands/group';
@@ -43,12 +43,12 @@ export interface CommandoClientOptions extends ClientOptions {
     excludeModules?: string[];
 }
 export interface CommandoClientEvents extends OverwrittenClientEvents {
-    commandBlock: [instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData];
+    commandBlock: [context: CommandContext, reason: CommandBlockReason, data?: CommandBlockData];
     commandCancel: [command: Command, reason: string, message: CommandoMessage, result?: ArgumentCollectorResult];
     commandError: [
         command: Command,
         error: Error,
-        instances: CommandInstances,
+        context: CommandContext,
         args: Record<string, unknown> | string[] | string,
         fromPattern?: boolean,
         result?: ArgumentCollectorResult
@@ -63,7 +63,7 @@ export interface CommandoClientEvents extends OverwrittenClientEvents {
     commandRun: [
         command: Command,
         promise: Awaitable<Message | Message[] | null | void>,
-        instances: CommandInstances,
+        context: CommandContext,
         args: Record<string, unknown> | string[] | string,
         fromPattern?: boolean,
         result?: ArgumentCollectorResult | null
@@ -129,7 +129,7 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
     /** Initializes all default listeners that make the client work. */
     protected initDefaultListeners(): void;
     /** Parses all {@link Guild} instances into {@link CommandoGuild}s. */
-    protected parseGuilds(client: CommandoClient<true>): void;
+    protected parseGuilds(client: CommandoClient<true>): Promise<void>;
     /**
      * Parses a {@link Guild} instance into a {@link CommandoGuild}.
      * @param guild - The Guild to parse

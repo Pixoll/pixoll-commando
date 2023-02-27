@@ -1,9 +1,7 @@
 import { Client, Collection, Guild, If, Message, MessageCreateOptions, PartialMessage, PermissionsString } from 'discord.js';
 import { capitalize } from 'lodash';
 import CommandoClient from './client';
-import { CommandInstances } from './commands/base';
 import CommandoGuild from './extensions/guild';
-import CommandoInteraction from './extensions/interaction';
 import CommandoMessage from './extensions/message';
 
 export type Tuple<T, N extends number, R extends T[] = []> = R['length'] extends N ? R : Tuple<T, N, [T, ...R]>;
@@ -272,18 +270,6 @@ export default class Util extends null {
      */
     public static isNullish(val: unknown): val is null | undefined {
         return typeof val === 'undefined' || val === null;
-    }
-
-    /**
-     * Get the current instance of a command. Useful if you need to get the same properties from both instances.
-     * @param instances - The instances object.
-     * @returns The instance of the command.
-     */
-    public static getInstanceFrom<InGuild extends boolean = boolean>(
-        instances: CommandInstances<InGuild>
-    ): CommandoInteraction<InGuild> | CommandoMessage<InGuild> {
-        if ('message' in instances) return instances.message;
-        return instances.interaction;
     }
 
     public static equals<T extends number | string, V extends T>(value: T, values: V[]): value is V {

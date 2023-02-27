@@ -99,6 +99,7 @@ export interface ArgumentInfo<T extends ArgumentTypeString = ArgumentTypeString>
      */
     wait?: number;
 }
+export type ArgumentInfoResolvable = ArgumentInfo | Readonly<ArgumentInfo>;
 export type ArgumentResponse = CommandoMessage | Message | null;
 /** Result object from obtaining a single {@link Argument}'s value(s) */
 export interface ArgumentResult<T = unknown> {

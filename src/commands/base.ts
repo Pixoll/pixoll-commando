@@ -18,11 +18,11 @@ import {
     MessageCreateOptions,
 } from 'discord.js';
 import path from 'path';
-import ArgumentCollector, { ArgumentCollectorResult, MapArguments } from './collector';
+import ArgumentCollector, { ArgumentCollectorResult, ParseRawArguments } from './collector';
 import Util from '../util';
 import CommandoClient from '../client';
 import CommandGroup from './group';
-import { ArgumentInfo } from './argument';
+import { ArgumentInfo, ArgumentInfoResolvable } from './argument';
 import CommandoMessage from '../extensions/message';
 import CommandoGuild from '../extensions/guild';
 import CommandoInteraction from '../extensions/interaction';
@@ -36,8 +36,13 @@ export interface ThrottlingOptions {
     duration: number;
 }
 
+export type CommandArgumentsResolvable = ArgumentInfoResolvable[] | readonly ArgumentInfoResolvable[];
+
 /** The command information */
-export interface CommandInfo<InGuild extends boolean = boolean, Args extends ArgumentInfo[] = ArgumentInfo[]> {
+export interface CommandInfo<
+    InGuild extends boolean = boolean,
+    Args extends CommandArgumentsResolvable = ArgumentInfo[]
+> {
     /** The name of the command (must be lowercase). */
     name: string;
     /** Alternative names for the command (all must be lowercase). */
@@ -175,16 +180,10 @@ export interface Throttle {
     timeout: NodeJS.Timeout;
 }
 
-/** The instances the command is being run for */
-export type CommandInstances<InGuild extends boolean = boolean> =
-    | {
-        /** The interaction the command is being run for */
-        interaction: CommandoInteraction<InGuild>;
-    }
-    | {
-        /** The message the command is being run for */
-        message: CommandoMessage<InGuild>;
-    };
+/** The context that ran the command */
+export type CommandContext<InGuild extends boolean = boolean> =
+    | CommandoInteraction<InGuild>
+    | CommandoMessage<InGuild>;
 
 /** The reason of {@link Command#onBlock} */
 export type CommandBlockReason =
@@ -226,8 +225,63 @@ export interface SlashCommandInfo extends Omit<
 
 export type APISlashCommand = Required<Pick<SlashCommandInfo, 'deferEphemeral'>> & RESTPostAPISlashCommand;
 
-/** A command that can be run in a client */
-export default abstract class Command<InGuild extends boolean = boolean, Args extends ArgumentInfo[] = ArgumentInfo[]> {
+/**
+ * A command that can be run in a client
+ * @example
+ * ```ts
+ * import { ApplicationCommandOptionType } from 'discord.js';
+ * import { CommandoClient, Command, CommandContext, ParseRawArguments } from 'pixoll-commando';
+ * 
+ * const args = [{
+ *     key: 'first',
+ *     prompt: 'First argument.',
+ *     type: 'user',
+ * }, {
+ *     key: 'optional',
+ *     prompt: 'Optional argument.',
+ *     type: 'string',
+ *     required: false,
+ * }] as const;
+ * 
+ * type RawArgs = typeof args;
+ * type ParsedArgs = ParseRawArguments<RawArgs>;
+ * 
+ * export default class TestCommand extends Command<boolean, RawArgs> {
+ *     public constructor(client: CommandoClient) {
+ *         super(client, {
+ *             name: 'test',
+ *             description: 'Test command.',
+ *             group: 'commands',
+ *             args,
+ *         }, {
+ *             options: [{
+ *                 name: 'first',
+ *                 description: 'First argument.',
+ *                 type: ApplicationCommandOptionType.User,
+ *                 required: true,
+ *             }, {
+ *                 name: 'optional',
+ *                 description: 'Optional argument.',
+ *                 type: ApplicationCommandOptionType.String,
+ *             }],
+ *         });
+ *     }
+ * 
+ *     public async run(context: CommandContext, args: ParsedArgs): Promise<void> {
+ *         const content = `\`${context.toString()}\`: ${args.first}, ${args.optional}`;
+ *         if ('isEditable' in context && context.isEditable()) {
+ *             await context.editReply(content);
+ *             return;
+ *         }
+ *         await context.reply(content);
+ *     }
+ * }
+ * ```
+ */
+export default abstract class Command<
+    InGuild extends boolean = boolean,
+    Args extends CommandArgumentsResolvable = ArgumentInfo[]
+> {
     /** Client that this command is for */
     declare public readonly client: CommandoClient;
     /** Name of this command */
@@ -303,8 +357,8 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
      * @param slashInfo - The slash command information
      */
     public constructor(client: CommandoClient, info: CommandInfo<InGuild, Args>, slashInfo?: SlashCommandInfo) {
-        Command.validateInfo(client, info);
-        const parsedSlashInfo = Command.validateAndParseSlashInfo(info, slashInfo);
+        Command.validateInfo(client, info as CommandInfo);
+        const parsedSlashInfo = Command.validateAndParseSlashInfo(info as CommandInfo, slashInfo);
 
         Object.defineProperty(this, 'client', { value: client });
 
@@ -362,7 +416,7 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
 
     /**
      * Runs the command
-     * @param instances - The message the command is being run for
+     * @param context - The context of the command
      * @param args - The arguments for the command, or the matches from a pattern.
      * If args is specified on the command, this will be the argument values object. If argsType is single, then only
      * one string will be passed. If multiple, an array of strings will be passed. When fromPattern is true, this is the
@@ -372,24 +426,23 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
      * @param result - Result from obtaining the arguments from the collector (if applicable)
      */
     public abstract run(
-        instances: CommandInstances<InGuild>,
-        args: MapArguments<Args> | string[] | string,
+        context: CommandContext<InGuild>,
+        args: ParseRawArguments<Args> | string[] | string,
         fromPattern?: boolean,
         result?: ArgumentCollectorResult | null
     ): Awaitable<Message | Message[] | null | void>;
 
     /**
      * Checks whether the user has permission to use the command
-     * @param instances - The triggering command instances
+     * @param context - The triggering command context
      * @param ownerOverride - Whether the bot owner(s) will always have permission
      * @return Whether the user has permission, or an error message to respond with if they don't
      */
     public hasPermission(
-        instances: CommandInstances<InGuild>, ownerOverride = true
+        context: CommandContext<InGuild>, ownerOverride = true
     ): CommandBlockReason | PermissionsString[] | true {
         const { guildOwnerOnly, ownerOnly, userPermissions, modPermissions, client } = this;
-        const instance = Util.getInstanceFrom(instances);
-        const { channel, guild, member, author } = instance;
+        const { channel, guild, member, author } = context;
 
         if (!guildOwnerOnly && !ownerOnly && !userPermissions && !modPermissions) return true;
         if (ownerOverride && client.isOwner(author)) return true;
@@ -417,7 +470,7 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
 
     /**
      * Called when the command is prevented from running
-     * @param instances - The instances the command is being run for
+     * @param context - The context og the command
      * @param reason - Reason that the command was blocked
      * @param data - Additional data associated with the block. Built-in reason data properties:
      * - guildOnly: none
@@ -426,7 +479,7 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
      * - userPermissions & clientPermissions: `missing` (Array<string>) permission names
      */
     public onBlock(
-        instances: CommandInstances, reason: CommandBlockReason, data: CommandBlockData = {}
+        context: CommandContext, reason: CommandBlockReason, data: CommandBlockData = {}
     ): Promise<Message | null> {
         const { name } = this;
         const { missing, remaining } = data;
@@ -434,26 +487,26 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
 
         switch (reason) {
             case 'dmOnly':
-                return replyInstance(instances, embed(useCommandOnlyIf('in direct messages')));
+                return replyContext(context, embed(useCommandOnlyIf('in direct messages')));
             case 'guildOnly':
-                return replyInstance(instances, embed(useCommandOnlyIf('in a server channel')));
+                return replyContext(context, embed(useCommandOnlyIf('in a server channel')));
             case 'guildOwnerOnly':
-                return replyInstance(instances, embed(useCommandOnlyIf('by the server\'s owner')));
+                return replyContext(context, embed(useCommandOnlyIf('by the server\'s owner')));
             case 'nsfw':
-                return replyInstance(instances, embed(useCommandOnlyIf('in a NSFW channel')));
+                return replyContext(context, embed(useCommandOnlyIf('in a NSFW channel')));
             case 'ownerOnly':
-                return replyInstance(instances, embed(useCommandOnlyIf('by the bot\'s owner')));
+                return replyContext(context, embed(useCommandOnlyIf('by the bot\'s owner')));
             case 'userPermissions': {
                 if (!missing) {
                     throw new Error('Missing permissions object must be specified for "userPermissions" case');
                 }
-                return replyInstance(instances, embed(
+                return replyContext(context, embed(
                     'You are missing the following permissions:',
                     missing.map(perm => `\`${Util.permissions[perm]}\``).join(', ')
                 ));
             }
             case 'modPermissions':
-                return replyInstance(instances, embed(
+                return replyContext(context, embed(
                     useCommandOnlyIf('by "moderators"'),
                     'For more information visit the `page 3` of the `help` command.'
                 ));
@@ -461,7 +514,7 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
                 if (!missing) {
                     throw new Error('Missing permissions object must be specified for "clientPermissions" case');
                 }
-                return replyInstance(instances, embed(
+                return replyContext(context, embed(
                     'The bot is missing the following permissions:',
                     missing.map(perm => `\`${Util.permissions[perm]}\``).join(', ')
                 ));
@@ -470,7 +523,7 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
                 if (!remaining) {
                     throw new Error('Remaining time value must be specified for "throttling" case');
                 }
-                return replyInstance(instances, embed(
+                return replyContext(context, embed(
                     `Please wait **${remaining.toFixed(1)} seconds** before using the \`${name}\` command again.`
                 ));
             }
@@ -480,7 +533,7 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
     /**
      * Called when the command produces an error while running
      * @param err - Error that was thrown
-     * @param instances - The instances the command is being run for
+     * @param context - The context the command is being run for
      * @param args - Arguments for the command (see {@link Command#run})
      * @param fromPattern - Whether the args are pattern matches (see {@link Command#run})
      * @param result - Result from obtaining the arguments from the collector
@@ -488,7 +541,7 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
      */
     public async onError(
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        err: Error, instances: CommandInstances, args: Record<string, unknown> | string[] | string,
+        err: Error, context: CommandContext, args: Record<string, unknown> | string[] | string,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         fromPattern?: boolean, result?: ArgumentCollectorResult | null
     ): Promise<Message | Message[] | null> {
@@ -552,14 +605,13 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
 
     /**
      * Checks if the command is usable for a message
-     * @param instances - The instances
+     * @param context - The command context
      */
-    public isUsable(instances?: CommandInstances<InGuild>): boolean {
-        if (!instances) return this._globalEnabled;
-        const instance = Util.getInstanceFrom(instances);
-        const { guild } = instance;
-        if (this.guildOnly && !instance.inGuild()) return false;
-        const hasPermission = this.hasPermission(instances);
+    public isUsable(context?: CommandContext<InGuild>): boolean {
+        if (!context) return this._globalEnabled;
+        const { guild } = context;
+        if (this.guildOnly && !context.inGuild()) return false;
+        const hasPermission = this.hasPermission(context);
         return this.isEnabledIn(guild) && hasPermission === true;
     }
 
@@ -910,25 +962,21 @@ function embed(name: string, value?: string): EmbedBuilder {
     return embed;
 }
 
-async function replyInstance(
-    instances: CommandInstances, options: EmbedBuilder | Omit<MessageCreateOptions, 'flags'> | string
+async function replyContext(
+    context: CommandContext, options: EmbedBuilder | Omit<MessageCreateOptions, 'flags'> | string
 ): Promise<Message | null> {
     if (options instanceof EmbedBuilder) options = { embeds: [options] };
     if (typeof options === 'string') options = { content: options };
-    if ('interaction' in instances) {
-        const { interaction } = instances;
-        if (interaction.isEditable()) {
-            return await interaction.editReply(options).catch(() => null);
+    if ('isEditable' in context) {
+        if (context.isEditable()) {
+            return await context.editReply(options).catch(() => null);
         }
-        await interaction.reply(options).catch(() => null);
+        await context.reply(options).catch(() => null);
         return null;
     }
-    if ('message' in instances) {
-        const { message } = instances;
-        Object.assign(options, Util.noReplyPingInDMs(message));
-        return await message.reply(options).catch(() => null);
-    }
-    return null;
+
+    Object.assign(options, Util.noReplyPingInDMs(context));
+    return await context.reply(options).catch(() => null);
 }
 
 const isModConditions: PermissionsString[] = [

@@ -1,4 +1,5 @@
 import { Guild, User, EmbedBuilder } from 'discord.js';
+import { RawGuildData } from 'discord.js/typings/rawDataTypes';
 import CommandoClient from '../client';
 import Command from '../commands/base';
 import GuildDatabaseManager from '../database/GuildDatabaseManager';
@@ -36,8 +37,7 @@ export default class CommandoGuild extends Guild {
      * @param data - The guild data
      */
     public constructor(client: CommandoClient<true>, data: Guild) {
-        // @ts-expect-error: data.toJSON() does not work
-        super(client, { id: data.id });
+        super(client, guildToJSON(data));
         Object.assign(this, data);
 
         client.emit('debug', `Created new ${this.constructor.name} with ID ${this.id}`);
@@ -47,7 +47,6 @@ export default class CommandoGuild extends Guild {
         this._prefix = null;
         this._commandsEnabled = new Map();
         this._groupsEnabled = new Map();
-        this.channels.cache.first()?.guild;
     }
 
     /**
@@ -137,4 +136,41 @@ export default class CommandoGuild extends Guild {
     public commandUsage(command: string, user: User | null = this.client.user): string {
         return Command.usage(command, this.prefix, user);
     }
+}
+
+function guildToJSON(data: Guild): RawGuildData {
+    /* eslint-disable camelcase */
+    return {
+        afk_channel_id: null,
+        afk_timeout: 60,
+        application_id: null,
+        banner: null,
+        default_message_notifications: data.defaultMessageNotifications,
+        description: null,
+        discovery_splash: null,
+        emojis: [],
+        explicit_content_filter: data.explicitContentFilter,
+        features: [],
+        hub_type: null,
+        icon: null,
+        id: data.id,
+        mfa_level: data.mfaLevel,
+        name: data.name,
+        nsfw_level: data.nsfwLevel,
+        owner_id: data.ownerId,
+        preferred_locale: data.preferredLocale,
+        premium_progress_bar_enabled: data.premiumProgressBarEnabled,
+        premium_tier: data.premiumTier,
+        public_updates_channel_id: null,
+        roles: [],
+        rules_channel_id: null,
+        splash: null,
+        stickers: [],
+        system_channel_flags: data.systemChannelFlags.bitfield,
+        system_channel_id: null,
+        unavailable: !data.available,
+        vanity_url_code: null,
+        verification_level: data.verificationLevel,
+    };
+    /* eslint-enable camelcase */
 }

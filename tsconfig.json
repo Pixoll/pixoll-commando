@@ -23,7 +23,4 @@
     "exclude": [
         "node_modules",
     ],
-    "files": [
-        "package.json",
-    ],
 }

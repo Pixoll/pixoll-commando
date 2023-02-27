@@ -30,7 +30,7 @@ import {
     CommandoInvite,
     OverwrittenClientEvents,
 } from './discord.overrides';
-import Command, { CommandBlockData, CommandBlockReason, CommandInstances } from './commands/base';
+import Command, { CommandBlockData, CommandBlockReason, CommandContext } from './commands/base';
 import { ArgumentCollectorResult } from './commands/collector';
 import ArgumentType from './types/base';
 import CommandGroup from './commands/group';
@@ -68,12 +68,12 @@ export interface CommandoClientOptions extends ClientOptions {
 }
 
 export interface CommandoClientEvents extends OverwrittenClientEvents {
-    commandBlock: [instances: CommandInstances, reason: CommandBlockReason, data?: CommandBlockData];
+    commandBlock: [context: CommandContext, reason: CommandBlockReason, data?: CommandBlockData];
     commandCancel: [command: Command, reason: string, message: CommandoMessage, result?: ArgumentCollectorResult];
     commandError: [
         command: Command,
         error: Error,
-        instances: CommandInstances,
+        context: CommandContext,
         args: Record<string, unknown> | string[] | string,
         fromPattern?: boolean,
         result?: ArgumentCollectorResult
@@ -88,7 +88,7 @@ export interface CommandoClientEvents extends OverwrittenClientEvents {
     commandRun: [
         command: Command,
         promise: Awaitable<Message | Message[] | null | void>,
-        instances: CommandInstances,
+        context: CommandContext,
         args: Record<string, unknown> | string[] | string,
         fromPattern?: boolean,
         result?: ArgumentCollectorResult | null
@@ -228,6 +228,20 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
 
     /** Initializes all default listeners that make the client work. */
     protected initDefaultListeners(): void {
+        // Add application owner to CommandoClient.options.owners
+        this.once('ready', async client => {
+            const { application, options } = client;
+            const { owner } = await application.fetch();
+            if (!owner) return;
+
+            const ownerId = owner instanceof User ? owner.id : owner.ownerId;
+            if (!ownerId) return;
+
+            options.owners ??= [];
+            if (Array.isArray(options.owners)) options.owners.push(ownerId);
+            else options.owners.add(ownerId);
+        });
+
         // Parses all the guild instances
         this.once('ready', this.parseGuilds);
         this.on('guildCreate', guild => {
@@ -279,15 +293,13 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
 
         // Establishes MongoDB connection and loads all modules
         this.once('guildsReady', initializeDB);
-
-        this.on('channelDelete', channel => {
-            if (channel.isDMBased()) channel;
-        });
     }
 
     /** Parses all {@link Guild} instances into {@link CommandoGuild}s. */
-    protected parseGuilds(client: CommandoClient<true>): void {
-        this.guilds.cache.forEach(guild => this.parseGuild(guild as Guild));
+    protected async parseGuilds(client: CommandoClient<true>): Promise<void> {
+        const rawGuilds = await this.guilds.fetch();
+        const guilds = await Promise.all(rawGuilds.map(guild => guild.fetch()));
+        guilds.forEach(guild => this.parseGuild(guild));
         this.emit('guildsReady', client);
     }
 

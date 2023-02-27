@@ -1,7 +1,7 @@
 import { Collection } from 'discord.js';
 import CommandoClient from './client';
 import { ArgumentTypeString } from './commands/argument';
-import Command, { APISlashCommand, CommandInstances } from './commands/base';
+import Command, { APISlashCommand, CommandContext } from './commands/base';
 import CommandGroup from './commands/group';
 import CommandoMessage from './extensions/message';
 import ArgumentType from './types/base';
@@ -154,10 +154,10 @@ export default class CommandoRegistry {
      * Finds all commands that match the search string
      * @param searchString - The string to search for
      * @param exact - Whether the search should be exact
-     * @param instances - The instances to check usability against
+     * @param context - The context to check usability against
      * @return All commands that are found
      */
-    findCommands(searchString?: string | null, exact?: boolean, instances?: CommandInstances): Command[];
+    findCommands(searchString?: string | null, exact?: boolean, context?: CommandContext): Command[];
     /**
      * Resolves a CommandResolvable to a Command object
      * @param command - The command to resolve

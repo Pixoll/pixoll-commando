@@ -4,7 +4,7 @@ import path from 'path';
 import requireAll from 'require-all';
 import CommandoClient from './client';
 import { ArgumentTypeString } from './commands/argument';
-import Command, { APISlashCommand, CommandInstances } from './commands/base';
+import Command, { APISlashCommand, CommandContext } from './commands/base';
 import CommandGroup from './commands/group';
 import CommandoMessage from './extensions/message';
 import ArgumentType from './types/base';
@@ -447,14 +447,14 @@ export default class CommandoRegistry {
      * Finds all commands that match the search string
      * @param searchString - The string to search for
      * @param exact - Whether the search should be exact
-     * @param instances - The instances to check usability against
+     * @param context - The context to check usability against
      * @return All commands that are found
      */
-    public findCommands(searchString: string | null = null, exact = false, instances?: CommandInstances): Command[] {
+    public findCommands(searchString: string | null = null, exact = false, context?: CommandContext): Command[] {
         const { commands } = this;
         if (!searchString) {
-            return instances && Util.getInstanceFrom(instances)
-                ? commands.filter(cmd => cmd.isUsable(instances)).toJSON()
+            return context
+                ? commands.filter(cmd => cmd.isUsable(context)).toJSON()
                 : commands.toJSON();
         }
 

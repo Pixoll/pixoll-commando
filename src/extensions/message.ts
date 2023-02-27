@@ -193,33 +193,33 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
 
             // Make sure the command is usable in this context
             if (command.dmOnly) {
-                client.emit('commandBlock', { message: this }, 'dmOnly');
-                return await command.onBlock({ message: this }, 'dmOnly');
+                client.emit('commandBlock', this, 'dmOnly');
+                return await command.onBlock(this, 'dmOnly');
             }
         }
 
         // Make sure the command is usable in this context
         if ((command.guildOnly || command.guildOwnerOnly) && !guild) {
-            client.emit('commandBlock', { message: this }, 'guildOnly');
-            return await command.onBlock({ message: this }, 'guildOnly');
+            client.emit('commandBlock', this, 'guildOnly');
+            return await command.onBlock(this, 'guildOnly');
         }
 
         // Ensure the channel is a NSFW one if required
         if (command.nsfw && 'nsfw' in channel && !channel.nsfw) {
-            client.emit('commandBlock', { message: this }, 'nsfw');
-            return await command.onBlock({ message: this }, 'nsfw');
+            client.emit('commandBlock', this, 'nsfw');
+            return await command.onBlock(this, 'nsfw');
         }
 
         // Ensure the user has permission to use the command
-        const hasPermission = command.hasPermission({ message: this });
+        const hasPermission = command.hasPermission(this);
         if (!channel.isDMBased() && hasPermission !== true) {
             if (typeof hasPermission === 'string') {
-                client.emit('commandBlock', { message: this }, hasPermission);
-                return await command.onBlock({ message: this }, hasPermission);
+                client.emit('commandBlock', this, hasPermission);
+                return await command.onBlock(this, hasPermission);
             }
             const data = { missing: hasPermission };
-            client.emit('commandBlock', { message: this }, 'userPermissions', data);
-            return await command.onBlock({ message: this }, 'userPermissions', data);
+            client.emit('commandBlock', this, 'userPermissions', data);
+            return await command.onBlock(this, 'userPermissions', data);
         }
 
         // Ensure the client user has the required permissions
@@ -227,8 +227,8 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
             const missing = channel.permissionsFor(clientUser)?.missing(command.clientPermissions) || [];
             if (missing.length > 0) {
                 const data = { missing };
-                client.emit('commandBlock', { message: this }, 'clientPermissions', data);
-                return await command.onBlock({ message: this }, 'clientPermissions', data);
+                client.emit('commandBlock', this, 'clientPermissions', data);
+                return await command.onBlock(this, 'clientPermissions', data);
             }
         }
 
@@ -238,8 +238,8 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
         if (throttle && command.throttling && throttle.usages + 1 > command.throttling.usages) {
             const remaining = (throttle.start + (command.throttling.duration * 1000) - Date.now()) / 1000;
             const data = { throttle, remaining };
-            client.emit('commandBlock', { message: this }, 'throttling', data);
-            return await command.onBlock({ message: this }, 'throttling', data);
+            client.emit('commandBlock', this, 'throttling', data);
+            return await command.onBlock(this, 'throttling', data);
         }
 
         if (command.deprecated) {
@@ -282,9 +282,9 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
             const location = guildId ? `${guildId}:${channelId}` : `DM:${author.id}`;
             client.emit('debug', `Running message command "${groupId}:${memberName}" at "${location}".`);
             await channel.sendTyping().catch(() => null);
-            const promise = command.run({ message: this }, args, fromPattern, collResult);
+            const promise = command.run(this, args, fromPattern, collResult);
 
-            client.emit('commandRun', command, promise, { message: this }, args, fromPattern, collResult);
+            client.emit('commandRun', command, promise, this, args, fromPattern, collResult);
             const retVal = await promise as CommandoMessageResponse;
             const isValid = retVal instanceof Message || Array.isArray(retVal) || Util.isNullish(retVal);
             if (!isValid) {
@@ -301,12 +301,12 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
             return retVal;
         } catch (err) {
             client.emit(
-                'commandError', command, err as Error, { message: this }, args, fromPattern, collResult ?? undefined
+                'commandError', command, err as Error, this, args, fromPattern, collResult ?? undefined
             );
             if (err instanceof FriendlyError) {
                 return await this.reply(err.message);
             }
-            return await command.onError(err as Error, { message: this }, args, fromPattern, collResult);
+            return await command.onError(err as Error, this, args, fromPattern, collResult);
         }
     }
 
@@ -576,17 +576,17 @@ function messageToJSON(data: CommandoifiedMessage): APIMessage {
     return {
         attachments: [],
         author: data.author.toJSON() as APIUser,
-        channel_id: '',
-        content: '',
+        channel_id: data.channelId,
+        content: data.content,
         edited_timestamp: null,
         embeds: [],
-        id: '',
-        mention_everyone: false,
+        id: data.id,
+        mention_everyone: data.mentions.everyone,
         mention_roles: [],
         mentions: [],
-        pinned: false,
-        timestamp: '',
-        tts: false,
+        pinned: data.pinned,
+        timestamp: data.createdTimestamp.toString(),
+        tts: data.tts,
         type: data.type,
     };
     /* eslint-enable camelcase */

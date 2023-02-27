@@ -1,8 +1,6 @@
 import { Client, Collection, Guild, If, Message, MessageCreateOptions, PartialMessage, PermissionsString } from 'discord.js';
 import CommandoClient from './client';
-import { CommandInstances } from './commands/base';
 import CommandoGuild from './extensions/guild';
-import CommandoInteraction from './extensions/interaction';
 import CommandoMessage from './extensions/message';
 export type Tuple<T, N extends number, R extends T[] = []> = R['length'] extends N ? R : Tuple<T, N, [T, ...R]>;
 export type Require<T extends object, K extends keyof T = keyof T, Expand extends boolean = true> = Expand extends true ? Destructure<Omit<T, K> & Required<Pick<T, K>>> : Omit<T, K> & Required<Pick<T, K>>;
@@ -122,12 +120,6 @@ export default class Util extends null {
      * @returns Whether the value is nullish.
      */
     static isNullish(val: unknown): val is null | undefined;
-    /**
-     * Get the current instance of a command. Useful if you need to get the same properties from both instances.
-     * @param instances - The instances object.
-     * @returns The instance of the command.
-     */
-    static getInstanceFrom<InGuild extends boolean = boolean>(instances: CommandInstances<InGuild>): CommandoInteraction<InGuild> | CommandoMessage<InGuild>;
     static equals<T extends number | string, V extends T>(value: T, values: V[]): value is V;
     static removeReadonlyFromArguments<T extends ReadonlyArguments>(args: T): Mutable<T>;
     static getEnumEntries<T extends object>(obj: T): Array<[Extract<keyof T, string>, PropertiesOf<T>]>;

@@ -162,37 +162,37 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
 
             // Make sure the command is usable in this context
             if (command.dmOnly) {
-                client.emit('commandBlock', { interaction: this }, 'dmOnly');
-                await command.onBlock({ interaction: this }, 'dmOnly');
+                client.emit('commandBlock', this, 'dmOnly');
+                await command.onBlock(this, 'dmOnly');
                 return;
             }
         }
 
         // Make sure the command is usable in this context
         if ((command.guildOnly || command.guildOwnerOnly) && !guild) {
-            client.emit('commandBlock', { interaction: this }, 'guildOnly');
-            await command.onBlock({ interaction: this }, 'guildOnly');
+            client.emit('commandBlock', this, 'guildOnly');
+            await command.onBlock(this, 'guildOnly');
             return;
         }
 
         // Ensure the channel is a NSFW one if required
         if (command.nsfw && !channel.isDMBased() && channel.isTextBased() && !channel.isThread() && !channel.nsfw) {
-            client.emit('commandBlock', { interaction: this }, 'nsfw');
-            await command.onBlock({ interaction: this }, 'nsfw');
+            client.emit('commandBlock', this, 'nsfw');
+            await command.onBlock(this, 'nsfw');
             return;
         }
 
         // Ensure the user has permission to use the command
-        const hasPermission = command.hasPermission({ interaction: this });
+        const hasPermission = command.hasPermission(this);
         if (hasPermission !== true) {
             if (typeof hasPermission === 'string') {
-                client.emit('commandBlock', { interaction: this }, hasPermission);
-                await command.onBlock({ interaction: this }, hasPermission);
+                client.emit('commandBlock', this, hasPermission);
+                await command.onBlock(this, hasPermission);
                 return;
             }
             const data = { missing: hasPermission };
-            client.emit('commandBlock', { interaction: this }, 'userPermissions', data);
-            await command.onBlock({ interaction: this }, 'userPermissions', data);
+            client.emit('commandBlock', this, 'userPermissions', data);
+            await command.onBlock(this, 'userPermissions', data);
             return;
         }
 
@@ -201,8 +201,8 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
             const missing = channel.permissionsFor(clientUser)?.missing(command.clientPermissions) || [];
             if (missing.length > 0) {
                 const data = { missing };
-                client.emit('commandBlock', { interaction: this }, 'clientPermissions', data);
-                await command.onBlock({ interaction: this }, 'clientPermissions', data);
+                client.emit('commandBlock', this, 'clientPermissions', data);
+                await command.onBlock(this, 'clientPermissions', data);
                 return;
             }
         }
@@ -226,12 +226,12 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
             const location = guildId ? `${guildId}:${channelId}` : `DM:${author.id}`;
             client.emit('debug', `Running slash command "${groupId}:${memberName}" at "${location}".`);
             await this.deferReply({ ephemeral: command.slashInfo?.deferEphemeral });
-            const promise = command.run({ interaction: this }, args);
+            const promise = command.run(this, args);
 
-            client.emit('commandRun', command, promise, { interaction: this }, args);
+            client.emit('commandRun', command, promise, this, args);
             await promise;
         } catch (err) {
-            client.emit('commandError', command, err as Error, { interaction: this }, args);
+            client.emit('commandError', command, err as Error, this, args);
             if (err instanceof FriendlyError) {
                 if (this.isEditable()) {
                     await this.editReply({ content: err.message, components: [], embeds: [] });
@@ -239,7 +239,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
                     await this.reply(err.message);
                 }
             }
-            await command.onError(err as Error, { interaction: this }, args);
+            await command.onError(err as Error, this, args);
         }
     }
 }

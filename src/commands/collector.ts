@@ -7,6 +7,7 @@ import Argument, {
     ArgumentTypeString,
     ArgumentTypeStringMap,
 } from './argument';
+import { CommandArgumentsResolvable } from './base';
 
 /** Result object from obtaining argument values from an {@link ArgumentCollector} */
 export interface ArgumentCollectorResult<T = Record<string, unknown>> {
@@ -25,17 +26,23 @@ export interface ArgumentCollectorResult<T = Record<string, unknown>> {
     answers: ArgumentResponse[];
 }
 
-export type MapArguments<Args extends ArgumentInfo[] = ArgumentInfo[]> = {
-    [A in Args[number]as A['key']]: (A['required'] extends false ? null : never)
-    | (A['type'] extends ArgumentTypeString ? ArgumentTypeStringMap[A['type']] : (
-        A['type'] extends ArgumentTypeString[]
-        ? ArgumentTypeStringMap[A['type'][number]]
-        : unknown
-    ));
+export type ParseRawArguments<Args extends CommandArgumentsResolvable = ArgumentInfo[]> = {
+    // eslint-disable-next-line @typescript-eslint/sort-type-union-intersection-members
+    [A in Args[number]as A['key']]: (A['required'] extends false ? null : never) | (
+        A['oneOf'] extends Array<infer U>
+        ? U
+        : A['type'] extends ArgumentTypeString
+        ? ArgumentTypeStringMap[A['type']]
+        : (
+            A['type'] extends ArgumentTypeString[]
+            ? ArgumentTypeStringMap[A['type'][number]]
+            : unknown
+        )
+    );
 };
 
 /** Obtains, validates, and prompts for argument values */
-export default class ArgumentCollector<Args extends ArgumentInfo[]> {
+export default class ArgumentCollector<Args extends CommandArgumentsResolvable> {
     /** Client this collector is for */
     declare public readonly client: CommandoClient;
     /** Arguments the collector handles */
@@ -77,7 +84,7 @@ export default class ArgumentCollector<Args extends ArgumentInfo[]> {
      */
     public async obtain(
         msg: CommandoMessage, provided: unknown[] = [], promptLimit = this.promptLimit
-    ): Promise<ArgumentCollectorResult<MapArguments<Args>>> {
+    ): Promise<ArgumentCollectorResult<ParseRawArguments<Args>>> {
         const { author, channelId } = msg;
         // @ts-expect-error: _awaiting should not be used outside of class CommandDispatcher
         const { _awaiting } = this.client.dispatcher;
@@ -116,7 +123,7 @@ export default class ArgumentCollector<Args extends ArgumentInfo[]> {
 
         _awaiting.delete(id);
         return {
-            values: values as MapArguments<Args>,
+            values: values as ParseRawArguments<Args>,
             cancelled: null,
             prompts: results.map(res => res.prompts).flat(),
             answers: results.map(res => res.answers).flat(),

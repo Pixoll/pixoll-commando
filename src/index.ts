@@ -27,20 +27,26 @@ export {
 export {
     default as Command,
     APISlashCommand,
+    CommandArgumentsResolvable,
     CommandBlockData,
     CommandBlockReason,
+    CommandContext,
     CommandInfo,
-    CommandInstances,
     SlashCommandInfo,
     Throttle,
     ThrottlingOptions,
 } from './commands/base';
 export { default as CommandGroup } from './commands/group';
-export { default as ArgumentCollector, ArgumentCollectorResult, MapArguments } from './commands/collector';
+export {
+    default as ArgumentCollector,
+    ArgumentCollectorResult,
+    ParseRawArguments,
+} from './commands/collector';
 export {
     default as Argument,
     ArgumentDefault,
     ArgumentInfo,
+    ArgumentInfoResolvable,
     ArgumentResponse,
     ArgumentResult,
     ArgumentTypeString,
@@ -180,6 +186,5 @@ export type {
     PartialCommandoifiedMessage,
 } from './discord.overrides';
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: @ts-expect-error throws "unused directive". File is in program as specified under 'files' in tsconfig.json
-export { version } from '../package.json';
+declare function require<T>(id: string): T;
+export const version = require<{ version: string }>('../package.json').version;

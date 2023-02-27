@@ -123,6 +123,8 @@ export interface ArgumentInfo<T extends ArgumentTypeString = ArgumentTypeString>
     wait?: number;
 }
 
+export type ArgumentInfoResolvable = ArgumentInfo | Readonly<ArgumentInfo>;
+
 export type ArgumentResponse =
     | CommandoMessage
     | Message
