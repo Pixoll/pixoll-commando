@@ -18,7 +18,7 @@ import CommandFormatError from '../errors/command-format';
 import Util from '../util';
 import CommandoClient from '../client';
 import CommandoGuild from './guild';
-import { CommandoGuildMember, CommandoifiedMessage, CommandoInstanceChannel } from '../discord.overrides';
+import { CommandoGuildMember, CommandoifiedMessage, CommandContextChannel } from '../discord.overrides';
 
 /** Type of the response */
 export type ResponseType =
@@ -97,8 +97,8 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
     }
 
     /** The channel this message was sent in */
-    public get channel(): CommandoInstanceChannel<false, InGuild> {
-        return super.channel as CommandoInstanceChannel<false, InGuild>;
+    public get channel(): CommandContextChannel<false, InGuild> {
+        return super.channel as CommandContextChannel<false, InGuild>;
     }
 
     public inGuild(): this is CommandoMessage<true> {

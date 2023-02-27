@@ -135,7 +135,7 @@ export type {
     CommandoGuildResolvable,
     CommandoGuildScheduledEvent,
     CommandoGuildTextBasedChannel,
-    CommandoInstanceChannel,
+    CommandContextChannel as CommandoInstanceChannel,
     CommandoInteractionOverride,
     CommandoInvite,
     CommandoMappedChannelCategoryTypes,

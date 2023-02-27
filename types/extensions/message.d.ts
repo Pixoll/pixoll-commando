@@ -2,7 +2,7 @@ import { Message, EmbedBuilder, User, MessageCreateOptions, MessageReplyOptions,
 import Command from '../commands/base';
 import CommandoClient from '../client';
 import CommandoGuild from './guild';
-import { CommandoGuildMember, CommandoifiedMessage, CommandoInstanceChannel } from '../discord.overrides';
+import { CommandoGuildMember, CommandoifiedMessage, CommandContextChannel } from '../discord.overrides';
 /** Type of the response */
 export type ResponseType = 'code' | 'direct' | 'plain' | 'reply';
 export type StringResolvable = MessageCreateOptions | string;
@@ -44,7 +44,7 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
     /** The guild this message was sent in */
     get guild(): If<InGuild, CommandoGuild>;
     /** The channel this message was sent in */
-    get channel(): CommandoInstanceChannel<false, InGuild>;
+    get channel(): CommandContextChannel<false, InGuild>;
     inGuild(): this is CommandoMessage<true>;
     /**
      * Initializes the message for a command

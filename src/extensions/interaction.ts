@@ -19,7 +19,7 @@ import {
     CommandoChannel,
     CommandoChatInputCommandInteraction,
     CommandoGuildMember,
-    CommandoInstanceChannel,
+    CommandContextChannel,
     CommandoRole,
     CommandoUser,
 } from '../discord.overrides';
@@ -82,8 +82,8 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
     }
 
     /** The channel this interaction was used in */
-    public get channel(): CommandoInstanceChannel<true, InGuild> {
-        return super.channel as CommandoInstanceChannel<true, InGuild>;
+    public get channel(): CommandContextChannel<true, InGuild> {
+        return super.channel as CommandContextChannel<true, InGuild>;
     }
 
     /** Command that the interaction triggers */
@@ -135,7 +135,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
         const { command, channelId, channel: tempChannel, guild, author, guildId, client } = this;
         const { groupId, memberName } = command;
         const clientUser = client.user;
-        const channel = tempChannel ?? await client.channels.fetch(channelId) as CommandoInstanceChannel<false>;
+        const channel = tempChannel ?? await client.channels.fetch(channelId) as CommandContextChannel<false>;
 
         if (guild && !channel.isDMBased()) {
             const { members } = guild;

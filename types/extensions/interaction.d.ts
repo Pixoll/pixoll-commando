@@ -1,7 +1,7 @@
 import { APIApplicationCommandOption as APISlashCommandOption, ApplicationCommandOptionType as SlashCommandOptionType, Attachment, ChatInputCommandInteraction, If, User } from 'discord.js';
 import CommandoClient from '../client';
 import Command from '../commands/base';
-import { CommandoChannel, CommandoChatInputCommandInteraction, CommandoGuildMember, CommandoInstanceChannel, CommandoRole, CommandoUser } from '../discord.overrides';
+import { CommandoChannel, CommandoChatInputCommandInteraction, CommandoGuildMember, CommandContextChannel, CommandoRole, CommandoUser } from '../discord.overrides';
 import CommandoGuild from './guild';
 export type SlashCommandBasicOptionsParser<O extends APISlashCommandOption[]> = {
     [A in O[number] as A['name']]: A['required'] extends true ? SlashCommandOptionTypeMap[A['type']] : (SlashCommandOptionTypeMap[A['type']] extends never ? never : SlashCommandOptionTypeMap[A['type']] | null);
@@ -33,7 +33,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
     constructor(client: CommandoClient<true>, data: CommandoChatInputCommandInteraction);
     get author(): User;
     /** The channel this interaction was used in */
-    get channel(): CommandoInstanceChannel<true, InGuild>;
+    get channel(): CommandContextChannel<true, InGuild>;
     /** Command that the interaction triggers */
     get command(): Command<InGuild>;
     /** The guild this interaction was used in */
