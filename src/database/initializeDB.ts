@@ -5,7 +5,11 @@ import CommandoClient from '../client';
 import Schemas, { AnySchema, ModelFrom } from './Schemas';
 import Util from '../util';
 
-type Module = (client: CommandoClient) => Promise<unknown>;
+type ModuleLoader = (client: CommandoClient) => Promise<unknown>;
+type Module = ModuleLoader | {
+    default: ModuleLoader;
+    [k: string]: ModuleLoader;
+};
 
 /**
  * Connects to MongoDB, caches the database and loads all client modules.
@@ -87,8 +91,13 @@ async function loadModules(client: CommandoClient<true>): Promise<void> {
         for (const fileName in folder) {
             if (excludeModules?.includes(fileName)) continue;
             const file = folder[fileName];
+            const loader = typeof file === 'function'
+                ? file
+                : file.default
+                || file[Object.keys(file).filter(k => k !== '__esModule')[0]];
+
             // eslint-disable-next-line no-await-in-loop
-            await file(client);
+            await loader(client);
             client.emit('debug', `Loaded module ${folderName}/${fileName}`);
         }
     }

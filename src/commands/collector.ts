@@ -29,7 +29,7 @@ export interface ArgumentCollectorResult<T = Record<string, unknown>> {
 export type ParseRawArguments<Args extends CommandArgumentsResolvable = ArgumentInfo[]> = {
     // eslint-disable-next-line @typescript-eslint/sort-type-union-intersection-members
     [A in Args[number]as A['key']]: (A['required'] extends false ? null : never) | (
-        A['oneOf'] extends Array<infer U>
+        A['oneOf'] extends Array<infer U> | ReadonlyArray<infer U>
         ? U
         : A['type'] extends ArgumentTypeString
         ? ArgumentTypeStringMap[A['type']]

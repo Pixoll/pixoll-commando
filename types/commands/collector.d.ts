@@ -19,7 +19,7 @@ export interface ArgumentCollectorResult<T = Record<string, unknown>> {
     answers: ArgumentResponse[];
 }
 export type ParseRawArguments<Args extends CommandArgumentsResolvable = ArgumentInfo[]> = {
-    [A in Args[number] as A['key']]: (A['required'] extends false ? null : never) | (A['oneOf'] extends Array<infer U> ? U : A['type'] extends ArgumentTypeString ? ArgumentTypeStringMap[A['type']] : (A['type'] extends ArgumentTypeString[] ? ArgumentTypeStringMap[A['type'][number]] : unknown));
+    [A in Args[number] as A['key']]: (A['required'] extends false ? null : never) | (A['oneOf'] extends Array<infer U> | ReadonlyArray<infer U> ? U : A['type'] extends ArgumentTypeString ? ArgumentTypeStringMap[A['type']] : (A['type'] extends ArgumentTypeString[] ? ArgumentTypeStringMap[A['type'][number]] : unknown));
 };
 /** Obtains, validates, and prompts for argument values */
 export default class ArgumentCollector<Args extends CommandArgumentsResolvable> {
