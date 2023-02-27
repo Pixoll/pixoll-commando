@@ -8,6 +8,7 @@ import {
 import CommandoClient from './client';
 import { ArgumentResponse } from './commands/argument';
 import { CommandBlockReason } from './commands/base';
+import { CommandoAutocompleteInteraction } from './discord.overrides';
 import CommandoInteraction from './extensions/interaction';
 import CommandoMessage, { CommandoMessageResponse } from './extensions/message';
 import CommandoRegistry from './registry';
@@ -166,8 +167,8 @@ export default class CommandDispatcher {
      * Handle a new slash command interaction
      * @param interaction - The interaction to handle
      */
-    protected async handleSlash(interaction: CommandoInteraction): Promise<void> {
-        if (!this.shouldHandleSlash(interaction)) return;
+    protected async handleSlashCommand(interaction: CommandoInteraction): Promise<void> {
+        if (!this.shouldHandleSlashCommand(interaction)) return;
 
         const { command, guild } = interaction;
 
@@ -184,6 +185,17 @@ export default class CommandDispatcher {
         }
 
         await interaction.run();
+    }
+
+    /**
+     * Handle a new slash command auto-complete interaction
+     * @param interaction - The interaction to handle
+     */
+    protected async handleSlashAutocomplete(interaction: CommandoAutocompleteInteraction): Promise<void> {
+        const { client, commandName } = interaction;
+        const command = client.registry.resolveCommand(commandName);
+        if (!command.runAutocomplete) return;
+        await command.runAutocomplete(interaction);
     }
 
     /**
@@ -209,10 +221,10 @@ export default class CommandDispatcher {
     }
 
     /**
-     * Check whether an interaction should be handled
-     * @param interaction - The interaction to handle
+     * Check whether a slash command interaction should be handled
+     * @param interaction - The interaction to check
      */
-    protected shouldHandleSlash(interaction: CommandoInteraction): boolean {
+    protected shouldHandleSlashCommand(interaction: CommandoInteraction): boolean {
         const { author, client, commandType, type } = interaction;
 
         // Ignore bot messages

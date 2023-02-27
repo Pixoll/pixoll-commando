@@ -279,16 +279,15 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
             this.registry.registerSlashCommands()
         );
         this.on('interactionCreate', interaction => {
-            if (
-                !interaction.isChatInputCommand() || interaction.channel?.type === ChannelType.GuildStageVoice
-            ) return;
-            try {
-                const commando = new CommandoInteraction(this as CommandoClient<true>, interaction);
-                // @ts-expect-error: handleSlash is protected in CommandDispatcher
-                this.dispatcher.handleSlash(commando).catch(catchErr);
-            } catch (error) {
-                console.error(error);
+            if (interaction.channel?.type === ChannelType.GuildStageVoice) return;
+            if (interaction.isAutocomplete()) {
+                // @ts-expect-error: handleSlashAutocomplete is protected in CommandDispatcher
+                this.dispatcher.handleSlashAutocomplete(interaction).catch(catchErr);
             }
+            if (!interaction.isChatInputCommand()) return;
+            const commando = new CommandoInteraction(this as CommandoClient<true>, interaction);
+            // @ts-expect-error: handleSlashCommand is protected in CommandDispatcher
+            this.dispatcher.handleSlashCommand(commando).catch(catchErr);
         });
 
         // Establishes MongoDB connection and loads all modules

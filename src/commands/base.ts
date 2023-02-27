@@ -6,9 +6,9 @@ import {
     Colors,
     SlashCommandBuilder,
     PermissionsBitField,
-    ApplicationCommandOptionType,
+    ApplicationCommandOptionType as SlashCommandOptionType,
     ApplicationCommandOptionBase,
-    ApplicationCommandOptionData,
+    ApplicationCommandOptionData as SlashCommandOptionData,
     APIApplicationCommandOptionChoice,
     SharedNameAndDescription,
     SharedSlashCommandOptions,
@@ -16,6 +16,7 @@ import {
     RESTPostAPIChatInputApplicationCommandsJSONBody as RESTPostAPISlashCommand,
     Awaitable,
     MessageCreateOptions,
+    ChannelType,
 } from 'discord.js';
 import path from 'path';
 import ArgumentCollector, { ArgumentCollectorResult, ParseRawArguments } from './collector';
@@ -26,7 +27,7 @@ import { ArgumentInfo, ArgumentInfoResolvable } from './argument';
 import CommandoMessage from '../extensions/message';
 import CommandoGuild from '../extensions/guild';
 import CommandoInteraction from '../extensions/interaction';
-import { CommandoGuildMember, CommandoGuildResolvable } from '../discord.overrides';
+import { CommandoAutocompleteInteraction, CommandoGuildMember, CommandoGuildResolvable } from '../discord.overrides';
 
 /** Options for throttling usages of the command. */
 export interface ThrottlingOptions {
@@ -168,6 +169,17 @@ export interface CommandInfo<
      * Required if `deprecated` is `true`.
      */
     deprecatedReplacement?: string;
+    /**
+     * Whether to automatically generate a slash command. This may not always work as you intend.
+     * It's recommended to manually specify options for the slash command.
+     * - No options will be generated if you specified your own.
+     * - Check {@link argumentTypeMap ArgumentTypeMap} for details on how each argument type
+     * is parsed.
+     * - Arguments without a type will be skipped.
+     * - If an argument as multiple types, the parser will choose the first one.
+     * @default false
+     */
+    autogenerateSlashCommand?: boolean;
 }
 
 /** Throttling object of the command. */
@@ -224,6 +236,55 @@ export interface SlashCommandInfo extends Omit<
 }
 
 export type APISlashCommand = Required<Pick<SlashCommandInfo, 'deferEphemeral'>> & RESTPostAPISlashCommand;
+
+type BasicSlashCommandOptionData = Exclude<SlashCommandOptionData, {
+    type: SlashCommandOptionType.Subcommand | SlashCommandOptionType.SubcommandGroup;
+}>;
+
+const argumentTypeMap/* : Record<ArgumentTypeString, SlashCommandOptionType> */ = {
+    boolean: SlashCommandOptionType.Boolean,
+    'category-channel': SlashCommandOptionType.Channel,
+    channel: SlashCommandOptionType.Channel,
+    command: SlashCommandOptionType.String,
+    date: SlashCommandOptionType.String,
+    'default-emoji': SlashCommandOptionType.String,
+    duration: SlashCommandOptionType.String,
+    float: SlashCommandOptionType.Number,
+    group: SlashCommandOptionType.String,
+    'guild-emoji': SlashCommandOptionType.String,
+    integer: SlashCommandOptionType.Integer,
+    invite: SlashCommandOptionType.String,
+    member: SlashCommandOptionType.User,
+    message: SlashCommandOptionType.String,
+    role: SlashCommandOptionType.Role,
+    'stage-channel': SlashCommandOptionType.Channel,
+    string: SlashCommandOptionType.String,
+    'text-channel': SlashCommandOptionType.Channel,
+    'thread-channel': SlashCommandOptionType.Channel,
+    time: SlashCommandOptionType.String,
+    user: SlashCommandOptionType.User,
+    'voice-channel': SlashCommandOptionType.Channel,
+} as const;
+
+type ChannelTypeMapKey = keyof {
+    -readonly [
+    P in keyof typeof argumentTypeMap as (typeof argumentTypeMap)[P] extends SlashCommandOptionType.Channel
+    ? P : never
+    ]: SlashCommandOptionType.Channel;
+};
+
+const channelTypeMap: Record<ChannelTypeMapKey, ChannelType[] | null[]> = {
+    'category-channel': [ChannelType.GuildCategory],
+    channel: [null],
+    'stage-channel': [ChannelType.GuildStageVoice],
+    'text-channel': [ChannelType.GuildText],
+    'thread-channel': [
+        ChannelType.AnnouncementThread,
+        ChannelType.PrivateThread,
+        ChannelType.PublicThread,
+    ],
+    'voice-channel': [ChannelType.GuildVoice],
+};
 
 /**
  * A command that can be run in a client
@@ -433,6 +494,12 @@ export default abstract class Command<
     ): Awaitable<Message | Message[] | null | void>;
 
     /**
+     * Run the slash command auto-complete interaction logic.
+     * @param interaction - The auto-complete interaction
+     */
+    public runAutocomplete?(interaction: CommandoAutocompleteInteraction): Awaitable<unknown>;
+
+    /**
      * Checks whether the user has permission to use the command
      * @param context - The triggering command context
      * @param ownerOverride - Whether the bot owner(s) will always have permission
@@ -498,7 +565,7 @@ export default abstract class Command<
                 return replyContext(context, embed(useCommandOnlyIf('by the bot\'s owner')));
             case 'userPermissions': {
                 if (!missing) {
-                    throw new Error('Missing permissions object must be specified for "userPermissions" case');
+                    throw new Error('Missing permissions array must be specified for "userPermissions" case');
                 }
                 return replyContext(context, embed(
                     'You are missing the following permissions:',
@@ -512,7 +579,7 @@ export default abstract class Command<
                 ));
             case 'clientPermissions': {
                 if (!missing) {
-                    throw new Error('Missing permissions object must be specified for "clientPermissions" case');
+                    throw new Error('Missing permissions array must be specified for "clientPermissions" case');
                 }
                 return replyContext(context, embed(
                     'The bot is missing the following permissions:',
@@ -670,6 +737,10 @@ export default abstract class Command<
         registry.unregisterCommand(this);
     }
 
+    public toString(): string {
+        return this.name;
+    }
+
     /**
      * Creates a usage string for a command
      * @param command - A command + arg string
@@ -785,13 +856,13 @@ export default abstract class Command<
      * @param slashInfo - Slash info to validate
      */
     protected static validateAndParseSlashInfo(info: CommandInfo, slashInfo?: SlashCommandInfo): APISlashCommand | null {
-        if (!slashInfo) return null;
-        const { name, description, userPermissions, dmOnly, guildOnly } = info;
+        const { autogenerateSlashCommand, name, description, userPermissions, dmOnly, guildOnly, args } = info;
+        if (!slashInfo && !autogenerateSlashCommand) return null;
         const {
             nameLocalizations = null,
             descriptionLocalizations = null,
-            options,
-        } = slashInfo;
+            options: slashOptions,
+        } = slashInfo ?? {};
         const memberPermissions = dmOnly ? '0' : (userPermissions && PermissionsBitField.resolve(userPermissions));
 
         const slash = new SlashCommandBuilder()
@@ -802,77 +873,107 @@ export default abstract class Command<
             .setDMPermission(!guildOnly)
             .setDefaultMemberPermissions(memberPermissions);
 
-        if (options) {
-            addBasicOptions(slash, options);
-
-            for (const option of options) {
-                const { type: optionType } = option;
-
-                if (optionType === ApplicationCommandOptionType.Subcommand) {
-                    slash.addSubcommand(builder => {
-                        createBaseSlashOption(option)(builder);
-                        if (option.options) addBasicOptions(builder, option.options);
-                        return builder;
-                    });
-                }
-                if (optionType === ApplicationCommandOptionType.SubcommandGroup) {
-                    slash.addSubcommandGroup(builder => {
-                        createBaseSlashOption(option)(builder);
-                        if (!option.options) return builder;
-                        for (const subCommand of option.options) {
-                            builder.addSubcommand(subBuilder => {
-                                createBaseSlashOption(subCommand)(subBuilder);
-                                if (subCommand.options) addBasicOptions(subBuilder, subCommand.options);
-                                return subBuilder;
-                            });
-                        }
-                        return builder;
-                    });
-                }
-            }
+        if (slashOptions || args) {
+            const options = slashOptions ?? (autogenerateSlashCommand && args
+                ? Util.filterNullishItems(args.map(parseMessageArgToSlashOption))
+                : null
+            );
+            if (options) addSlashOptions(slash, options);
         }
 
         // Validate data
         const validatedData = slash.toJSON();
         return {
             ...validatedData,
-            deferEphemeral: !!slashInfo.deferEphemeral,
+            deferEphemeral: !!slashInfo?.deferEphemeral,
         };
     }
+}
+
+function parseMessageArgToSlashOption(arg: ArgumentInfo): BasicSlashCommandOptionData | null {
+    const { key: name, prompt: description, type: rawType, min, max, oneOf } = arg;
+    if (!rawType) return null;
+
+    const required = 'required' in arg ? !!arg.required : !('default' in arg);
+    const defaultData: Required<Pick<BasicSlashCommandOptionData, 'description' | 'name' | 'required'>> = {
+        name,
+        description,
+        required,
+    };
+    const defaultStringOrNumberData = {
+        maxLength: max,
+        minLength: min,
+    };
+    const argType = Array.isArray(rawType) ? rawType[0] : rawType;
+    const type = argumentTypeMap[argType];
+
+    if (Util.equals(type, [
+        SlashCommandOptionType.Boolean, SlashCommandOptionType.User, SlashCommandOptionType.Role,
+    ])) return { type, ...defaultData };
+
+    if (type === SlashCommandOptionType.Channel && Util.equals(argType, [
+        'category-channel', 'channel', 'text-channel', 'thread-channel', 'stage-channel', 'voice-channel',
+    ])) return {
+        type,
+        ...defaultData,
+        channelTypes: Util.filterNullishItems(channelTypeMap[argType]),
+    };
+
+    if (type === SlashCommandOptionType.String) return {
+        type,
+        ...defaultData,
+        ...defaultStringOrNumberData,
+        choices: oneOf?.filter((c): c is string => typeof c === 'string').map(choice => ({
+            name: choice,
+            value: choice,
+        })),
+    };
+
+    if (Util.equals(type, [SlashCommandOptionType.Integer, SlashCommandOptionType.Number])) return {
+        type,
+        ...defaultData,
+        ...defaultStringOrNumberData,
+        choices: oneOf?.filter((c): c is number => typeof c === 'number').map(choice => ({
+            name: choice.toString(),
+            value: choice,
+        })),
+    };
+
+    return null;
 }
 
 type SlashCommandOptionBase =
     | ApplicationCommandOptionBase
     | SharedNameAndDescription;
 
-function createBaseSlashOption(option: ApplicationCommandOptionData): <T extends SlashCommandOptionBase>(builder: T) => T {
+function createBaseSlashOption(option: SlashCommandOptionData): <T extends SlashCommandOptionBase>(builder: T) => T {
     return <T extends SlashCommandOptionBase>(builder: T): T => {
         builder.setName(option.name)
             .setNameLocalizations(option.nameLocalizations ?? null)
             .setDescription(option.description)
             .setDescriptionLocalizations(option.descriptionLocalizations ?? null);
         if (
-            option.type !== ApplicationCommandOptionType.Subcommand
-            && option.type !== ApplicationCommandOptionType.SubcommandGroup
+            option.type !== SlashCommandOptionType.Subcommand
+            && option.type !== SlashCommandOptionType.SubcommandGroup
             && 'setRequired' in builder
         ) builder.setRequired(option.required ?? false);
         return builder;
     };
 }
 
-function addBasicOptions<T extends SharedSlashCommandOptions<boolean>>(
-    builder: T, options: ApplicationCommandOptionData[]
+function addSlashOptions<T extends SharedSlashCommandOptions<false> | SlashCommandBuilder>(
+    builder: T, options: SlashCommandOptionData[]
 ): T {
     for (const option of options) {
         const { type: optionType } = option;
 
-        if (optionType === ApplicationCommandOptionType.Attachment) {
+        if (optionType === SlashCommandOptionType.Attachment) {
             builder.addAttachmentOption(createBaseSlashOption(option));
         }
-        if (optionType === ApplicationCommandOptionType.Boolean) {
+        if (optionType === SlashCommandOptionType.Boolean) {
             builder.addBooleanOption(createBaseSlashOption(option));
         }
-        if (optionType === ApplicationCommandOptionType.Channel) {
+        if (optionType === SlashCommandOptionType.Channel) {
             builder.addChannelOption(optBuilder => {
                 createBaseSlashOption(option)(optBuilder);
                 const channelTypes = option.channelTypes ?? option.channel_types;
@@ -880,7 +981,7 @@ function addBasicOptions<T extends SharedSlashCommandOptions<boolean>>(
                 return optBuilder;
             });
         }
-        if (optionType === ApplicationCommandOptionType.Integer) {
+        if (optionType === SlashCommandOptionType.Integer) {
             builder.addIntegerOption(optBuilder => {
                 createBaseSlashOption(option)(optBuilder);
                 if (option.autocomplete) optBuilder.setAutocomplete(option.autocomplete);
@@ -898,10 +999,10 @@ function addBasicOptions<T extends SharedSlashCommandOptions<boolean>>(
                 return optBuilder;
             });
         }
-        if (optionType === ApplicationCommandOptionType.Mentionable) {
+        if (optionType === SlashCommandOptionType.Mentionable) {
             builder.addMentionableOption(createBaseSlashOption(option));
         }
-        if (optionType === ApplicationCommandOptionType.Number) {
+        if (optionType === SlashCommandOptionType.Number) {
             builder.addNumberOption(optBuilder => {
                 createBaseSlashOption(option)(optBuilder);
                 if (option.autocomplete) optBuilder.setAutocomplete(option.autocomplete);
@@ -919,10 +1020,10 @@ function addBasicOptions<T extends SharedSlashCommandOptions<boolean>>(
                 return optBuilder;
             });
         }
-        if (optionType === ApplicationCommandOptionType.Role) {
+        if (optionType === SlashCommandOptionType.Role) {
             builder.addRoleOption(createBaseSlashOption(option));
         }
-        if (optionType === ApplicationCommandOptionType.String) {
+        if (optionType === SlashCommandOptionType.String) {
             builder.addStringOption(optBuilder => {
                 createBaseSlashOption(option)(optBuilder);
                 if (option.autocomplete) optBuilder.setAutocomplete(option.autocomplete);
@@ -940,8 +1041,29 @@ function addBasicOptions<T extends SharedSlashCommandOptions<boolean>>(
                 return optBuilder;
             });
         }
-        if (optionType === ApplicationCommandOptionType.User) {
+        if (optionType === SlashCommandOptionType.User) {
             builder.addUserOption(createBaseSlashOption(option));
+        }
+        if (optionType === SlashCommandOptionType.Subcommand && 'addSubcommand' in builder) {
+            builder.addSubcommand(optBuilder => {
+                createBaseSlashOption(option)(optBuilder);
+                if (option.options) addSlashOptions(optBuilder, option.options);
+                return optBuilder;
+            });
+        }
+        if (optionType === SlashCommandOptionType.SubcommandGroup && 'addSubcommandGroup' in builder) {
+            builder.addSubcommandGroup(optBuilder => {
+                createBaseSlashOption(option)(optBuilder);
+                if (!option.options) return optBuilder;
+                for (const subCommand of option.options) {
+                    optBuilder.addSubcommand(subBuilder => {
+                        createBaseSlashOption(subCommand)(subBuilder);
+                        if (subCommand.options) addSlashOptions(subBuilder, subCommand.options);
+                        return subBuilder;
+                    });
+                }
+                return optBuilder;
+            });
         }
     }
 

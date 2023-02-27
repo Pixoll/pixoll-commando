@@ -6,7 +6,7 @@ import CommandGroup from './group';
 import { ArgumentInfo, ArgumentInfoResolvable } from './argument';
 import CommandoMessage from '../extensions/message';
 import CommandoInteraction from '../extensions/interaction';
-import { CommandoGuildResolvable } from '../discord.overrides';
+import { CommandoAutocompleteInteraction, CommandoGuildResolvable } from '../discord.overrides';
 /** Options for throttling usages of the command. */
 export interface ThrottlingOptions {
     /** Maximum number of usages of the command allowed in the time frame. */
@@ -142,6 +142,17 @@ export interface CommandInfo<InGuild extends boolean = boolean, Args extends Com
      * Required if `deprecated` is `true`.
      */
     deprecatedReplacement?: string;
+    /**
+     * Whether to automatically generate a slash command. This may not always work as you intend.
+     * It's recommended to manually specify options for the slash command.
+     * - No options will be generated if you specified your own.
+     * - Check {@link argumentTypeMap ArgumentTypeMap} for details on how each argument type
+     * is parsed.
+     * - Arguments without a type will be skipped.
+     * - If an argument as multiple types, the parser will choose the first one.
+     * @default false
+     */
+    autogenerateSlashCommand?: boolean;
 }
 /** Throttling object of the command. */
 export interface Throttle {
@@ -320,6 +331,11 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
      */
     abstract run(context: CommandContext<InGuild>, args: ParseRawArguments<Args> | string[] | string, fromPattern?: boolean, result?: ArgumentCollectorResult | null): Awaitable<Message | Message[] | null | void>;
     /**
+     * Run the slash command auto-complete interaction logic.
+     * @param interaction - The auto-complete interaction
+     */
+    runAutocomplete?(interaction: CommandoAutocompleteInteraction): Awaitable<unknown>;
+    /**
      * Checks whether the user has permission to use the command
      * @param context - The triggering command context
      * @param ownerOverride - Whether the bot owner(s) will always have permission
@@ -380,6 +396,7 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
     reload(): void;
     /** Unloads the command */
     unload(): void;
+    toString(): string;
     /**
      * Creates a usage string for a command
      * @param command - A command + arg string

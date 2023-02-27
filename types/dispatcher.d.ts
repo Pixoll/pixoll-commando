@@ -1,5 +1,6 @@
 import { Message } from 'discord.js';
 import CommandoClient from './client';
+import { CommandoAutocompleteInteraction } from './discord.overrides';
 import CommandoInteraction from './extensions/interaction';
 import CommandoMessage, { CommandoMessageResponse } from './extensions/message';
 import CommandoRegistry from './registry';
@@ -67,7 +68,12 @@ export default class CommandDispatcher {
      * Handle a new slash command interaction
      * @param interaction - The interaction to handle
      */
-    protected handleSlash(interaction: CommandoInteraction): Promise<void>;
+    protected handleSlashCommand(interaction: CommandoInteraction): Promise<void>;
+    /**
+     * Handle a new slash command auto-complete interaction
+     * @param interaction - The interaction to handle
+     */
+    protected handleSlashAutocomplete(interaction: CommandoAutocompleteInteraction): Promise<void>;
     /**
      * Check whether a message should be handled
      * @param message - The message to handle
@@ -75,10 +81,10 @@ export default class CommandDispatcher {
      */
     protected shouldHandleMessage(message: CommandoMessage, oldMessage?: Message): boolean;
     /**
-     * Check whether an interaction should be handled
-     * @param interaction - The interaction to handle
+     * Check whether a slash command interaction should be handled
+     * @param interaction - The interaction to check
      */
-    protected shouldHandleSlash(interaction: CommandoInteraction): boolean;
+    protected shouldHandleSlashCommand(interaction: CommandoInteraction): boolean;
     /**
      * Inhibits a command message
      * @param message - Command message to inhibit
