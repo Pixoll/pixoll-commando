@@ -6,7 +6,7 @@ import ArgumentType from '../types/base';
 import Command from './base';
 import CommandGroup from './group';
 type ArgumentCheckerParams<T extends ArgumentTypeString = ArgumentTypeString> = [
-    value: string[] | string,
+    value: string,
     originalMessage: CommandoMessage,
     argument: Argument<T>,
     currentMessage?: CommandoMessage
@@ -217,7 +217,7 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
      * @param originalMsg - Message that triggered the command
      * @param currentMsg - Current response message
      */
-    isEmpty(value: string[] | string, originalMessage: CommandoMessage, currentMessage?: CommandoMessage): boolean;
+    isEmpty(value: string, originalMessage: CommandoMessage, currentMessage?: CommandoMessage): boolean;
     /**
      * Validates the constructor parameters
      * @param client - Client to validate

@@ -23,7 +23,7 @@ import Command from './base';
 import CommandGroup from './group';
 
 type ArgumentCheckerParams<T extends ArgumentTypeString = ArgumentTypeString> = [
-    value: string[] | string,
+    value: string,
     originalMessage: CommandoMessage,
     argument: Argument<T>,
     currentMessage?: CommandoMessage,
@@ -528,7 +528,7 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
      * @param currentMsg - Current response message
      */
     public isEmpty(
-        value: string[] | string, originalMessage: CommandoMessage, currentMessage: CommandoMessage = originalMessage
+        value: string, originalMessage: CommandoMessage, currentMessage: CommandoMessage = originalMessage
     ): boolean {
         if (this.emptyChecker) return this.emptyChecker(value, originalMessage, this, currentMessage);
         if (this.type) return this.type.isEmpty(value, originalMessage, this, currentMessage);
