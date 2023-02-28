@@ -122,6 +122,8 @@ export interface ArgumentResult<T extends ArgumentTypeString = ArgumentTypeStrin
 }
 /** A fancy argument */
 export default class Argument<T extends ArgumentTypeString = ArgumentTypeString> {
+    /** Client that this argument is for */
+    readonly client: CommandoClient;
     /** Key for the argument */
     key: string;
     /** Label for the argument */

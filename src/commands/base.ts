@@ -902,10 +902,6 @@ function parseMessageArgToSlashOption(arg: ArgumentInfo): BasicSlashCommandOptio
         description,
         required,
     };
-    const defaultStringOrNumberData = {
-        maxLength: max,
-        minLength: min,
-    };
     const argType = Array.isArray(rawType) ? rawType[0] : rawType;
     const type = argumentTypeMap[argType];
 
@@ -924,7 +920,8 @@ function parseMessageArgToSlashOption(arg: ArgumentInfo): BasicSlashCommandOptio
     if (type === SlashCommandOptionType.String) return {
         type,
         ...defaultData,
-        ...defaultStringOrNumberData,
+        maxLength: max,
+        minLength: min,
         choices: oneOf?.filter((c): c is string => typeof c === 'string').map(choice => ({
             name: choice,
             value: choice,
@@ -934,7 +931,8 @@ function parseMessageArgToSlashOption(arg: ArgumentInfo): BasicSlashCommandOptio
     if (Util.equals(type, [SlashCommandOptionType.Integer, SlashCommandOptionType.Number])) return {
         type,
         ...defaultData,
-        ...defaultStringOrNumberData,
+        maxValue: max,
+        minValue: min,
         choices: oneOf?.filter((c): c is number => typeof c === 'number').map(choice => ({
             name: choice.toString(),
             value: choice,

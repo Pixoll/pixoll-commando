@@ -156,6 +156,8 @@ export interface ArgumentResult<T extends ArgumentTypeString = ArgumentTypeStrin
 
 /** A fancy argument */
 export default class Argument<T extends ArgumentTypeString = ArgumentTypeString> {
+    /** Client that this argument is for */
+    declare public readonly client: CommandoClient;
     /** Key for the argument */
     public key: string;
     /** Label for the argument */
@@ -219,6 +221,8 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
      */
     protected constructor(client: CommandoClient, info: ArgumentInfo<T>) {
         Argument.validateInfo(client, info);
+
+        Object.defineProperty(this, 'client', { value: client });
 
         this.key = info.key;
         this.label = info.label || info.key;
