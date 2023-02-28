@@ -138,9 +138,9 @@ export type ArgumentResponse =
     | null;
 
 /** Result object from obtaining a single {@link Argument}'s value(s) */
-export interface ArgumentResult<T = unknown> {
+export interface ArgumentResult<T extends ArgumentTypeString = ArgumentTypeString> {
     /** Final value(s) for the argument */
-    value: T | null;
+    value: ArgumentTypeStringMap[T] |null;
     /**
      * One of:
      * - `user` (user cancelled)
@@ -332,7 +332,9 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
         /* eslint-enable no-await-in-loop */
 
         return {
-            value: await this.parse(val, msg, answers[answers.length - 1] as CommandoMessage ?? msg),
+            value: await this.parse(
+                val, msg, answers[answers.length - 1] as CommandoMessage ?? msg
+            ) as ArgumentTypeStringMap[T],
             cancelled: null,
             prompts,
             answers,
@@ -345,9 +347,11 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
      * @param vals - Pre-provided values for the argument
      * @param promptLimit - Maximum number of times to prompt for the argument
      */
-    protected async obtainInfinite(msg: CommandoMessage, vals?: string[], promptLimit = Infinity): Promise<ArgumentResult> {
+    protected async obtainInfinite(
+        msg: CommandoMessage, vals?: string[], promptLimit = Infinity
+    ): Promise<ArgumentResult<T>> {
         const wait = this.wait > 0 && this.wait !== Infinity ? this.wait * 1000 : null;
-        const results: ArgumentResponse[] = [];
+        const results: Array<ArgumentTypeStringMap[T]> = [];
         const prompts: ArgumentResponse[] = [];
         const answers: ArgumentResponse[] = [];
         let currentVal = 0;
@@ -435,7 +439,7 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
                 const lc = val.toLowerCase();
                 if (lc === 'finish') {
                     return {
-                        value: results.length > 0 ? results : null,
+                        value: results.length > 0 ? results as unknown as ArgumentTypeStringMap[T] : null,
                         cancelled: this.default ? null : results.length > 0 ? null : 'user',
                         prompts,
                         answers,
@@ -455,13 +459,13 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
 
             results.push(await this.parse(
                 val as string, msg, answers[answers.length - 1] as CommandoMessage ?? msg
-            ) as ArgumentResponse);
+            ) as ArgumentTypeStringMap[T]);
 
             if (vals) {
                 currentVal++;
                 if (currentVal === vals.length) {
                     return {
-                        value: results,
+                        value: results as unknown as ArgumentTypeStringMap[T],
                         cancelled: null,
                         prompts,
                         answers,

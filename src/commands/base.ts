@@ -650,11 +650,11 @@ export default abstract class Command<
         if (guarded) throw new Error('The command is guarded.');
         if (!guild) {
             this._globalEnabled = enabled;
-            client.emit('commandStatusChange', null, this, enabled);
+            client.emit('commandStatusChange', null, this as unknown as Command, enabled);
             return;
         }
         const commandoGuild = client.guilds.resolve(guild) as CommandoGuild;
-        commandoGuild.setCommandEnabled(this, enabled);
+        commandoGuild.setCommandEnabled(this as unknown as Command, enabled);
     }
 
     /**
@@ -667,7 +667,9 @@ export default abstract class Command<
         if (this.guarded) return true;
         if (!guild) return group.isEnabledIn(null) && this._globalEnabled;
         const commandoGuild = client.guilds.resolve(guild) as CommandoGuild;
-        return (bypassGroup || commandoGuild.isGroupEnabled(group)) && commandoGuild.isCommandEnabled(this);
+        return (
+            bypassGroup || commandoGuild.isGroupEnabled(group)
+        ) && commandoGuild.isCommandEnabled(this as unknown as Command);
     }
 
     /**
@@ -699,23 +701,23 @@ export default abstract class Command<
         const { client, groupId, memberName } = this;
         const { registry } = client;
 
-        let cmdPath = '';
+        let commandPath = '';
         let cached: NodeModule | undefined;
-        let newCmd: this;
+        let newCommand: Command;
         try {
-            cmdPath = registry.resolveCommandPath(groupId, memberName);
-            cached = require.cache[cmdPath];
-            delete require.cache[cmdPath];
-            newCmd = require(cmdPath);
+            commandPath = registry.resolveCommandPath(groupId, memberName);
+            cached = require.cache[commandPath];
+            delete require.cache[commandPath];
+            newCommand = require(commandPath);
         } catch (err) {
-            if (cached) require.cache[cmdPath] = cached;
+            if (cached) require.cache[commandPath] = cached;
             try {
-                cmdPath = path.join(__dirname, groupId, `${memberName}.js`);
-                cached = require.cache[cmdPath];
-                delete require.cache[cmdPath];
-                newCmd = require(cmdPath);
+                commandPath = path.join(__dirname, groupId, `${memberName}.js`);
+                cached = require.cache[commandPath];
+                delete require.cache[commandPath];
+                newCommand = require(commandPath);
             } catch (err2) {
-                if (cached) require.cache[cmdPath] = cached;
+                if (cached) require.cache[commandPath] = cached;
                 if ((err2 as Error).message.includes('Cannot find module')) {
                     throw err;
                 }
@@ -723,7 +725,7 @@ export default abstract class Command<
             }
         }
 
-        registry.reregisterCommand(newCmd, this);
+        registry.reregisterCommand(newCommand, this as unknown as Command);
     }
 
     /** Unloads the command */
@@ -734,7 +736,7 @@ export default abstract class Command<
         const cmdPath = registry.resolveCommandPath(groupId, memberName);
         if (!require.cache[cmdPath]) throw new Error('Command cannot be unloaded.');
         delete require.cache[cmdPath];
-        registry.unregisterCommand(this);
+        registry.unregisterCommand(this as unknown as Command);
     }
 
     public toString(): string {

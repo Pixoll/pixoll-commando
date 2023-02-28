@@ -105,9 +105,9 @@ type ReadonlyArgumentInfo = Readonly<Omit<ArgumentInfo, 'oneOf' | 'type'> & {
 export type ArgumentInfoResolvable = ArgumentInfo | ReadonlyArgumentInfo;
 export type ArgumentResponse = CommandoMessage | Message | null;
 /** Result object from obtaining a single {@link Argument}'s value(s) */
-export interface ArgumentResult<T = unknown> {
+export interface ArgumentResult<T extends ArgumentTypeString = ArgumentTypeString> {
     /** Final value(s) for the argument */
-    value: T | null;
+    value: ArgumentTypeStringMap[T] | null;
     /**
      * One of:
      * - `user` (user cancelled)
@@ -196,7 +196,7 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
      * @param vals - Pre-provided values for the argument
      * @param promptLimit - Maximum number of times to prompt for the argument
      */
-    protected obtainInfinite(msg: CommandoMessage, vals?: string[], promptLimit?: number): Promise<ArgumentResult>;
+    protected obtainInfinite(msg: CommandoMessage, vals?: string[], promptLimit?: number): Promise<ArgumentResult<T>>;
     /**
      * Checks if a value is valid for the argument
      * @param val - Value to check

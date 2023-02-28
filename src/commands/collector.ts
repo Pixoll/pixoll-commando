@@ -28,7 +28,11 @@ export interface ArgumentCollectorResult<T = Record<string, unknown>> {
 
 export type ParseRawArguments<Args extends CommandArgumentsResolvable = ArgumentInfo[]> = {
     // eslint-disable-next-line @typescript-eslint/sort-type-union-intersection-members
-    [A in Args[number]as A['key']]: (A['required'] extends false ? null : never) | (
+    [A in Args[number]as A['key']]: (
+        A['default'] extends unknown
+        ? (A['required'] extends false ? null : never)
+        : A['default']
+    ) | (
         A['oneOf'] extends Array<infer U> | ReadonlyArray<infer U>
         ? U
         : A['type'] extends ArgumentTypeString
@@ -41,12 +45,17 @@ export type ParseRawArguments<Args extends CommandArgumentsResolvable = Argument
     );
 };
 
+export type ArgumentCollectorArgs<Args extends CommandArgumentsResolvable> = Array<Argument<keyof {
+    [Type in Args[number]['type']as Type extends undefined ? ArgumentTypeString
+    : Type extends Array<infer U> | ReadonlyArray<infer U> ? U : Type]: null;
+}>>;
+
 /** Obtains, validates, and prompts for argument values */
 export default class ArgumentCollector<Args extends CommandArgumentsResolvable> {
     /** Client this collector is for */
     declare public readonly client: CommandoClient;
     /** Arguments the collector handles */
-    public args: Argument[];
+    public args: ArgumentCollectorArgs<Args>;
     /** Maximum number of times to prompt for a single argument */
     public promptLimit: number;
 
