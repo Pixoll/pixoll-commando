@@ -140,7 +140,7 @@ export type ArgumentResponse =
 /** Result object from obtaining a single {@link Argument}'s value(s) */
 export interface ArgumentResult<T extends ArgumentTypeString = ArgumentTypeString> {
     /** Final value(s) for the argument */
-    value: ArgumentTypeStringMap[T] |null;
+    value: ArgumentTypeStringMap[T] | null;
     /**
      * One of:
      * - `user` (user cancelled)
@@ -485,11 +485,11 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
     public validate(
         val: string, originalMsg: CommandoMessage, currentMsg: CommandoMessage = originalMsg
     ): Awaitable<boolean | string> {
-        let valid = this.validator?.(val, originalMsg, this, currentMsg);
-        if (!this.type) {
+        if (!this.type || (!this.type && this.validator)) {
             throw new Error('Argument must have both validate and parse since it doesn\'t have a type.');
         }
-        valid = this.type.validate(val, originalMsg, this, currentMsg);
+        const validator = this.validator ?? this.type.validate;
+        const valid = validator(val, originalMsg, this, currentMsg);
 
         if (!valid || typeof valid === 'string') return this.error || valid;
         if (Util.isPromise(valid)) {

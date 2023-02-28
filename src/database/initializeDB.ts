@@ -101,6 +101,6 @@ async function loadModules(client: CommandoClient<true>): Promise<void> {
             client.emit('debug', `Loaded module ${folderName}/${fileName}`);
         }
     }
-    client.emit('debug', 'Loaded client module');
+    client.emit('debug', 'Loaded client modules');
     client.emit('modulesReady', client);
 }
