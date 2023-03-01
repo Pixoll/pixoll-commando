@@ -3,6 +3,7 @@ import Command from '../commands/base';
 import CommandoClient from '../client';
 import CommandoGuild from './guild';
 import { CommandoGuildMember, CommandoifiedMessage, CommandContextChannel } from '../discord.overrides';
+import CommandoInteraction from './interaction';
 /** Type of the response */
 export type ResponseType = 'code' | 'direct' | 'plain' | 'reply';
 export type StringResolvable = MessageCreateOptions | string;
@@ -46,6 +47,8 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
     /** The channel this message was sent in */
     get channel(): CommandContextChannel<false, InGuild>;
     inGuild(): this is CommandoMessage<true>;
+    isInteraction(): this is CommandoInteraction<InGuild>;
+    isMessage(): this is CommandoMessage<InGuild>;
     /**
      * Initializes the message for a command
      * @param command - Command the message triggers

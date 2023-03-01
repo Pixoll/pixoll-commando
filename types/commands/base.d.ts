@@ -193,7 +193,6 @@ export type APISlashCommand = Required<Pick<SlashCommandInfo, 'deferEphemeral'>>
 /**
  * A command that can be run in a client
  * @example
- * ```ts
  * import { ApplicationCommandOptionType } from 'discord.js';
  * import { CommandoClient, Command, CommandContext, ParseRawArguments } from 'pixoll-commando';
  *
@@ -241,7 +240,6 @@ export type APISlashCommand = Required<Pick<SlashCommandInfo, 'deferEphemeral'>>
  *         await context.reply(content);
  *     }
  * }
- * ```
  */
 export default abstract class Command<InGuild extends boolean = boolean, Args extends CommandArgumentsResolvable = ArgumentInfo[]> {
     /** Client that this command is for */

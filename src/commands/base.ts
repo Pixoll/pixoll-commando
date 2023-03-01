@@ -289,7 +289,6 @@ const channelTypeMap: Record<ChannelTypeMapKey, ChannelType[] | null[]> = {
 /**
  * A command that can be run in a client
  * @example
- * ```ts
  * import { ApplicationCommandOptionType } from 'discord.js';
  * import { CommandoClient, Command, CommandContext, ParseRawArguments } from 'pixoll-commando';
  * 
@@ -337,7 +336,6 @@ const channelTypeMap: Record<ChannelTypeMapKey, ChannelType[] | null[]> = {
  *         await context.reply(content);
  *     }
  * }
- * ```
  */
 export default abstract class Command<
     InGuild extends boolean = boolean,

@@ -3,6 +3,7 @@ import CommandoClient from '../client';
 import Command from '../commands/base';
 import { CommandoChannel, CommandoChatInputCommandInteraction, CommandoGuildMember, CommandContextChannel, CommandoRole, CommandoUser } from '../discord.overrides';
 import CommandoGuild from './guild';
+import CommandoMessage from './message';
 export type SlashCommandBasicOptionsParser<O extends APISlashCommandOption[]> = {
     [A in O[number] as A['name']]: A['required'] extends true ? SlashCommandOptionTypeMap[A['type']] : (SlashCommandOptionTypeMap[A['type']] extends never ? never : SlashCommandOptionTypeMap[A['type']] | null);
 };
@@ -41,6 +42,8 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
     inGuild(): this is CommandoInteraction<true>;
     /** Whether this interaction is able to been edited (has been previously deferred or replied to) */
     isEditable(): boolean;
+    isInteraction(): this is CommandoInteraction<InGuild>;
+    isMessage(): this is CommandoMessage<InGuild>;
     /**
      * Parses the options data into usable arguments
      * @see Command#run

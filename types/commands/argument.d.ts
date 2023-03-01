@@ -90,7 +90,7 @@ export interface ArgumentInfo<T extends ArgumentTypeString = ArgumentTypeString>
     /** Validator function for the argument (see {@link ArgumentType#validate}) */
     validate?: (...args: ArgumentCheckerParams<T>) => Awaitable<boolean | string>;
     /** Parser function for the argument (see {@link ArgumentType#parse}) */
-    parse?: (...args: ArgumentCheckerParams<T>) => ArgumentTypeStringMap[T];
+    parse?: (...args: ArgumentCheckerParams<T>) => Awaitable<ArgumentTypeStringMap[T] | null>;
     /** Empty checker for the argument (see {@link ArgumentType#isEmpty}) */
     isEmpty?: (...args: ArgumentCheckerParams<T>) => boolean;
     /**

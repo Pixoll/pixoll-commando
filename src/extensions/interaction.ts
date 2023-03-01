@@ -25,6 +25,7 @@ import {
 } from '../discord.overrides';
 import Util, { PropertiesOf } from '../util';
 import CommandoGuild from './guild';
+import CommandoMessage from './message';
 
 export type SlashCommandBasicOptionsParser<O extends APISlashCommandOption[]> = {
     [A in O[number]as A['name']]: A['required'] extends true
@@ -100,6 +101,14 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
     /** Whether this interaction is able to been edited (has been previously deferred or replied to) */
     public isEditable(): boolean {
         return this.deferred || this.replied;
+    }
+
+    public isInteraction(): this is CommandoInteraction<InGuild> {
+        return true;
+    }
+
+    public isMessage(): this is CommandoMessage<InGuild> {
+        return false;
     }
 
     /**

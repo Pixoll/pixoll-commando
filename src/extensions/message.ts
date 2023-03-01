@@ -19,6 +19,7 @@ import Util from '../util';
 import CommandoClient from '../client';
 import CommandoGuild from './guild';
 import { CommandoGuildMember, CommandoifiedMessage, CommandContextChannel } from '../discord.overrides';
+import CommandoInteraction from './interaction';
 
 /** Type of the response */
 export type ResponseType =
@@ -103,6 +104,14 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
 
     public inGuild(): this is CommandoMessage<true> {
         return super.inGuild();
+    }
+
+    public isInteraction(): this is CommandoInteraction<InGuild> {
+        return false;
+    }
+
+    public isMessage(): this is CommandoMessage<InGuild> {
+        return true;
     }
 
     /**
