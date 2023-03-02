@@ -38,7 +38,7 @@ export type ParseRawArguments<Args extends CommandArgumentsResolvable = Argument
         : A['type'] extends ArgumentTypeString
         ? ArgumentTypeStringMap[A['type']]
         : (
-            A['type'] extends ArgumentTypeString[]
+            A['type'] extends ArgumentTypeString[] | readonly ArgumentTypeString[]
             ? ArgumentTypeStringMap[A['type'][number]]
             : unknown
         )
