@@ -1,7 +1,7 @@
 import { model, Schema } from 'mongoose';
-import { BaseSchema, DocumentFrom } from './base';
+import { BaseSchemaWithoutTimestamps, DocumentFrom } from './base';
 
-export interface FaqSchema extends BaseSchema {
+export interface FaqSchema extends BaseSchemaWithoutTimestamps {
     question: string;
     answer: string;
 }

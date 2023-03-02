@@ -1,4 +1,4 @@
-import { Model, FilterQuery, UpdateQuery, UpdateWriteOpResult } from 'mongoose';
+import { Model } from 'mongoose';
 import { BaseSchema, DocumentFrom, BaseSchemaWithTimestamps } from './base';
 import ActiveModel, { ActiveSchema } from './active';
 import AfkModel, { AfkSchema } from './afk';
@@ -26,14 +26,6 @@ export {
     ModerationType,
     TimeBasedModerationType,
 };
-
-// @ts-expect-error: incompatible methods between interfaces
-export interface SimplifiedModel<T> extends Model<T> {
-    find(filter: FilterQuery<T>): Promise<T[]>;
-    findOne(filter: FilterQuery<T>): Promise<T>;
-    findById(id: string): Promise<T>;
-    updateOne(filter: FilterQuery<T>, update: Omit<T, '_id'> | UpdateQuery<Omit<T, '_id'>>): Promise<UpdateWriteOpResult>;
-}
 
 export type ModelFrom<
     T extends BaseSchema | (Omit<BaseSchema, '_id'> & { readonly _id: string }) = BaseSchema,
@@ -85,26 +77,6 @@ export {
     WelcomeSchema,
 };
 
-export interface SimplifiedSchemas {
-    ActiveModel: SimplifiedModel<ActiveSchema>;
-    AfkModel: SimplifiedModel<AfkSchema>;
-    DisabledModel: SimplifiedModel<DisabledSchema>;
-    ErrorsModel: SimplifiedModel<ErrorSchema>;
-    FaqModel: SimplifiedModel<FaqSchema>;
-    McIpsModel: SimplifiedModel<McIpSchema>;
-    ModerationsModel: SimplifiedModel<ModerationSchema>;
-    ModulesModel: SimplifiedModel<ModuleSchema>;
-    PollsModel: SimplifiedModel<PollSchema>;
-    PrefixesModel: SimplifiedModel<PrefixSchema>;
-    ReactionRolesModel: SimplifiedModel<ReactionRoleSchema>;
-    RemindersModel: SimplifiedModel<ReminderSchema>;
-    RulesModel: SimplifiedModel<RuleSchema>;
-    SetupModel: SimplifiedModel<SetupSchema>;
-    StickyRolesModel: SimplifiedModel<StickyRoleSchema>;
-    TodoModel: SimplifiedModel<TodoSchema>;
-    WelcomeModel: SimplifiedModel<WelcomeSchema>;
-}
-
 const Schemas = {
     ActiveModel,
     AfkModel,
@@ -123,6 +95,6 @@ const Schemas = {
     StickyRolesModel,
     TodoModel,
     WelcomeModel,
-};
+} as const;
 
 export default Schemas;

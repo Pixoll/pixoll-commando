@@ -10,6 +10,7 @@ import {
     Colors,
     EmbedBuilder,
     If,
+    Snowflake,
     User,
 } from 'discord.js';
 import CommandoClient from '../client';
@@ -59,6 +60,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
     /** The client the interaction is for */
     declare public readonly client: CommandoClient<true>;
     declare public member: If<InGuild, CommandoGuildMember>;
+    declare public guildId: If<InGuild, Snowflake>;
     /** Command that the interaction triggers */
     protected _command: Command<InGuild>;
 

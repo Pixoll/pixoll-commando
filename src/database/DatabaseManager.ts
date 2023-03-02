@@ -1,20 +1,20 @@
 import { Collection, LimitedCollection } from 'discord.js';
 import { isEqual } from 'lodash';
-import { FilterQuery, UpdateAggregationStage, UpdateQuery } from 'mongoose';
+import { Document, FilterQuery, UpdateAggregationStage, UpdateQuery } from 'mongoose';
 import CommandoGuild from '../extensions/guild';
 import Util from '../util';
-import { ModelFrom, SimplifiedModel, AnySchema } from './Schemas';
+import { ModelFrom, AnySchema, BaseSchema } from './Schemas';
 
 export type QuerySchema<T extends AnySchema> = T extends { _id: string }
-    ? Omit<T, 'createdAt' | 'updatedAt'>
-    : Omit<T, '_id' |'createdAt' | 'updatedAt'>;
+    ? Omit<T, '__v' | 'createdAt' | 'updatedAt'>
+    : Omit<T, '__v' | '_id' |'createdAt' | 'updatedAt'>;
 
 /** A MongoDB database schema manager */
 export default class DatabaseManager<T extends AnySchema, IncludeId extends boolean = boolean> {
     /** Guild for this database */
     declare public readonly guild: CommandoGuild | null;
     /** The name of the schema this manager is for */
-    public Schema: SimplifiedModel<T>;
+    public Schema: ModelFrom<T, IncludeId>;
     /** The cache for this manager */
     public cache: LimitedCollection<string, T>;
 
@@ -25,7 +25,6 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
     public constructor(schema: ModelFrom<T, IncludeId>, guild?: CommandoGuild) {
         Object.defineProperty(this, 'guild', { value: guild ?? null });
 
-        // @ts-expect-error: SimplifiedModel is meant to narrow and simplify methods for better understanding
         this.Schema = schema;
         this.cache = new LimitedCollection({
             maxSize: 200,
@@ -45,7 +44,8 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
         const { guild, Schema } = this;
         if (guild) doc.guild ??= guild.id;
 
-        const added = await new Schema(doc).save() as T;
+        const rawDoc = await new Schema(doc).save() as Document<BaseSchema>;
+        const added = rawDoc.toJSON() as T;
         this.cache.set(added._id.toString(), added);
 
         return added;
@@ -115,10 +115,11 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
         }
 
         await Schema.updateOne({ _id: doc._id }, update);
-        const newDoc = await Schema.findById(doc._id.toString());
-        cache.set(newDoc._id.toString(), newDoc);
+        const rawDoc = await Schema.findOne({ _id: doc._id }) as Document<BaseSchema>;
+        const updatedDoc = rawDoc.toJSON() as T;
+        cache.set(updatedDoc._id.toString(), updatedDoc);
 
-        return newDoc;
+        return updatedDoc;
     }
 
     /**
@@ -131,7 +132,8 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
         if (typeof filter === 'string') {
             const existing = cache.get(filter);
             if (existing) return existing;
-            const data = await Schema.findById(filter);
+            const rawData = await Schema.findById(filter) as Document<BaseSchema>;
+            const data = rawData?.toJSON() as T | undefined ?? null;
             if (data) cache.set(data._id.toString(), data);
             return data;
         }
@@ -142,12 +144,10 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
         const existing = cache.find(this.filterDocuments(filter));
         if (existing) return existing;
 
-        const doc = await Schema.findOne(filter);
-        if (doc) {
-            cache.set(doc._id.toString(), doc);
-            return doc;
-        }
-        return null;
+        const rawDoc = await Schema.findOne(filter) as Document<BaseSchema>;
+        const doc = rawDoc?.toJSON() as T | undefined ?? null;
+        if (doc) cache.set(doc._id.toString(), doc);
+        return doc;
     }
 
     /**
@@ -163,17 +163,16 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
         const filtered = cache.filter(this.filterDocuments(filter));
         if (filtered.size !== 0) return filtered;
 
-        const data = await Schema.find(filter);
+        const rawData = await Schema.find(filter) as Array<Document<BaseSchema>>;
         const fetched: Collection<string, T> = new LimitedCollection({
             maxSize: 200,
         });
 
-        for (const doc of data) {
+        for (const rawDoc of rawData.slice(0, 200)) {
+            const doc = rawDoc.toJSON() as T;
             const id = doc._id.toString();
             if (!guild && doc.guild) continue;
-            if (!cache.get(id)) {
-                cache.set(id, doc);
-            }
+            if (!cache.get(id)) cache.set(id, doc);
             fetched.set(id, doc);
         }
         return fetched;

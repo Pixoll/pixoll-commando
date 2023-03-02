@@ -82,8 +82,6 @@ export {
     ReminderSchema,
     RuleSchema,
     SetupSchema,
-    SimplifiedModel,
-    SimplifiedSchemas,
     StickyRoleSchema,
     TimeBasedModerationType,
     TodoSchema,

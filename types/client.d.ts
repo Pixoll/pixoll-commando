@@ -4,7 +4,7 @@ import CommandDispatcher from './dispatcher';
 import CommandoMessage from './extensions/message';
 import CommandoGuild from './extensions/guild';
 import ClientDatabaseManager from './database/ClientDatabaseManager';
-import { SimplifiedSchemas } from './database/Schemas';
+import Schemas from './database/Schemas';
 import GuildDatabaseManager from './database/GuildDatabaseManager';
 import { BaseCommandoGuildEmojiManager, CommandoChannelManager, CommandoGuildManager, CommandoInvite, OverwrittenClientEvents } from './discord.overrides';
 import Command, { CommandBlockData, CommandBlockReason, CommandContext } from './commands/base';
@@ -89,7 +89,7 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
     /** The guilds' database manager, mapped by the guilds ids */
     databases: Collection<string, GuildDatabaseManager>;
     /** Object containing all the schemas this client uses. */
-    databaseSchemas: SimplifiedSchemas;
+    databaseSchemas: typeof Schemas;
     /** The client's command dispatcher */
     dispatcher: CommandDispatcher;
     guilds: CommandoGuildManager;

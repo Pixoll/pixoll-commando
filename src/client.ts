@@ -18,7 +18,7 @@ import CommandDispatcher from './dispatcher';
 import CommandoMessage from './extensions/message';
 import CommandoGuild from './extensions/guild';
 import ClientDatabaseManager from './database/ClientDatabaseManager';
-import Schemas, { SimplifiedSchemas } from './database/Schemas';
+import Schemas from './database/Schemas';
 import GuildDatabaseManager from './database/GuildDatabaseManager';
 import Util from './util';
 import initializeDB from './database/initializeDB';
@@ -116,7 +116,7 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
     /** The guilds' database manager, mapped by the guilds ids */
     public databases: Collection<string, GuildDatabaseManager>;
     /** Object containing all the schemas this client uses. */
-    public databaseSchemas: SimplifiedSchemas;
+    public databaseSchemas: typeof Schemas;
     /** The client's command dispatcher */
     public dispatcher: CommandDispatcher;
     declare public guilds: CommandoGuildManager;
@@ -154,7 +154,7 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
         this.dispatcher = new CommandDispatcher(this, this.registry);
         this.database = new ClientDatabaseManager(this);
         this.databases = new Collection();
-        this.databaseSchemas = Schemas as unknown as SimplifiedSchemas;
+        this.databaseSchemas = Schemas;
         this._prefix = null;
 
         this.initDefaultListeners();

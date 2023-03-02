@@ -1,8 +1,8 @@
 import { model, Schema } from 'mongoose';
-import { BaseSchema, DocumentFrom } from './base';
+import { BaseSchemaWithoutTimestamps, DocumentFrom } from './base';
 import { Snowflake } from 'discord.js';
 
-export interface TodoSchema extends BaseSchema {
+export interface TodoSchema extends BaseSchemaWithoutTimestamps {
     user: Snowflake;
     list: string[];
 }

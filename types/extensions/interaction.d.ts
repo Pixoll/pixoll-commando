@@ -1,4 +1,4 @@
-import { APIApplicationCommandOption as APISlashCommandOption, ApplicationCommandOptionType as SlashCommandOptionType, Attachment, ChatInputCommandInteraction, If, User } from 'discord.js';
+import { APIApplicationCommandOption as APISlashCommandOption, ApplicationCommandOptionType as SlashCommandOptionType, Attachment, ChatInputCommandInteraction, If, Snowflake, User } from 'discord.js';
 import CommandoClient from '../client';
 import Command from '../commands/base';
 import { CommandoChannel, CommandoChatInputCommandInteraction, CommandoGuildMember, CommandContextChannel, CommandoRole, CommandoUser } from '../discord.overrides';
@@ -25,6 +25,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
     /** The client the interaction is for */
     readonly client: CommandoClient<true>;
     member: If<InGuild, CommandoGuildMember>;
+    guildId: If<InGuild, Snowflake>;
     /** Command that the interaction triggers */
     protected _command: Command<InGuild>;
     /**

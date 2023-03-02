@@ -23,8 +23,8 @@
 /// <reference types="mongoose/types/virtuals" />
 /// <reference types="mongoose" />
 /// <reference types="mongoose/types/inferschematype" />
-import { BaseSchema, DocumentFrom } from './base';
-export interface FaqSchema extends BaseSchema {
+import { BaseSchemaWithoutTimestamps, DocumentFrom } from './base';
+export interface FaqSchema extends BaseSchemaWithoutTimestamps {
     question: string;
     answer: string;
 }

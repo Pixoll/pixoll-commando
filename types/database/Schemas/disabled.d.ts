@@ -23,9 +23,9 @@
 /// <reference types="mongoose/types/virtuals" />
 /// <reference types="mongoose" />
 /// <reference types="mongoose/types/inferschematype" />
-import { BaseSchema, DocumentFrom } from './base';
+import { BaseSchemaWithoutTimestamps, DocumentFrom } from './base';
 import { Snowflake } from 'discord.js';
-export interface DisabledSchema extends BaseSchema {
+export interface DisabledSchema extends BaseSchemaWithoutTimestamps {
     guild?: Snowflake | undefined;
     global: boolean;
     commands: string[];

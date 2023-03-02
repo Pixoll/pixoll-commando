@@ -1,8 +1,8 @@
 import { model, Schema } from 'mongoose';
-import { BaseSchema, DocumentFrom } from './base';
+import { BaseSchemaWithoutTimestamps, DocumentFrom } from './base';
 import { Snowflake } from 'discord.js';
 
-export interface McIpSchema extends BaseSchema {
+export interface McIpSchema extends BaseSchemaWithoutTimestamps {
     guild: Snowflake;
     type: 'bedrock' | 'java';
     ip: string;

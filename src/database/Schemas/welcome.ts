@@ -1,8 +1,8 @@
 import { model, Schema } from 'mongoose';
-import { BaseSchema, DocumentFrom } from './base';
+import { BaseSchemaWithoutTimestamps, DocumentFrom } from './base';
 import { Snowflake } from 'discord.js';
 
-export interface WelcomeSchema extends BaseSchema {
+export interface WelcomeSchema extends BaseSchemaWithoutTimestamps {
     guild: Snowflake;
     channel: Snowflake;
     message: Snowflake;

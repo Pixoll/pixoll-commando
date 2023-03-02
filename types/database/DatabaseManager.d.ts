@@ -1,16 +1,16 @@
 import { Collection, LimitedCollection } from 'discord.js';
 import { FilterQuery, UpdateAggregationStage, UpdateQuery } from 'mongoose';
 import CommandoGuild from '../extensions/guild';
-import { ModelFrom, SimplifiedModel, AnySchema } from './Schemas';
+import { ModelFrom, AnySchema } from './Schemas';
 export type QuerySchema<T extends AnySchema> = T extends {
     _id: string;
-} ? Omit<T, 'createdAt' | 'updatedAt'> : Omit<T, '_id' | 'createdAt' | 'updatedAt'>;
+} ? Omit<T, '__v' | 'createdAt' | 'updatedAt'> : Omit<T, '__v' | '_id' | 'createdAt' | 'updatedAt'>;
 /** A MongoDB database schema manager */
 export default class DatabaseManager<T extends AnySchema, IncludeId extends boolean = boolean> {
     /** Guild for this database */
     readonly guild: CommandoGuild | null;
     /** The name of the schema this manager is for */
-    Schema: SimplifiedModel<T>;
+    Schema: ModelFrom<T, IncludeId>;
     /** The cache for this manager */
     cache: LimitedCollection<string, T>;
     /**

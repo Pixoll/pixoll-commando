@@ -1,8 +1,8 @@
 import { Collection, LimitedCollection } from 'discord.js';
-import { connect } from 'mongoose';
+import { connect, Model } from 'mongoose';
 import requireAll from 'require-all';
 import CommandoClient from '../client';
-import Schemas, { AnySchema, ModelFrom } from './Schemas';
+import Schemas, { BaseSchema } from './Schemas';
 import Util from '../util';
 
 type ModuleLoader = (client: CommandoClient) => Promise<unknown>;
@@ -10,6 +10,9 @@ type Module = ModuleLoader | {
     default: ModuleLoader;
     [k: string]: ModuleLoader;
 };
+
+type GeneralSchema = BaseSchema & { guild?: string };
+type GeneralModel = Model<GeneralSchema>;
 
 /**
  * Connects to MongoDB, caches the database and loads all client modules.
@@ -45,14 +48,14 @@ async function cacheDB(client: CommandoClient<true>): Promise<void> {
     const { database, databases, guilds } = client;
 
     // @ts-expect-error: we only care about the general schema type
-    const schemas = Object.values(Schemas) as Array<ModelFrom<AnySchema>>;
+    const schemas = Object.values(Schemas) as GeneralModel[];
     // Resolves all promises at once after getting all data.
     const schemasData = await Promise.all(schemas.map(schema => schema.find({})));
 
-    const data = new Collection<string, LimitedCollection<string, AnySchema>>();
+    const data = new Collection<string, LimitedCollection<string, GeneralSchema>>();
     for (let i = 0; i < schemas.length; i++) {
         const schemaName = Util.removeDashes(schemas[i].collection.name);
-        const entries = schemasData[i].map<[string, AnySchema]>(doc => [doc._id.toString(), doc]);
+        const entries = schemasData[i].map<[string, GeneralSchema]>(doc => [doc._id.toString(), doc.toJSON()]);
 
         const documents = new LimitedCollection({
             maxSize: 200,
