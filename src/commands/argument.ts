@@ -486,9 +486,9 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
      * @param originalMsg - Message that triggered the command
      * @param currentMsg - Current response message
      */
-    public validate(
+    public async validate(
         val: string, originalMsg: CommandoMessage, currentMsg: CommandoMessage = originalMsg
-    ): Awaitable<boolean | string> {
+    ): Promise<boolean | string> {
         if (!this.type || (!this.type && this.validator)) {
             throw new Error('Argument must have both validate and parse since it doesn\'t have a type.');
         }
@@ -497,7 +497,7 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
 
         if (!valid || typeof valid === 'string') return this.error || valid;
         if (Util.isPromise(valid)) {
-            return valid.then(vld => {
+            return await valid.then(vld => {
                 const arr = typeof vld === 'string' ? vld.split('\n') : null;
                 if (arr) {
                     if (arr.length === 1) return arr[0];
@@ -515,14 +515,14 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
      * @param originalMessage - Message that triggered the command
      * @param currentMessage - Current response message
      */
-    public parse(
+    public async parse(
         value: string, originalMessage: CommandoMessage, currentMessage: CommandoMessage = originalMessage
-    ): unknown {
-        if (this.parser) return this.parser(value, originalMessage, this, currentMessage);
+    ): Promise<ArgumentTypeStringMap[T] | null> {
+        if (this.parser) return await this.parser(value, originalMessage, this, currentMessage);
         if (!this.type) {
             throw new Error('Argument must have both validate and parse since it doesn\'t have a type.');
         }
-        return this.type.parse(value, originalMessage, this, currentMessage);
+        return await this.type.parse(value, originalMessage, this, currentMessage);
     }
 
     /**

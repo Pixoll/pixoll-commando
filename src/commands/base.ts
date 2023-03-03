@@ -173,7 +173,7 @@ export interface CommandInfo<
      * Whether to automatically generate a slash command. This may not always work as you intend.
      * It's recommended to manually specify options for the slash command.
      * - No options will be generated if you specified your own.
-     * - Check {@link argumentTypeMap ArgumentTypeMap} for details on how each argument type
+     * - Check {@link ArgumentTypeToSlashMap} for details on how each argument type
      * is parsed.
      * - Arguments without a type will be skipped.
      * - If an argument as multiple types, the parser will choose the first one.
@@ -241,7 +241,7 @@ type BasicSlashCommandOptionData = Exclude<SlashCommandOptionData, {
     type: SlashCommandOptionType.Subcommand | SlashCommandOptionType.SubcommandGroup;
 }>;
 
-const argumentTypeMap/* : Record<ArgumentTypeString, SlashCommandOptionType> */ = {
+const argumentTypeToSlashMap/* : Record<ArgumentTypeString, SlashCommandOptionType> */ = {
     boolean: SlashCommandOptionType.Boolean,
     'category-channel': SlashCommandOptionType.Channel,
     channel: SlashCommandOptionType.Channel,
@@ -266,10 +266,11 @@ const argumentTypeMap/* : Record<ArgumentTypeString, SlashCommandOptionType> */ 
     'voice-channel': SlashCommandOptionType.Channel,
 } as const;
 
+export type ArgumentTypeToSlashMap = typeof argumentTypeToSlashMap;
+
 type ChannelTypeMapKey = keyof {
-    -readonly [
-    P in keyof typeof argumentTypeMap as (typeof argumentTypeMap)[P] extends SlashCommandOptionType.Channel
-    ? P : never
+    -readonly [P in keyof ArgumentTypeToSlashMap as ArgumentTypeToSlashMap[P] extends
+    SlashCommandOptionType.Channel ? P : never
     ]: SlashCommandOptionType.Channel;
 };
 
@@ -495,7 +496,7 @@ export default abstract class Command<
      * Run the slash command auto-complete interaction logic.
      * @param interaction - The auto-complete interaction
      */
-    public runAutocomplete?(interaction: CommandoAutocompleteInteraction): Awaitable<unknown>;
+    public runAutocomplete?(interaction: CommandoAutocompleteInteraction): Awaitable<void>;
 
     /**
      * Checks whether the user has permission to use the command
@@ -901,7 +902,7 @@ function parseMessageArgToSlashOption(arg: ArgumentInfo): BasicSlashCommandOptio
         required,
     };
     const argType = Array.isArray(rawType) ? rawType[0] : rawType;
-    const type = argumentTypeMap[argType];
+    const type = argumentTypeToSlashMap[argType];
 
     if (Util.equals(type, [
         SlashCommandOptionType.Boolean, SlashCommandOptionType.User, SlashCommandOptionType.Role,

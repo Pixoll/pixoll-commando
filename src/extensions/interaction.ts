@@ -27,6 +27,7 @@ import {
 import Util, { PropertiesOf } from '../util';
 import CommandoGuild from './guild';
 import CommandoMessage from './message';
+import { capitalize } from 'lodash';
 
 export type SlashCommandBasicOptionsParser<O extends APISlashCommandOption[]> = {
     [A in O[number]as A['name']]: A['required'] extends true
@@ -134,7 +135,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
             const isSubCommand = Util.equals(getOptionName, ['getSubcommand', 'getSubcommandGroup']);
             const argName = getOptionName === 'getSubcommand' ? 'subCommand'
                 : getOptionName === 'getSubcommandGroup' ? 'subCommandGroup'
-                    : name;
+                    : name.split('-').map((s, i) => i === 0 ? s : capitalize(s)).join('');
             const apiName = name.replace(/[A-Z]/g, '-$&').toLowerCase();
             const value = isSubCommand
                 ? optionsManager[getOptionName]()

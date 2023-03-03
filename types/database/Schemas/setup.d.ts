@@ -27,11 +27,11 @@ import { BaseSchemaWithoutTimestamps, DocumentFrom } from './base';
 import { Snowflake } from 'discord.js';
 export interface SetupSchema extends BaseSchemaWithoutTimestamps {
     guild: Snowflake;
-    logsChannel: Snowflake;
-    memberRole: Snowflake;
-    botRole: Snowflake;
-    mutedRole: Snowflake;
-    lockChannels: Snowflake[];
+    logsChannel?: Snowflake | undefined;
+    memberRole?: Snowflake | undefined;
+    botRole?: Snowflake | undefined;
+    mutedRole?: Snowflake | undefined;
+    lockChannels?: Snowflake[] | undefined;
 }
 declare const SetupModel: import("mongoose").Model<DocumentFrom<SetupSchema, false>, {}, {}, {}, any>;
 export default SetupModel;

@@ -4,11 +4,11 @@ import { Snowflake } from 'discord.js';
 
 export interface SetupSchema extends BaseSchemaWithoutTimestamps {
     guild: Snowflake;
-    logsChannel: Snowflake;
-    memberRole: Snowflake;
-    botRole: Snowflake;
-    mutedRole: Snowflake;
-    lockChannels: Snowflake[];
+    logsChannel?: Snowflake | undefined;
+    memberRole?: Snowflake | undefined;
+    botRole?: Snowflake | undefined;
+    mutedRole?: Snowflake | undefined;
+    lockChannels?: Snowflake[] | undefined;
 }
 
 const SetupModel = model<DocumentFrom<SetupSchema>>('setup', new Schema({

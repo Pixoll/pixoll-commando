@@ -205,14 +205,14 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
      * @param originalMsg - Message that triggered the command
      * @param currentMsg - Current response message
      */
-    validate(val: string, originalMsg: CommandoMessage, currentMsg?: CommandoMessage): Awaitable<boolean | string>;
+    validate(val: string, originalMsg: CommandoMessage, currentMsg?: CommandoMessage): Promise<boolean | string>;
     /**
      * Parses a value string into a proper value for the argument
      * @param value - Value to parse
      * @param originalMessage - Message that triggered the command
      * @param currentMessage - Current response message
      */
-    parse(value: string, originalMessage: CommandoMessage, currentMessage?: CommandoMessage): unknown;
+    parse(value: string, originalMessage: CommandoMessage, currentMessage?: CommandoMessage): Promise<ArgumentTypeStringMap[T] | null>;
     /**
      * Checks whether a value for the argument is considered to be empty
      * @param value - Value to check for emptiness

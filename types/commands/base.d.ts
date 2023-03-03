@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { Message, PermissionsString, User, ChatInputApplicationCommandData, RESTPostAPIChatInputApplicationCommandsJSONBody as RESTPostAPISlashCommand, Awaitable } from 'discord.js';
+import { Message, PermissionsString, User, ApplicationCommandOptionType as SlashCommandOptionType, ChatInputApplicationCommandData, RESTPostAPIChatInputApplicationCommandsJSONBody as RESTPostAPISlashCommand, Awaitable } from 'discord.js';
 import ArgumentCollector, { ArgumentCollectorResult, ParseRawArguments } from './collector';
 import CommandoClient from '../client';
 import CommandGroup from './group';
@@ -146,7 +146,7 @@ export interface CommandInfo<InGuild extends boolean = boolean, Args extends Com
      * Whether to automatically generate a slash command. This may not always work as you intend.
      * It's recommended to manually specify options for the slash command.
      * - No options will be generated if you specified your own.
-     * - Check {@link argumentTypeMap ArgumentTypeMap} for details on how each argument type
+     * - Check {@link ArgumentTypeToSlashMap} for details on how each argument type
      * is parsed.
      * - Arguments without a type will be skipped.
      * - If an argument as multiple types, the parser will choose the first one.
@@ -190,6 +190,31 @@ export interface SlashCommandInfo extends Omit<ChatInputApplicationCommandData, 
     deferEphemeral?: boolean;
 }
 export type APISlashCommand = Required<Pick<SlashCommandInfo, 'deferEphemeral'>> & RESTPostAPISlashCommand;
+declare const argumentTypeToSlashMap: {
+    readonly boolean: SlashCommandOptionType.Boolean;
+    readonly 'category-channel': SlashCommandOptionType.Channel;
+    readonly channel: SlashCommandOptionType.Channel;
+    readonly command: SlashCommandOptionType.String;
+    readonly date: SlashCommandOptionType.String;
+    readonly 'default-emoji': SlashCommandOptionType.String;
+    readonly duration: SlashCommandOptionType.String;
+    readonly float: SlashCommandOptionType.Number;
+    readonly group: SlashCommandOptionType.String;
+    readonly 'guild-emoji': SlashCommandOptionType.String;
+    readonly integer: SlashCommandOptionType.Integer;
+    readonly invite: SlashCommandOptionType.String;
+    readonly member: SlashCommandOptionType.User;
+    readonly message: SlashCommandOptionType.String;
+    readonly role: SlashCommandOptionType.Role;
+    readonly 'stage-channel': SlashCommandOptionType.Channel;
+    readonly string: SlashCommandOptionType.String;
+    readonly 'text-channel': SlashCommandOptionType.Channel;
+    readonly 'thread-channel': SlashCommandOptionType.Channel;
+    readonly time: SlashCommandOptionType.String;
+    readonly user: SlashCommandOptionType.User;
+    readonly 'voice-channel': SlashCommandOptionType.Channel;
+};
+export type ArgumentTypeToSlashMap = typeof argumentTypeToSlashMap;
 /**
  * A command that can be run in a client
  * @example
@@ -332,7 +357,7 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
      * Run the slash command auto-complete interaction logic.
      * @param interaction - The auto-complete interaction
      */
-    runAutocomplete?(interaction: CommandoAutocompleteInteraction): Awaitable<unknown>;
+    runAutocomplete?(interaction: CommandoAutocompleteInteraction): Awaitable<void>;
     /**
      * Checks whether the user has permission to use the command
      * @param context - The triggering command context
@@ -415,3 +440,4 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
      */
     protected static validateAndParseSlashInfo(info: CommandInfo, slashInfo?: SlashCommandInfo): APISlashCommand | null;
 }
+export {};

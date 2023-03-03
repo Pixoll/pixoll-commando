@@ -27,6 +27,7 @@ export {
 export {
     default as Command,
     APISlashCommand,
+    ArgumentTypeToSlashMap,
     CommandArgumentsResolvable,
     CommandBlockData,
     CommandBlockReason,

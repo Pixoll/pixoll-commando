@@ -4,7 +4,7 @@ export { default as CommandDispatcher, Inhibition } from './dispatcher';
 export { default as CommandoInteraction, SlashCommandBasicOptionsParser, SlashCommandOptionTypeMap, } from './extensions/interaction';
 export { default as CommandoGuild } from './extensions/guild';
 export { default as CommandoMessage, CommandoMessageResponse, ResponseOptions, ResponseType, StringResolvable, } from './extensions/message';
-export { default as Command, APISlashCommand, CommandArgumentsResolvable, CommandBlockData, CommandBlockReason, CommandContext, CommandInfo, SlashCommandInfo, Throttle, ThrottlingOptions, } from './commands/base';
+export { default as Command, APISlashCommand, ArgumentTypeToSlashMap, CommandArgumentsResolvable, CommandBlockData, CommandBlockReason, CommandContext, CommandInfo, SlashCommandInfo, Throttle, ThrottlingOptions, } from './commands/base';
 export { default as CommandGroup } from './commands/group';
 export { default as ArgumentCollector, ArgumentCollectorResult, ParseRawArguments, } from './commands/collector';
 export { default as Argument, ArgumentDefault, ArgumentInfo, ArgumentInfoResolvable, ArgumentResponse, ArgumentResult, ArgumentTypeString, ArgumentTypeStringMap, } from './commands/argument';
