@@ -895,9 +895,10 @@ function parseMessageArgToSlashOption(arg: ArgumentInfo): BasicSlashCommandOptio
     const { key: name, prompt: description, type: rawType, min, max, oneOf } = arg;
     if (!rawType) return null;
 
+    const parsedOptionName = /[A-Z]/.test(name) ? name.replace(/([A-Z]+)/g, '-$1').toLowerCase() : name;
     const required = 'required' in arg ? !!arg.required : !('default' in arg);
     const defaultData: Required<Pick<BasicSlashCommandOptionData, 'description' | 'name' | 'required'>> = {
-        name,
+        name: parsedOptionName,
         description,
         required,
     };
@@ -914,6 +915,14 @@ function parseMessageArgToSlashOption(arg: ArgumentInfo): BasicSlashCommandOptio
         type,
         ...defaultData,
         channelTypes: Util.filterNullishItems(channelTypeMap[argType]),
+    };
+
+    if (type === SlashCommandOptionType.Channel && Array.isArray(rawType) && rawType.every(type => Util.equals(type, [
+        'category-channel', 'channel', 'text-channel', 'thread-channel', 'stage-channel', 'voice-channel',
+    ]))) return {
+        type,
+        ...defaultData,
+        channelTypes: Util.filterNullishItems(rawType.map(type => channelTypeMap[type as ChannelTypeMapKey]).flat()),
     };
 
     if (type === SlashCommandOptionType.String) return {
