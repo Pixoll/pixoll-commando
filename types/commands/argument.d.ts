@@ -87,11 +87,11 @@ export interface ArgumentInfo<T extends ArgumentTypeString = ArgumentTypeString>
      */
     infinite?: boolean;
     /** Validator function for the argument (see {@link ArgumentType#validate}) */
-    validate?: (value: string, ...args: ArgumentCheckerParams<T>) => Awaitable<boolean | string>;
+    validate?: (value: string | undefined, ...args: ArgumentCheckerParams<T>) => Awaitable<boolean | string>;
     /** Parser function for the argument (see {@link ArgumentType#parse}) */
-    parse?: (value: string, ...args: ArgumentCheckerParams<T>) => Awaitable<ArgumentTypeStringMap[T] | null>;
+    parse?: (value: string | undefined, ...args: ArgumentCheckerParams<T>) => Awaitable<ArgumentTypeStringMap[T] | null>;
     /** Empty checker for the argument (see {@link ArgumentType#isEmpty}) */
-    isEmpty?: (value: string[] | string, ...args: ArgumentCheckerParams<T>) => boolean;
+    isEmpty?: (value: string[] | string | undefined, ...args: ArgumentCheckerParams<T>) => boolean;
     /**
      * How long to wait for input (in seconds)
      * @default 30
@@ -190,7 +190,7 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
      * @param value - Pre-provided value for the argument
      * @param promptLimit - Maximum number of times to prompt for the argument
      */
-    obtain(message: CommandoMessage, value: string[] | string, promptLimit?: number): Promise<ArgumentResult>;
+    obtain(message: CommandoMessage, value?: string[] | string, promptLimit?: number): Promise<ArgumentResult>;
     /**
      * Prompts the user and obtains multiple values for the argument
      * @param message - Message that triggered the command
@@ -204,21 +204,21 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
      * @param originalMessage - Message that triggered the command
      * @param currentMessage - Current response message
      */
-    validate(value: string, originalMessage: CommandoMessage, currentMessage?: CommandoMessage): Promise<boolean | string>;
+    validate(value: string | undefined, originalMessage: CommandoMessage, currentMessage?: CommandoMessage): Promise<boolean | string>;
     /**
      * Parses a value string into a proper value for the argument
      * @param value - Value to parse
      * @param originalMessage - Message that triggered the command
      * @param currentMessage - Current response message
      */
-    parse(value: string, originalMessage: CommandoMessage, currentMessage?: CommandoMessage): Promise<ArgumentTypeStringMap[T] | null>;
+    parse(value: string | undefined, originalMessage: CommandoMessage, currentMessage?: CommandoMessage): Promise<ArgumentTypeStringMap[T] | null>;
     /**
      * Checks whether a value for the argument is considered to be empty
      * @param value - Value to check for emptiness
      * @param originalMsg - Message that triggered the command
      * @param currentMsg - Current response message
      */
-    isEmpty(value: string[] | string, originalMessage: CommandoMessage, currentMessage?: CommandoMessage): boolean;
+    isEmpty(value: string[] | string | undefined, originalMessage: CommandoMessage, currentMessage?: CommandoMessage): boolean;
     /**
      * Validates the constructor parameters
      * @param client - Client to validate

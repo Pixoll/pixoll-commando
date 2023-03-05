@@ -10,14 +10,15 @@ export default class CustomEmojiArgumentType extends ArgumentType<'guild-emoji'>
         super(client, 'guild-emoji');
     }
 
-    public validate(value: string, msg: CommandoMessage): boolean | string {
+    public validate(value: string | undefined, message: CommandoMessage): boolean | string {
+        if (typeof value === 'undefined') return false;
         const matches = value.match(/^(?:<a?:(\w+):)?(\d+)>?$/);
-        if (matches && msg.client.emojis.cache.has(matches[2])) return true;
+        if (matches && message.client.emojis.cache.has(matches[2])) return true;
 
-        if (!msg.guild) return false;
+        if (!message.guild) return false;
 
         const search = value.toLowerCase();
-        let emojis = msg.guild.emojis.cache.filter(nameFilterInexact(search));
+        let emojis = message.guild.emojis.cache.filter(nameFilterInexact(search));
         if (!emojis.size) return false;
         if (emojis.size === 1) return true;
 

@@ -8,7 +8,8 @@ export default class StringArgumentType extends ArgumentType<'string'> {
         super(client, 'string');
     }
 
-    public validate(value: string, _: unknown, argument: Argument<'string'>): boolean | string {
+    public validate(value: string | undefined, _: unknown, argument: Argument<'string'>): boolean | string {
+        if (typeof value === 'undefined') return false;
         if (argument.oneOf && !argument.oneOf.includes(value.toLowerCase())) {
             return `Please enter one of the following options: ${argument.oneOf.map(opt => `\`${opt}\``).join(', ')}`;
         }

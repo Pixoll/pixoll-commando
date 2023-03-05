@@ -21,7 +21,7 @@ export default abstract class ArgumentType<T extends ArgumentTypeString = Argume
      * @param currentMessage - Current response message
      * @return Whether the value is valid, or an error message
      */
-    abstract validate(value: string, originalMessage: CommandoMessage, argument: Argument<T>, currentMessage?: CommandoMessage): Awaitable<boolean | string>;
+    abstract validate(value: string | undefined, originalMessage: CommandoMessage, argument: Argument<T>, currentMessage?: CommandoMessage): Awaitable<boolean | string>;
     /**
      * Parses the raw value string into a usable value
      * @param value - Value to parse
@@ -30,7 +30,7 @@ export default abstract class ArgumentType<T extends ArgumentTypeString = Argume
      * @param currentMessage - Current response message
      * @return Usable value
      */
-    abstract parse(value: string, originalMessage: CommandoMessage, argument: Argument<T>, currentMessage?: CommandoMessage): Awaitable<ArgumentTypeStringMap[T] | null>;
+    abstract parse(value: string | undefined, originalMessage: CommandoMessage, argument: Argument<T>, currentMessage?: CommandoMessage): Awaitable<ArgumentTypeStringMap[T] | null>;
     /**
      * Checks whether a value is considered to be empty. This determines whether the default value for an argument
      * should be used and changes the response to the user under certain circumstances.
@@ -40,5 +40,5 @@ export default abstract class ArgumentType<T extends ArgumentTypeString = Argume
      * @param currentMessage - Current response message
      * @return Whether the value is empty
      */
-    isEmpty(value: string[] | string, originalMessage: CommandoMessage, argument: Argument<T>, currentMessage?: CommandoMessage): boolean;
+    isEmpty(value: string[] | string | undefined, originalMessage: CommandoMessage, argument: Argument<T>, currentMessage?: CommandoMessage): boolean;
 }

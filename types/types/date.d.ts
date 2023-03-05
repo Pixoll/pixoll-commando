@@ -4,7 +4,7 @@ import ArgumentType from './base';
 export default class DateArgumentType extends ArgumentType<'date'> {
     constructor(client: CommandoClient);
     get dateRegex(): RegExp;
-    validate(val: string, _: unknown, arg: Argument<'date'>): boolean | string;
+    validate(value: string | undefined, _: unknown, argument: Argument<'date'>): boolean | string;
     parse(val: string): Date | null;
     /**
      * Parses the string value into a valid Date object, if possible.

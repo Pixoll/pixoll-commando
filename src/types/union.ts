@@ -20,13 +20,15 @@ export default class ArgumentUnionType<T extends ArgumentTypeString = ArgumentTy
         }
     }
 
-    public async validate(value: string, message: CommandoMessage, argument: Argument): Promise<boolean | string> {
+    public async validate(
+        value: string | undefined, message: CommandoMessage, argument: Argument
+    ): Promise<boolean | string> {
         const results = await Promise.all(this.types.map(type =>
             !type.isEmpty(value, message, argument) && type.validate(value, message, argument)
         ));
-        if (results.some(valid => valid && typeof valid !== 'string')) return true;
+        if (results.some(valid => valid === true)) return true;
 
-        const errors = results.filter(valid => typeof valid === 'string');
+        const errors = results.filter((valid): valid is string => typeof valid === 'string');
         if (errors.length > 0) return errors.join('\n');
 
         return false;
@@ -41,7 +43,7 @@ export default class ArgumentUnionType<T extends ArgumentTypeString = ArgumentTy
 
         for (let i = 0; i < results.length; i++) {
             if (results[i] && typeof results[i] !== 'string') {
-                return this.types[i].parse(value, message, argument) as ArgumentTypeStringMap[T] | null;
+                return this.types[i].parse(value, message, argument) as Promise<ArgumentTypeStringMap[T] | null>;
             }
         }
 

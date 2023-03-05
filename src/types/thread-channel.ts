@@ -11,7 +11,10 @@ export default class ThreadChannelArgumentType extends ArgumentType<'thread-chan
         super(client, 'thread-channel');
     }
 
-    public validate(value: string, message: CommandoMessage, argument: Argument<'thread-channel'>): boolean | string {
+    public validate(
+        value: string | undefined, message: CommandoMessage, argument: Argument<'thread-channel'>
+    ): boolean | string {
+        if (typeof value === 'undefined') return false;
         const matches = value.match(/^(?:<#)?(\d+)>?$/);
         if (matches) {
             try {

@@ -3,7 +3,7 @@ import ArgumentType from './base';
 export default class TimeArgumentType extends ArgumentType<'time'> {
     constructor(client: CommandoClient);
     get timeRegex(): RegExp;
-    validate(value: string): boolean | string;
+    validate(value: string | undefined): boolean | string;
     parse(value: string): Date | null;
     /**
      * Parses the string value into a valid Date object, if possible.

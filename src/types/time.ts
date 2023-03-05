@@ -18,7 +18,8 @@ export default class TimeArgumentType extends ArgumentType<'time'> {
         return timeRegex;
     }
 
-    public validate(value: string): boolean | string {
+    public validate(value: string | undefined): boolean | string {
+        if (typeof value === 'undefined') return false;
         const date = this.parseDate(value.match(this.timeRegex), value);
         if (!date) {
             return 'Please enter a valid date format. Use the `help` command for more information.';

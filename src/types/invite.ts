@@ -12,7 +12,8 @@ export default class InviteArgumentType extends ArgumentType<'invite'> {
         this.fetchedInvite = null;
     }
 
-    public async validate(value: string): Promise<boolean> {
+    public async validate(value: string | undefined): Promise<boolean> {
+        if (typeof value === 'undefined') return false;
         const invite = await this.client.fetchInvite(value).catch(() => null);
         this.fetchedInvite = invite;
         return !!invite;

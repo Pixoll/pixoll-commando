@@ -8,7 +8,8 @@ export default class FloatArgumentType extends ArgumentType<'float'> {
         super(client, 'float');
     }
 
-    public validate(value: string, _: unknown, argument: Argument<'float'>): boolean | string {
+    public validate(value: string | undefined, _: unknown, argument: Argument<'float'>): boolean | string {
+        if (typeof value === 'undefined') return false;
         const float = /^[\d.]+$/.test(value) && parseFloat(value);
         if (!float || isNaN(float)) return false;
 

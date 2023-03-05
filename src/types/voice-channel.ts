@@ -11,7 +11,10 @@ export default class VoiceChannelArgumentType extends ArgumentType<'voice-channe
         super(client, 'voice-channel');
     }
 
-    public validate(value: string, message: CommandoMessage, argument: Argument<'voice-channel'>): boolean | string {
+    public validate(
+        value: string | undefined, message: CommandoMessage, argument: Argument<'voice-channel'>
+    ): boolean | string {
+        if (typeof value === 'undefined') return false;
         const matches = value.match(/^(?:<#)?(\d+)>?$/);
         if (matches) {
             try {

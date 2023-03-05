@@ -9,7 +9,8 @@ export default class GroupArgumentType extends ArgumentType<'group'> {
         super(client, 'group');
     }
 
-    public validate(value: string): boolean | string {
+    public validate(value: string | undefined): boolean | string {
+        if (typeof value === 'undefined') return false;
         const groups = this.client.registry.findGroups(value);
         if (groups.length === 1) return true;
         if (groups.length === 0) return false;

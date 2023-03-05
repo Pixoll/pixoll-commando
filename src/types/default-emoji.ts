@@ -12,8 +12,8 @@ export default class DefaultEmojiArgumentType extends ArgumentType<'default-emoj
         return new RegExp(`^(?:${emojiRegex().source})$`);
     }
 
-    public validate(value: string, _: unknown, argument: Argument<'default-emoji'>): boolean | string {
-        if (!this.emojiRegex.test(value)) return false;
+    public validate(value: string | undefined, _: unknown, argument: Argument<'default-emoji'>): boolean | string {
+        if (typeof value === 'undefined' || !this.emojiRegex.test(value)) return false;
         if (argument.oneOf && !argument.oneOf.includes(value)) {
             return `Please enter one of the following options: ${argument.oneOf.join(' | ')}`;
         }

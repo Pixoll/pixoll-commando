@@ -11,8 +11,10 @@ export default class MemberArgumentType extends ArgumentType<'member'> {
         super(client, 'member');
     }
 
-    public async validate(value: string, message: CommandoMessage, argument: Argument<'member'>): Promise<boolean | string> {
-        if (!message.inGuild()) return false;
+    public async validate(
+        value: string | undefined, message: CommandoMessage, argument: Argument<'member'>
+    ): Promise<boolean | string> {
+        if (typeof value === 'undefined' || !message.inGuild()) return false;
 
         const matches = value.match(/^(?:<@!?)?(\d+)>?$/);
         if (matches) {

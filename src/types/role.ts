@@ -11,8 +11,8 @@ export default class RoleArgumentType extends ArgumentType<'role'> {
         super(client, 'role');
     }
 
-    public validate(value: string, message: CommandoMessage, argument: Argument<'role'>): boolean | string {
-        if (!message.inGuild()) return false;
+    public validate(value: string | undefined, message: CommandoMessage, argument: Argument<'role'>): boolean | string {
+        if (typeof value === 'undefined' || !message.inGuild()) return false;
 
         const matches = value.match(/^(?:<@&)?(\d+)>?$/);
         if (matches) return message.guild.roles.cache.has(matches[1]);

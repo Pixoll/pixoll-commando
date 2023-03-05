@@ -5,6 +5,6 @@ import Argument from '../commands/argument';
 import { CommandoVoiceChannel } from '../discord.overrides';
 export default class VoiceChannelArgumentType extends ArgumentType<'voice-channel'> {
     constructor(client: CommandoClient);
-    validate(value: string, message: CommandoMessage, argument: Argument<'voice-channel'>): boolean | string;
+    validate(value: string | undefined, message: CommandoMessage, argument: Argument<'voice-channel'>): boolean | string;
     parse(value: string, message: CommandoMessage): CommandoVoiceChannel | null;
 }

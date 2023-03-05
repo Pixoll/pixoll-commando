@@ -11,7 +11,10 @@ export default class TextChannelArgumentType extends ArgumentType<'text-channel'
         super(client, 'text-channel');
     }
 
-    public validate(value: string, message: CommandoMessage, argument: Argument<'text-channel'>): boolean | string {
+    public validate(
+        value: string | undefined, message: CommandoMessage, argument: Argument<'text-channel'>
+    ): boolean | string {
+        if (typeof value === 'undefined') return false;
         const matches = value.match(/^(?:<#)?(\d+)>?$/);
         if (matches) {
             try {

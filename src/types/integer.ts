@@ -8,7 +8,8 @@ export default class IntegerArgumentType extends ArgumentType<'integer'> {
         super(client, 'integer');
     }
 
-    public validate(value: string, _: unknown, argument: Argument<'integer'>): boolean | string {
+    public validate(value: string | undefined, _: unknown, argument: Argument<'integer'>): boolean | string {
+        if (typeof value === 'undefined') return false;
         const int = /^\d+$/.test(value) && parseInt(value);
         if (!int || isNaN(int)) return false;
 

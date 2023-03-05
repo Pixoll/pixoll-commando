@@ -109,7 +109,7 @@ export default class ArgumentCollector<Args extends CommandArgumentsResolvable> 
                 const arg = args[i];
                 // eslint-disable-next-line no-await-in-loop
                 const result = await arg.obtain(
-                    message, (arg.infinite ? provided.slice(i) : provided[i]) ?? '', promptLimit
+                    message, arg.infinite ? provided.slice(i) : provided[i], promptLimit
                 );
                 results.push(result);
 

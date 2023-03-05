@@ -7,7 +7,7 @@ export default class ArgumentUnionType<T extends ArgumentTypeString = ArgumentTy
     /** Types to handle, in order of priority */
     types: ArgumentType[];
     constructor(client: CommandoClient, id: string);
-    validate(value: string, message: CommandoMessage, argument: Argument): Promise<boolean | string>;
+    validate(value: string | undefined, message: CommandoMessage, argument: Argument): Promise<boolean | string>;
     parse(value: string, message: CommandoMessage, argument: Argument): Promise<ArgumentTypeStringMap[T] | null>;
     isEmpty(value: string, message: CommandoMessage, argument: Argument): boolean;
 }

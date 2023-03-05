@@ -9,7 +9,8 @@ export default class CommandArgumentType extends ArgumentType<'command'> {
         super(client, 'command');
     }
 
-    public validate(value: string): boolean | string {
+    public validate(value: string | undefined): boolean | string {
+        if (typeof value === 'undefined') return false;
         const commands = this.client.registry.findCommands(value);
         if (commands.length === 1) return true;
         if (commands.length === 0) return false;

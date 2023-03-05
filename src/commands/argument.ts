@@ -110,11 +110,11 @@ export interface ArgumentInfo<T extends ArgumentTypeString = ArgumentTypeString>
      */
     infinite?: boolean;
     /** Validator function for the argument (see {@link ArgumentType#validate}) */
-    validate?: (value: string, ...args: ArgumentCheckerParams<T>) => Awaitable<boolean | string>;
+    validate?: (value: string | undefined, ...args: ArgumentCheckerParams<T>) => Awaitable<boolean | string>;
     /** Parser function for the argument (see {@link ArgumentType#parse}) */
-    parse?: (value: string, ...args: ArgumentCheckerParams<T>) => Awaitable<ArgumentTypeStringMap[T] | null>;
+    parse?: (value: string | undefined, ...args: ArgumentCheckerParams<T>) => Awaitable<ArgumentTypeStringMap[T] | null>;
     /** Empty checker for the argument (see {@link ArgumentType#isEmpty}) */
-    isEmpty?: (value: string[] | string, ...args: ArgumentCheckerParams<T>) => boolean;
+    isEmpty?: (value: string[] | string | undefined, ...args: ArgumentCheckerParams<T>) => boolean;
     /**
      * How long to wait for input (in seconds)
      * @default 30
@@ -248,7 +248,7 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
      * @param promptLimit - Maximum number of times to prompt for the argument
      */
     public async obtain(
-        message: CommandoMessage, value: string[] | string, promptLimit = Infinity
+        message: CommandoMessage, value?: string[] | string, promptLimit = Infinity
     ): Promise<ArgumentResult> {
         const { channel, author } = message;
 
@@ -488,7 +488,7 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
      * @param currentMessage - Current response message
      */
     public async validate(
-        value: string, originalMessage: CommandoMessage, currentMessage: CommandoMessage = originalMessage
+        value: string | undefined, originalMessage: CommandoMessage, currentMessage: CommandoMessage = originalMessage
     ): Promise<boolean | string> {
         if (!this.type || (!this.type && this.validator)) {
             throw new Error('Argument must have both validate and parse since it doesn\'t have a type.');
@@ -517,7 +517,7 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
      * @param currentMessage - Current response message
      */
     public async parse(
-        value: string, originalMessage: CommandoMessage, currentMessage: CommandoMessage = originalMessage
+        value: string | undefined, originalMessage: CommandoMessage, currentMessage: CommandoMessage = originalMessage
     ): Promise<ArgumentTypeStringMap[T] | null> {
         if (this.parser) return await this.parser(value, originalMessage, this, currentMessage);
         if (!this.type) {
@@ -533,7 +533,9 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
      * @param currentMsg - Current response message
      */
     public isEmpty(
-        value: string[] | string, originalMessage: CommandoMessage, currentMessage: CommandoMessage = originalMessage
+        value: string[] | string | undefined,
+        originalMessage: CommandoMessage,
+        currentMessage: CommandoMessage = originalMessage
     ): boolean {
         if (this.emptyChecker) return this.emptyChecker(value, originalMessage, this, currentMessage);
         if (this.type) return this.type.isEmpty(value, originalMessage, this, currentMessage);

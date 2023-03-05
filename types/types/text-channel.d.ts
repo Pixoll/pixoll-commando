@@ -5,6 +5,6 @@ import Argument from '../commands/argument';
 import { CommandoTextChannel } from '../discord.overrides';
 export default class TextChannelArgumentType extends ArgumentType<'text-channel'> {
     constructor(client: CommandoClient);
-    validate(value: string, message: CommandoMessage, argument: Argument<'text-channel'>): boolean | string;
+    validate(value: string | undefined, message: CommandoMessage, argument: Argument<'text-channel'>): boolean | string;
     parse(value: string, message: CommandoMessage): CommandoTextChannel | null;
 }

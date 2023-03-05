@@ -11,7 +11,8 @@ export default class BooleanArgumentType extends ArgumentType<'boolean'> {
         this.falsy = new Set(['false', 'f', 'no', 'n', 'off', 'disable', 'disabled', '0', '-']);
     }
 
-    public validate(value: string): boolean {
+    public validate(value: string | undefined): boolean {
+        if (typeof value === 'undefined') return false;
         const lc = value.toLowerCase();
         return this.truthy.has(lc) || this.falsy.has(lc);
     }

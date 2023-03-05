@@ -11,7 +11,10 @@ export default class CategoryChannelArgumentType extends ArgumentType<'category-
         super(client, 'category-channel');
     }
 
-    public validate(value: string, message: CommandoMessage, argument: Argument<'category-channel'>): boolean | string {
+    public validate(
+        value: string | undefined, message: CommandoMessage, argument: Argument<'category-channel'>
+    ): boolean | string {
+        if (typeof value === 'undefined') return false;
         const { client, guild } = message;
         const { oneOf } = argument;
 

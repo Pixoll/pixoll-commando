@@ -11,7 +11,10 @@ export default class UserArgumentType extends ArgumentType<'user'> {
         super(client, 'user');
     }
 
-    public async validate(value: string, message: CommandoMessage, argument: Argument<'user'>): Promise<boolean | string> {
+    public async validate(
+        value: string | undefined, message: CommandoMessage, argument: Argument<'user'>
+    ): Promise<boolean | string> {
+        if (typeof value === 'undefined') return false;
         const matches = value.match(/^(?:<@!?)?(\d+)>?$/);
         if (matches) {
             try {

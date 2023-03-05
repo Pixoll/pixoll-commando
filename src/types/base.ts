@@ -33,7 +33,7 @@ export default abstract class ArgumentType<T extends ArgumentTypeString = Argume
      * @return Whether the value is valid, or an error message
      */
     public abstract validate(
-        value: string, originalMessage: CommandoMessage, argument: Argument<T>, currentMessage?: CommandoMessage
+        value: string | undefined, originalMessage: CommandoMessage, argument: Argument<T>, currentMessage?: CommandoMessage
     ): Awaitable<boolean | string>;
 
     /**
@@ -45,7 +45,7 @@ export default abstract class ArgumentType<T extends ArgumentTypeString = Argume
      * @return Usable value
      */
     public abstract parse(
-        value: string, originalMessage: CommandoMessage, argument: Argument<T>, currentMessage?: CommandoMessage
+        value: string | undefined, originalMessage: CommandoMessage, argument: Argument<T>, currentMessage?: CommandoMessage
     ): Awaitable<ArgumentTypeStringMap[T] | null>;
 
     /**
@@ -58,7 +58,7 @@ export default abstract class ArgumentType<T extends ArgumentTypeString = Argume
      * @return Whether the value is empty
      */
     public isEmpty(
-        value: string[] | string,
+        value: string[] | string | undefined,
         originalMessage: CommandoMessage,
         argument: Argument<T>,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars

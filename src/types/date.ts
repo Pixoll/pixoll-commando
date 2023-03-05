@@ -20,12 +20,13 @@ export default class DateArgumentType extends ArgumentType<'date'> {
         return dateRegex;
     }
 
-    public validate(val: string, _: unknown, arg: Argument<'date'>): boolean | string {
-        const date = this.parseDate(val.match(this.dateRegex), val);
+    public validate(value: string | undefined, _: unknown, argument: Argument<'date'>): boolean | string {
+        if (typeof value === 'undefined') return false;
+        const date = this.parseDate(value.match(this.dateRegex), value);
         if (!date) {
             return 'Please enter a valid date format. Use the `help` command for more information.';
         }
-        if (arg.skipExtraDateValidation) return true;
+        if (argument.skipExtraDateValidation) return true;
 
         const int = date.getTime();
         if (int <= Date.now()) {
