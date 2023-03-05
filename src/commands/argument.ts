@@ -23,7 +23,6 @@ import Command from './base';
 import CommandGroup from './group';
 
 type ArgumentCheckerParams<T extends ArgumentTypeString = ArgumentTypeString> = [
-    value: string,
     originalMessage: CommandoMessage,
     argument: Argument<T>,
     currentMessage?: CommandoMessage,
@@ -111,11 +110,11 @@ export interface ArgumentInfo<T extends ArgumentTypeString = ArgumentTypeString>
      */
     infinite?: boolean;
     /** Validator function for the argument (see {@link ArgumentType#validate}) */
-    validate?: (...args: ArgumentCheckerParams<T>) => Awaitable<boolean | string>;
+    validate?: (value: string, ...args: ArgumentCheckerParams<T>) => Awaitable<boolean | string>;
     /** Parser function for the argument (see {@link ArgumentType#parse}) */
-    parse?: (...args: ArgumentCheckerParams<T>) => Awaitable<ArgumentTypeStringMap[T] | null>;
+    parse?: (value: string, ...args: ArgumentCheckerParams<T>) => Awaitable<ArgumentTypeStringMap[T] | null>;
     /** Empty checker for the argument (see {@link ArgumentType#isEmpty}) */
-    isEmpty?: (...args: ArgumentCheckerParams<T>) => boolean;
+    isEmpty?: (value: string[] | string, ...args: ArgumentCheckerParams<T>) => boolean;
     /**
      * How long to wait for input (in seconds)
      * @default 30
@@ -244,28 +243,30 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
 
     /**
      * Prompts the user and obtains the value for the argument
-     * @param msg - Message that triggered the command
-     * @param val - Pre-provided value for the argument
+     * @param message - Message that triggered the command
+     * @param value - Pre-provided value for the argument
      * @param promptLimit - Maximum number of times to prompt for the argument
      */
-    public async obtain(msg: CommandoMessage, val: string, promptLimit = Infinity): Promise<ArgumentResult> {
-        const { channel, author } = msg;
+    public async obtain(
+        message: CommandoMessage, value: string[] | string, promptLimit = Infinity
+    ): Promise<ArgumentResult> {
+        const { channel, author } = message;
 
-        let empty = this.isEmpty(val, msg);
+        let empty = this.isEmpty(value, message);
         if (empty && !this.required) {
             return {
-                value: typeof this.default === 'function' ? await this.default(msg, this) : this.default,
+                value: typeof this.default === 'function' ? await this.default(message, this) : this.default,
                 cancelled: null,
                 prompts: [],
                 answers: [],
             };
         }
-        if (this.infinite) return this.obtainInfinite(msg, [val], promptLimit);
+        if (this.infinite || Array.isArray(value)) return this.obtainInfinite(message, value as string[], promptLimit);
 
         const wait = this.wait > 0 && this.wait !== Infinity ? this.wait * 1000 : null;
         const prompts: ArgumentResponse[] = [];
         const answers: ArgumentResponse[] = [];
-        let valid = !empty ? await this.validate(val, msg) : false;
+        let valid = !empty ? await this.validate(value, message) : false;
 
         /* eslint-disable no-await-in-loop */
         while (!valid || typeof valid === 'string') {
@@ -297,11 +298,11 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
             }
 
             // Prompt the user for a new value
-            prompts.push(await msg.replyEmbed(prompt) as ArgumentResponse);
+            prompts.push(await message.replyEmbed(prompt) as ArgumentResponse);
 
             // Get the user's response
             const responses = await channel.awaitMessages({
-                filter: msg2 => msg2.author.id === author.id,
+                filter: msg => msg.author.id === author.id,
                 max: 1,
                 time: wait ?? undefined,
             });
@@ -318,10 +319,10 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
             }
 
             answers.push(response);
-            val = response.content;
+            value = response.content;
 
             // See if they want to cancel
-            if (val.toLowerCase() === 'cancel') {
+            if (value.toLowerCase() === 'cancel') {
                 return {
                     value: null,
                     cancelled: 'user',
@@ -330,14 +331,14 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
                 };
             }
 
-            empty = this.isEmpty(val, msg, response);
-            valid = await this.validate(val, msg, response);
+            empty = this.isEmpty(value, message, response);
+            valid = await this.validate(value, message, response);
         }
         /* eslint-enable no-await-in-loop */
 
         return {
             value: await this.parse(
-                val, msg, answers[answers.length - 1] as CommandoMessage ?? msg
+                value, message, answers[answers.length - 1] as CommandoMessage ?? message
             ) as ArgumentTypeStringMap[T],
             cancelled: null,
             prompts,
@@ -347,12 +348,12 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
 
     /**
      * Prompts the user and obtains multiple values for the argument
-     * @param msg - Message that triggered the command
-     * @param vals - Pre-provided values for the argument
+     * @param message - Message that triggered the command
+     * @param values - Pre-provided values for the argument
      * @param promptLimit - Maximum number of times to prompt for the argument
      */
     protected async obtainInfinite(
-        msg: CommandoMessage, vals?: string[], promptLimit = Infinity
+        message: CommandoMessage, values?: string[], promptLimit = Infinity
     ): Promise<ArgumentResult<T>> {
         const wait = this.wait > 0 && this.wait !== Infinity ? this.wait * 1000 : null;
         const results: Array<ArgumentTypeStringMap[T]> = [];
@@ -363,8 +364,8 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
         /* eslint-disable no-await-in-loop */
         // eslint-disable-next-line no-constant-condition
         while (true) {
-            let val = vals && vals[currentVal] ? vals[currentVal] : null;
-            let valid = val ? await this.validate(val, msg) : false;
+            let value = values?.[currentVal] ?? null;
+            let valid = value ? await this.validate(value, message) : false;
             let attempts = 0;
 
             while (!valid || typeof valid === 'string') {
@@ -379,8 +380,8 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
                 }
 
                 // Prompt the user for a new value
-                if (val) {
-                    const escaped = escapeMarkdown(val).replace(/@/g, '@\u200b');
+                if (value) {
+                    const escaped = escapeMarkdown(value).replace(/@/g, '@\u200b');
 
                     const prompt = new EmbedBuilder()
                         .setColor(Colors.Red)
@@ -399,7 +400,7 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
                             text: wait ? `The command will automatically be cancelled in ${this.wait} seconds.` : '',
                         });
 
-                    prompts.push(await msg.replyEmbed(prompt) as ArgumentResponse);
+                    prompts.push(await message.replyEmbed(prompt) as ArgumentResponse);
                 } else if (results.length === 0) {
                     const prompt = new EmbedBuilder()
                         .setColor(Colors.Blue)
@@ -415,12 +416,12 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
                                 : '',
                         });
 
-                    prompts.push(await msg.replyEmbed(prompt) as ArgumentResponse);
+                    prompts.push(await message.replyEmbed(prompt) as ArgumentResponse);
                 }
 
                 // Get the user's response
-                const responses = await msg.channel.awaitMessages({
-                    filter: msg2 => msg2.author.id === msg.author.id,
+                const responses = await message.channel.awaitMessages({
+                    filter: msg => msg.author.id === message.author.id,
                     max: 1,
                     time: wait ?? undefined,
                 });
@@ -437,10 +438,10 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
                 }
 
                 answers.push(response);
-                val = response.content;
+                value = response.content;
 
                 // See if they want to finish or cancel
-                const lc = val.toLowerCase();
+                const lc = value.toLowerCase();
                 if (lc === 'finish') {
                     return {
                         value: results.length > 0 ? results as unknown as ArgumentTypeStringMap[T] : null,
@@ -458,16 +459,16 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
                     };
                 }
 
-                valid = await this.validate(val, msg, response);
+                valid = await this.validate(value, message, response);
             }
 
             results.push(await this.parse(
-                val as string, msg, answers[answers.length - 1] as CommandoMessage ?? msg
+                value as string, message, answers[answers.length - 1] as CommandoMessage ?? message
             ) as ArgumentTypeStringMap[T]);
 
-            if (vals) {
+            if (values) {
                 currentVal++;
-                if (currentVal === vals.length) {
+                if (currentVal === values.length) {
                     return {
                         value: results as unknown as ArgumentTypeStringMap[T],
                         cancelled: null,
@@ -482,28 +483,28 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
 
     /**
      * Checks if a value is valid for the argument
-     * @param val - Value to check
-     * @param originalMsg - Message that triggered the command
-     * @param currentMsg - Current response message
+     * @param value - Value to check
+     * @param originalMessage - Message that triggered the command
+     * @param currentMessage - Current response message
      */
     public async validate(
-        val: string, originalMsg: CommandoMessage, currentMsg: CommandoMessage = originalMsg
+        value: string, originalMessage: CommandoMessage, currentMessage: CommandoMessage = originalMessage
     ): Promise<boolean | string> {
         if (!this.type || (!this.type && this.validator)) {
             throw new Error('Argument must have both validate and parse since it doesn\'t have a type.');
         }
         const validator = this.validator ?? this.type.validate;
-        const valid = validator(val, originalMsg, this, currentMsg);
+        const valid = validator(value, originalMessage, this, currentMessage);
 
         if (!valid || typeof valid === 'string') return this.error || valid;
         if (Util.isPromise(valid)) {
-            return await valid.then(vld => {
-                const arr = typeof vld === 'string' ? vld.split('\n') : null;
+            return await valid.then(resolved => {
+                const arr = typeof resolved === 'string' ? resolved.split('\n') : null;
                 if (arr) {
                     if (arr.length === 1) return arr[0];
                     if (arr.length > 1) return arr[arr.length - 1];
                 }
-                return !vld || typeof vld === 'string' ? this.error || vld : vld;
+                return !resolved || typeof resolved === 'string' ? this.error || resolved : resolved;
             });
         }
         return valid;
@@ -532,7 +533,7 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
      * @param currentMsg - Current response message
      */
     public isEmpty(
-        value: string, originalMessage: CommandoMessage, currentMessage: CommandoMessage = originalMessage
+        value: string[] | string, originalMessage: CommandoMessage, currentMessage: CommandoMessage = originalMessage
     ): boolean {
         if (this.emptyChecker) return this.emptyChecker(value, originalMessage, this, currentMessage);
         if (this.type) return this.type.isEmpty(value, originalMessage, this, currentMessage);

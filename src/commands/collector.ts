@@ -87,14 +87,14 @@ export default class ArgumentCollector<Args extends CommandArgumentsResolvable> 
 
     /**
      * Obtains values for the arguments, prompting if necessary.
-     * @param msg - Message that the collector is being triggered by
+     * @param message - Message that the collector is being triggered by
      * @param provided - Values that are already available
      * @param promptLimit - Maximum number of times to prompt for a single argument
      */
     public async obtain(
-        msg: CommandoMessage, provided: unknown[] = [], promptLimit = this.promptLimit
+        message: CommandoMessage, provided: string[] = [], promptLimit = this.promptLimit
     ): Promise<ArgumentCollectorResult<ParseRawArguments<Args>>> {
-        const { author, channelId } = msg;
+        const { author, channelId } = message;
         // @ts-expect-error: _awaiting should not be used outside of class CommandDispatcher
         const { _awaiting } = this.client.dispatcher;
         const { args } = this;
@@ -109,7 +109,7 @@ export default class ArgumentCollector<Args extends CommandArgumentsResolvable> 
                 const arg = args[i];
                 // eslint-disable-next-line no-await-in-loop
                 const result = await arg.obtain(
-                    msg, (arg.infinite ? provided.slice(i) : provided[i]) as string, promptLimit
+                    message, (arg.infinite ? provided.slice(i) : provided[i]) ?? '', promptLimit
                 );
                 results.push(result);
 

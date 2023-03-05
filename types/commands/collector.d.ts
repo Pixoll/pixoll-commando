@@ -40,9 +40,9 @@ export default class ArgumentCollector<Args extends CommandArgumentsResolvable> 
     constructor(client: CommandoClient, args: Args, promptLimit?: number);
     /**
      * Obtains values for the arguments, prompting if necessary.
-     * @param msg - Message that the collector is being triggered by
+     * @param message - Message that the collector is being triggered by
      * @param provided - Values that are already available
      * @param promptLimit - Maximum number of times to prompt for a single argument
      */
-    obtain(msg: CommandoMessage, provided?: unknown[], promptLimit?: number): Promise<ArgumentCollectorResult<ParseRawArguments<Args>>>;
+    obtain(message: CommandoMessage, provided?: string[], promptLimit?: number): Promise<ArgumentCollectorResult<ParseRawArguments<Args>>>;
 }

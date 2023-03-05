@@ -20,6 +20,7 @@ import CommandoClient from '../client';
 import CommandoGuild from './guild';
 import { CommandoGuildMember, CommandoifiedMessage, CommandContextChannel } from '../discord.overrides';
 import CommandoInteraction from './interaction';
+import { ArgumentCollectorResult } from '../commands/collector';
 
 /** Type of the response */
 export type ResponseType =
@@ -264,7 +265,7 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
 
         // Figure out the command arguments
         let args: Record<string, unknown> | string[] | string | null = patternMatches;
-        let collResult = null;
+        let collResult: ArgumentCollectorResult | null = null;
         if (!args && command.argsCollector) {
             const collArgs = command.argsCollector.args;
             const count = collArgs[collArgs.length - 1].infinite ? Infinity : collArgs.length;

@@ -6,7 +6,6 @@ import ArgumentType from '../types/base';
 import Command from './base';
 import CommandGroup from './group';
 type ArgumentCheckerParams<T extends ArgumentTypeString = ArgumentTypeString> = [
-    value: string,
     originalMessage: CommandoMessage,
     argument: Argument<T>,
     currentMessage?: CommandoMessage
@@ -88,11 +87,11 @@ export interface ArgumentInfo<T extends ArgumentTypeString = ArgumentTypeString>
      */
     infinite?: boolean;
     /** Validator function for the argument (see {@link ArgumentType#validate}) */
-    validate?: (...args: ArgumentCheckerParams<T>) => Awaitable<boolean | string>;
+    validate?: (value: string, ...args: ArgumentCheckerParams<T>) => Awaitable<boolean | string>;
     /** Parser function for the argument (see {@link ArgumentType#parse}) */
-    parse?: (...args: ArgumentCheckerParams<T>) => Awaitable<ArgumentTypeStringMap[T] | null>;
+    parse?: (value: string, ...args: ArgumentCheckerParams<T>) => Awaitable<ArgumentTypeStringMap[T] | null>;
     /** Empty checker for the argument (see {@link ArgumentType#isEmpty}) */
-    isEmpty?: (...args: ArgumentCheckerParams<T>) => boolean;
+    isEmpty?: (value: string[] | string, ...args: ArgumentCheckerParams<T>) => boolean;
     /**
      * How long to wait for input (in seconds)
      * @default 30
@@ -187,25 +186,25 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
     protected constructor(client: CommandoClient, info: ArgumentInfo<T>);
     /**
      * Prompts the user and obtains the value for the argument
-     * @param msg - Message that triggered the command
-     * @param val - Pre-provided value for the argument
+     * @param message - Message that triggered the command
+     * @param value - Pre-provided value for the argument
      * @param promptLimit - Maximum number of times to prompt for the argument
      */
-    obtain(msg: CommandoMessage, val: string, promptLimit?: number): Promise<ArgumentResult>;
+    obtain(message: CommandoMessage, value: string[] | string, promptLimit?: number): Promise<ArgumentResult>;
     /**
      * Prompts the user and obtains multiple values for the argument
-     * @param msg - Message that triggered the command
-     * @param vals - Pre-provided values for the argument
+     * @param message - Message that triggered the command
+     * @param values - Pre-provided values for the argument
      * @param promptLimit - Maximum number of times to prompt for the argument
      */
-    protected obtainInfinite(msg: CommandoMessage, vals?: string[], promptLimit?: number): Promise<ArgumentResult<T>>;
+    protected obtainInfinite(message: CommandoMessage, values?: string[], promptLimit?: number): Promise<ArgumentResult<T>>;
     /**
      * Checks if a value is valid for the argument
-     * @param val - Value to check
-     * @param originalMsg - Message that triggered the command
-     * @param currentMsg - Current response message
+     * @param value - Value to check
+     * @param originalMessage - Message that triggered the command
+     * @param currentMessage - Current response message
      */
-    validate(val: string, originalMsg: CommandoMessage, currentMsg?: CommandoMessage): Promise<boolean | string>;
+    validate(value: string, originalMessage: CommandoMessage, currentMessage?: CommandoMessage): Promise<boolean | string>;
     /**
      * Parses a value string into a proper value for the argument
      * @param value - Value to parse
@@ -219,7 +218,7 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
      * @param originalMsg - Message that triggered the command
      * @param currentMsg - Current response message
      */
-    isEmpty(value: string, originalMessage: CommandoMessage, currentMessage?: CommandoMessage): boolean;
+    isEmpty(value: string[] | string, originalMessage: CommandoMessage, currentMessage?: CommandoMessage): boolean;
     /**
      * Validates the constructor parameters
      * @param client - Client to validate
