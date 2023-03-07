@@ -26,6 +26,10 @@ export type OverrideClient<T, Ready extends boolean = boolean> = T extends {
 export type CommandoifyMessage<Type extends Message | PartialMessage, InGuild extends boolean = boolean> = OverrideClient<Omit<Type extends Message ? Message<InGuild> : PartialMessage, 'guild'> & {
     get guild(): If<InGuild, CommandoGuild>;
 }>;
+export type Constructable<T> = AbstractConstructable<T> | NonAbstractConstructable<T>;
+export type NonAbstractConstructable<T = unknown> = new (...args: unknown[]) => T;
+export type AbstractConstructable<T = any> = abstract new (...args: any[]) => T;
+export type ConstructorResult<T> = T extends AbstractConstructable<infer U> | NonAbstractConstructable<infer U> ? U : never;
 /** Options for splitting a message */
 export interface SplitOptions {
     /**

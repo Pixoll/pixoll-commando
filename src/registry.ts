@@ -8,7 +8,7 @@ import Command, { APISlashCommand, CommandContext } from './commands/base';
 import CommandGroup from './commands/group';
 import CommandoMessage from './extensions/message';
 import ArgumentType from './types/base';
-import Util from './util';
+import Util, { Constructable, NonAbstractConstructable } from './util';
 
 declare function require<T>(id: string): T;
 
@@ -147,7 +147,6 @@ export default class CommandoRegistry {
     public registerGroup(group: CommandGroup | { id: string; name?: string; guarded?: boolean }): this {
         const { client, groups } = this;
 
-        // @ts-expect-error: CommandGroup has "no construct signature"
         if (isConstructor(group, CommandGroup)) group = new group(client);
         else if (!(group instanceof CommandGroup)) {
             group = new CommandGroup(client, group.id, group.name, group.guarded);
@@ -194,10 +193,10 @@ export default class CommandoRegistry {
     public registerCommand(command: Command): this {
         const { client, commands, groups, unknownCommand } = this;
 
-        // @ts-expect-error: Command has "no construct signature"
         if (isConstructor(command, Command)) command = new command(client);
-        // @ts-expect-error: default doesn't exist in Command
-        else if (isConstructor(command.default, Command)) command = new command.default(client);
+        else if ('default' in command && isConstructor(command.default, Command)) {
+            command = new command.default(client);
+        }
         if (!(command instanceof Command)) throw new Error(`Invalid command object to register: ${command}`);
 
         const { name, aliases, groupId, memberName, unknown } = command;
@@ -238,10 +237,12 @@ export default class CommandoRegistry {
     public registerCommands(commands: Command[], ignoreInvalid = false): this {
         if (!Array.isArray(commands)) throw new TypeError('Commands must be an array.');
         for (const command of commands) {
-            // @ts-expect-error: Command not assignable to 'new () => unknown'
-            const valid = isConstructor(command, Command) || isConstructor(command.default, Command)
-                // @ts-expect-error: default doesn't exist in never
-                || (command instanceof Command) || (command.default instanceof Command);
+            const valid = isConstructor(command, Command)
+                || ('default' in command && (
+                    isConstructor(command.default, Command)
+                    || (command.default instanceof Command)
+                ))
+                || (command instanceof Command);
 
             if (ignoreInvalid && !valid) {
                 this.client.emit('warn', `Attempting to register an invalid command object: ${command} skipping.`);
@@ -280,10 +281,10 @@ export default class CommandoRegistry {
     public registerType(type: ArgumentType): this {
         const { client, types } = this;
 
-        // @ts-expect-error: ArgumentType has "no construct signature"
         if (isConstructor(type, ArgumentType)) type = new type(client);
-        // @ts-expect-error: default doesn't exist in ArgumentType
-        else if (isConstructor(type.default, ArgumentType)) type = new type.default(client);
+        else if ('default' in type && isConstructor(type.default, ArgumentType)) {
+            type = new type.default(client);
+        }
         if (!(type instanceof ArgumentType)) throw new Error(`Invalid type object to register: ${type}`);
 
         // Make sure there aren't any conflicts
@@ -306,10 +307,12 @@ export default class CommandoRegistry {
     public registerTypes(types: ArgumentType[], ignoreInvalid = false): this {
         if (!Array.isArray(types)) throw new TypeError('Types must be an array.');
         for (const type of types) {
-            // @ts-expect-error: ArgumentType not assignable to 'new () => unknown'
-            const valid = isConstructor(type, ArgumentType) || isConstructor(type.default, ArgumentType)
-                // @ts-expect-error: default doesn't exist in never
-                || (type instanceof ArgumentType) || (type.default instanceof ArgumentType);
+            const valid = isConstructor(type, ArgumentType)
+                || ('default' in type && (
+                    isConstructor(type.default, ArgumentType)
+                    || (type.default instanceof ArgumentType))
+                )
+                || (type instanceof ArgumentType);
 
             if (ignoreInvalid && !valid) {
                 this.client.emit('warn', `Attempting to register an invalid argument type object: ${type} skipping.`);
@@ -364,10 +367,10 @@ export default class CommandoRegistry {
     public reregisterCommand(command: Command, oldCommand: Command): void {
         const { client, commands, unknownCommand } = this;
 
-        // @ts-expect-error: Command has "no construct signature"
         if (isConstructor(command, Command)) command = new command(client);
-        // @ts-expect-error: default doesn't exist in Command
-        else if (isConstructor(command.default, Command)) command = new command.default(client);
+        else if ('default' in command && isConstructor(command.default, Command)) {
+            command = new command.default(client);
+        }
         if (!(command instanceof Command)) throw new Error(`Invalid command object to register: ${command}`);
 
         const { name, groupId, memberName, unknown } = command;
@@ -525,13 +528,15 @@ function commandFilterInexact(search: string) {
         || cmd.aliases?.some(ali => ali.includes(search));
 }
 
-function isConstructor(func: { new(): unknown }, _class: () => unknown): boolean {
+function isConstructor<T, U>(
+    value: Constructable<T> | T | U, construct: Constructable<T>
+): value is NonAbstractConstructable<T> {
     try {
-        new new Proxy(func, {
+        new new Proxy(value as { new(): unknown }, {
             construct: () => Object.prototype,
         })();
-        if (!_class) return true;
-        return func.prototype instanceof _class;
+        if (!construct) return true;
+        return (value as { new(): unknown }).prototype instanceof construct;
     } catch (err) {
         return false;
     }

@@ -6,11 +6,11 @@ import CommandoMessage from '../extensions/message';
 export default abstract class ArgumentType<T extends ArgumentTypeString = ArgumentTypeString> {
     /** Client that this argument type is for */
     readonly client: CommandoClient;
-    /** ID of this argument type (this is what you specify in {@link ArgumentInfo#type}) */
+    /** ID of this argument type (this is what you specify in {@link ArgumentInfo.type type}) */
     id: T;
     /**
      * @param client - The client the argument type is for
-     * @param id - The argument type ID (this is what you specify in {@link ArgumentInfo#type})
+     * @param id - The argument type ID (this is what you specify in {@link ArgumentInfo.type type})
      */
     constructor(client: CommandoClient, id: T);
     /**
@@ -30,7 +30,7 @@ export default abstract class ArgumentType<T extends ArgumentTypeString = Argume
      * @param currentMessage - Current response message
      * @return Usable value
      */
-    abstract parse(value: string | undefined, originalMessage: CommandoMessage, argument: Argument<T>, currentMessage?: CommandoMessage): Awaitable<ArgumentTypeStringMap[T] | null>;
+    abstract parse(value: string, originalMessage: CommandoMessage, argument: Argument<T>, currentMessage?: CommandoMessage): Awaitable<ArgumentTypeStringMap[T] | null>;
     /**
      * Checks whether a value is considered to be empty. This determines whether the default value for an argument
      * should be used and changes the response to the user under certain circumstances.

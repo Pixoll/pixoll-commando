@@ -16,10 +16,13 @@ import {
     CommandoVoiceChannel,
 } from '../discord.overrides';
 import CommandoMessage from '../extensions/message';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import CommandoRegistry from '../registry';
 import ArgumentType from '../types/base';
 import ArgumentUnionType from '../types/union';
 import Util from '../util';
-import Command from './base';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import Command, { CommandInfo } from './base';
 import CommandGroup from './group';
 
 type ArgumentCheckerParams<T extends ArgumentTypeString = ArgumentTypeString> = [
@@ -75,7 +78,8 @@ export interface ArgumentInfo<T extends ArgumentTypeString = ArgumentTypeString>
     error?: string;
     /**
      * Type of the argument (must be the ID of one of the registered argument types or multiple IDs in order of priority
-     * in an array for a union type - see {@link CommandoRegistry#registerDefaultTypes} for the built-in types)
+     * in an array for a union type - see {@link CommandoRegistry.registerDefaultTypes registerDefaultTypes} for the
+     * built-in types)
      */
     type?: T | T[];
     /**
@@ -109,17 +113,25 @@ export interface ArgumentInfo<T extends ArgumentTypeString = ArgumentTypeString>
      * @default false;
      */
     infinite?: boolean;
-    /** Validator function for the argument (see {@link ArgumentType#validate}) */
+    /** Validator function for the argument (see {@link ArgumentType.validate validate}) */
     validate?: (value: string | undefined, ...args: ArgumentCheckerParams<T>) => Awaitable<boolean | string>;
-    /** Parser function for the argument (see {@link ArgumentType#parse}) */
-    parse?: (value: string | undefined, ...args: ArgumentCheckerParams<T>) => Awaitable<ArgumentTypeStringMap[T] | null>;
-    /** Empty checker for the argument (see {@link ArgumentType#isEmpty}) */
+    /** Parser function for the argument (see {@link ArgumentType.parse parse}) */
+    parse?: (value: string, ...args: ArgumentCheckerParams<T>) => Awaitable<ArgumentTypeStringMap[T] | null>;
+    /** Empty checker for the argument (see {@link ArgumentType.isEmpty isEmpty}) */
     isEmpty?: (value: string[] | string | undefined, ...args: ArgumentCheckerParams<T>) => boolean;
     /**
      * How long to wait for input (in seconds)
      * @default 30
      */
     wait?: number;
+    /**
+     * Whether the automatically generated slash option will be flagged as `autocomplete`.  
+     * This will only work for types {@link ArgumentTypeStringMap.string string},
+     * {@link ArgumentTypeStringMap.integer integer} and {@link ArgumentTypeStringMap.float float}.  
+     * Will only be used if {@link CommandInfo.autogenerateSlashCommand autogenerateSlashCommand} is set to `true` and
+     * {@link ArgumentInfo.oneOf oneOf} is not defined.
+     */
+    autocomplete?: boolean;
 }
 
 type ReadonlyArgumentInfo = Readonly<Omit<ArgumentInfo, 'oneOf' | 'type'> & {
@@ -338,7 +350,7 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
 
         return {
             value: await this.parse(
-                value, message, answers[answers.length - 1] as CommandoMessage ?? message
+                value ?? '', message, answers[answers.length - 1] as CommandoMessage ?? message
             ) as ArgumentTypeStringMap[T],
             cancelled: null,
             prompts,
@@ -463,7 +475,7 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
             }
 
             results.push(await this.parse(
-                value as string, message, answers[answers.length - 1] as CommandoMessage ?? message
+                value ?? '', message, answers[answers.length - 1] as CommandoMessage ?? message
             ) as ArgumentTypeStringMap[T]);
 
             if (values) {
@@ -517,7 +529,7 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
      * @param currentMessage - Current response message
      */
     public async parse(
-        value: string | undefined, originalMessage: CommandoMessage, currentMessage: CommandoMessage = originalMessage
+        value: string, originalMessage: CommandoMessage, currentMessage: CommandoMessage = originalMessage
     ): Promise<ArgumentTypeStringMap[T] | null> {
         if (this.parser) return await this.parser(value, originalMessage, this, currentMessage);
         if (!this.type) {

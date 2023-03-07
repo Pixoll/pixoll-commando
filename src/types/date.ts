@@ -39,8 +39,8 @@ export default class DateArgumentType extends ArgumentType<'date'> {
         return true;
     }
 
-    public parse(val: string): Date | null {
-        return this.parseDate(val.match(this.dateRegex), val);
+    public parse(value: string): Date | null {
+        return this.parseDate(value.match(this.dateRegex), value);
     }
 
     /**

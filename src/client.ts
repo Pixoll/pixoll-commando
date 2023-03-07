@@ -106,7 +106,7 @@ export interface CommandoClientEvents extends OverwrittenClientEvents {
 
 /** Discord.js Client with a command framework */
 export default class CommandoClient<Ready extends boolean = boolean> extends Client<Ready> {
-    /** Internal global command prefix, controlled by the {@link CommandoClient#prefix} getter/setter */
+    /** Internal global command prefix, controlled by the {@link CommandoClient.prefix prefix} getter/setter */
     protected _prefix?: string | null;
 
     /** Invite for the bot */
@@ -176,8 +176,8 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
 
     /**
      * Global command prefix. An empty string indicates that there is no default prefix, and only mentions will be used.
-     * Setting to `null` means that the default prefix from {@link CommandoClient#options} will be used instead.
-     * @emits {@link CommandoClient#commandPrefixChange}
+     * Setting to `null` means that the default prefix from {@link CommandoClient.options options} will be used instead.
+     * @emits {@link CommandoClientEvents.commandPrefixChange commandPrefixChange}
      */
     public get prefix(): string | undefined {
         const { _prefix, options } = this;
@@ -191,9 +191,9 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
     }
 
     /**
-     * Owners of the bot, set by the {@link CommandoClientOptions#owners} option
+     * Owners of the bot, set by the {@link CommandoClientOptions.owners owners} option
      * <info>If you simply need to check if a user is an owner of the bot, please instead use
-     * {@link CommandoClient#isOwner}.</info>
+     * {@link CommandoClient.isOwner isOwner}.</info>
      * @readonly
      */
     public get owners(): User[] | null {
@@ -204,7 +204,7 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
     }
 
     /**
-     * Checks whether a user is an owner of the bot (in {@link CommandoClientOptions#owners})
+     * Checks whether a user is an owner of the bot (in {@link CommandoClientOptions.owners owners})
      * @param user - User to check for ownership
      */
     public isOwner(user: UserResolvable): boolean {

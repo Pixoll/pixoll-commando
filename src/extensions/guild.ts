@@ -1,6 +1,7 @@
 import { Guild, User, EmbedBuilder } from 'discord.js';
 import { RawGuildData } from 'discord.js/typings/rawDataTypes';
-import CommandoClient from '../client';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import CommandoClient, { CommandoClientEvents } from '../client';
 import Command from '../commands/base';
 import GuildDatabaseManager from '../database/GuildDatabaseManager';
 import {
@@ -25,7 +26,7 @@ export default class CommandoGuild extends Guild {
     public database: GuildDatabaseManager;
     /** The queued logs for this guild */
     public queuedLogs: EmbedBuilder[];
-    /** Internal command prefix for the guild, controlled by the {@link CommandoGuild#prefix} getter/setter */
+    /** Internal command prefix for the guild, controlled by the {@link CommandoGuild.prefix prefix} getter/setter */
     protected _prefix?: string | null;
     /** Internal map object of internal command statuses, mapped by command name */
     protected _commandsEnabled: Map<string, boolean>;
@@ -51,8 +52,8 @@ export default class CommandoGuild extends Guild {
 
     /**
      * Command prefix in the guild. An empty string indicates that there is no prefix, and only mentions will be used.
-     * Setting to `null` means that the prefix from {@link CommandoClient#prefix} will be used instead.
-     * @emits {@link CommandoClient#commandPrefixChange}
+     * Setting to `null` means that the prefix from {@link CommandoClient.prefix prefix} will be used instead.
+     * @emits {@link CommandoClientEvents.commandPrefixChange commandPrefixChange}
      */
     public get prefix(): string | undefined {
         if (this._prefix === null) return this.client.prefix;

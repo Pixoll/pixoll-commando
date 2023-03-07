@@ -16,7 +16,7 @@ export default class CommandoGuild extends Guild {
     database: GuildDatabaseManager;
     /** The queued logs for this guild */
     queuedLogs: EmbedBuilder[];
-    /** Internal command prefix for the guild, controlled by the {@link CommandoGuild#prefix} getter/setter */
+    /** Internal command prefix for the guild, controlled by the {@link CommandoGuild.prefix prefix} getter/setter */
     protected _prefix?: string | null;
     /** Internal map object of internal command statuses, mapped by command name */
     protected _commandsEnabled: Map<string, boolean>;
@@ -29,8 +29,8 @@ export default class CommandoGuild extends Guild {
     constructor(client: CommandoClient<true>, data: Guild);
     /**
      * Command prefix in the guild. An empty string indicates that there is no prefix, and only mentions will be used.
-     * Setting to `null` means that the prefix from {@link CommandoClient#prefix} will be used instead.
-     * @emits {@link CommandoClient#commandPrefixChange}
+     * Setting to `null` means that the prefix from {@link CommandoClient.prefix prefix} will be used instead.
+     * @emits {@link CommandoClientEvents.commandPrefixChange commandPrefixChange}
      */
     get prefix(): string | undefined;
     set prefix(prefix: string | undefined);

@@ -1,18 +1,19 @@
 import { Awaitable } from 'discord.js';
 import CommandoClient from '../client';
-import Argument, { ArgumentTypeString, ArgumentTypeStringMap } from '../commands/argument';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import Argument, { ArgumentTypeString, ArgumentTypeStringMap, ArgumentInfo } from '../commands/argument';
 import CommandoMessage from '../extensions/message';
 
 /** A type for command arguments */
 export default abstract class ArgumentType<T extends ArgumentTypeString = ArgumentTypeString> {
     /** Client that this argument type is for */
     declare public readonly client: CommandoClient;
-    /** ID of this argument type (this is what you specify in {@link ArgumentInfo#type}) */
+    /** ID of this argument type (this is what you specify in {@link ArgumentInfo.type type}) */
     public id: T;
 
     /**
      * @param client - The client the argument type is for
-     * @param id - The argument type ID (this is what you specify in {@link ArgumentInfo#type})
+     * @param id - The argument type ID (this is what you specify in {@link ArgumentInfo.type type})
      */
     public constructor(client: CommandoClient, id: T) {
         if (!client) throw new Error('A client must be specified.');
@@ -45,7 +46,7 @@ export default abstract class ArgumentType<T extends ArgumentTypeString = Argume
      * @return Usable value
      */
     public abstract parse(
-        value: string | undefined, originalMessage: CommandoMessage, argument: Argument<T>, currentMessage?: CommandoMessage
+        value: string, originalMessage: CommandoMessage, argument: Argument<T>, currentMessage?: CommandoMessage
     ): Awaitable<ArgumentTypeStringMap[T] | null>;
 
     /**

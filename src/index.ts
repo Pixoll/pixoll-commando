@@ -90,10 +90,13 @@ export {
 } from './database/Schemas';
 export {
     default as Util,
+    AbstractConstructable,
     Commandoify,
     CommandoifyMessage,
+    Constructable,
     Destructure,
     Mutable,
+    NonAbstractConstructable,
     OverrideClient,
     OverrideGuild,
     PropertiesOf,

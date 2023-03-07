@@ -38,6 +38,12 @@ export type CommandoifyMessage<
     get guild(): If<InGuild, CommandoGuild>;
 }>;
 
+export type Constructable<T> = AbstractConstructable<T> | NonAbstractConstructable<T>;
+export type NonAbstractConstructable<T = unknown> = new (...args: unknown[]) => T;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type AbstractConstructable<T = any> = abstract new (...args: any[]) => T;
+export type ConstructorResult<T> = T extends AbstractConstructable<infer U> | NonAbstractConstructable<infer U> ? U : never;
+
 /** Options for splitting a message */
 export interface SplitOptions {
     /**
@@ -129,8 +135,10 @@ export default class Util extends null {
      * @param obj - The object of function to check.
      */
     public static isPromise<T, S>(obj: PromiseLike<T> | S): obj is PromiseLike<T> {
-        // @ts-expect-error: 'then' does not exist in type S
-        return !!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function';
+        return !!obj
+            && (typeof obj === 'object' || typeof obj === 'function')
+            && 'then' in obj
+            && typeof obj.then === 'function';
     }
 
     /**

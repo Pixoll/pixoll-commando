@@ -197,7 +197,7 @@ export type CommandContext<InGuild extends boolean = boolean> =
     | CommandoInteraction<InGuild>
     | CommandoMessage<InGuild>;
 
-/** The reason of {@link Command#onBlock} */
+/** The reason of {@link Command.onBlock onBlock} */
 export type CommandBlockReason =
     | 'clientPermissions'
     | 'dmOnly'
@@ -340,7 +340,7 @@ const channelTypeMap: Record<ChannelTypeMapKey, ChannelType[] | null[]> = {
  */
 export default abstract class Command<
     InGuild extends boolean = boolean,
-    Args extends CommandArgumentsResolvable = ArgumentInfo[]
+    Args extends CommandArgumentsResolvable = CommandArgumentsResolvable
 > {
     /** Client that this command is for */
     declare public readonly client: CommandoClient;
@@ -438,8 +438,7 @@ export default abstract class Command<
         this.details = info.details ?? null;
         this.examples = info.examples ?? null;
         this.dmOnly = !!info.dmOnly;
-        // @ts-expect-error: seriously?
-        this.guildOnly = !!info.guildOnly;
+        this.guildOnly = !!info.guildOnly as InGuild;
         this.guildOwnerOnly = !!info.guildOwnerOnly;
         this.ownerOnly = !!info.ownerOnly;
         this.clientPermissions = info.clientPermissions ?? null;
@@ -600,10 +599,10 @@ export default abstract class Command<
      * Called when the command produces an error while running
      * @param err - Error that was thrown
      * @param context - The context the command is being run for
-     * @param args - Arguments for the command (see {@link Command#run})
-     * @param fromPattern - Whether the args are pattern matches (see {@link Command#run})
+     * @param args - Arguments for the command (see {@link Command.run run})
+     * @param fromPattern - Whether the args are pattern matches (see {@link Command.run run})
      * @param result - Result from obtaining the arguments from the collector
-     * (if applicable - see {@link Command#run})
+     * (if applicable - see {@link Command.run run})
      */
     public async onError(
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -892,7 +891,7 @@ export default abstract class Command<
 }
 
 function parseMessageArgToSlashOption(arg: ArgumentInfo): BasicSlashCommandOptionData | null {
-    const { key: name, prompt: description, type: rawType, min, max, oneOf } = arg;
+    const { key: name, prompt: description, type: rawType, min, max, oneOf, autocomplete } = arg;
     if (!rawType) return null;
 
     const parsedOptionName = /[A-Z]/.test(name) ? name.replace(/([A-Z]+)/g, '-$1').toLowerCase() : name;
@@ -934,6 +933,7 @@ function parseMessageArgToSlashOption(arg: ArgumentInfo): BasicSlashCommandOptio
             name: choice,
             value: choice,
         })),
+        ...!oneOf && { autocomplete },
     };
 
     if (Util.equals(type, [SlashCommandOptionType.Integer, SlashCommandOptionType.Number])) return {
@@ -945,6 +945,7 @@ function parseMessageArgToSlashOption(arg: ArgumentInfo): BasicSlashCommandOptio
             name: choice.toString(),
             value: choice,
         })),
+        ...!oneOf && { autocomplete },
     };
 
     return null;
