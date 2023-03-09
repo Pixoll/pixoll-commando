@@ -6,11 +6,11 @@ import CommandoMessage from '../extensions/message';
 export default abstract class ArgumentType<T extends ArgumentTypeString = ArgumentTypeString> {
     /** Client that this argument type is for */
     readonly client: CommandoClient;
-    /** ID of this argument type (this is what you specify in {@link ArgumentInfo.type type}) */
+    /** ID of this argument type (this is what you specify in {@link ArgumentInfo.type ArgumentInfo#type}) */
     id: T;
     /**
      * @param client - The client the argument type is for
-     * @param id - The argument type ID (this is what you specify in {@link ArgumentInfo.type type})
+     * @param id - The argument type ID (this is what you specify in {@link ArgumentInfo.type ArgumentInfo#type})
      */
     constructor(client: CommandoClient, id: T);
     /**

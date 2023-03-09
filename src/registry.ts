@@ -142,7 +142,7 @@ export default class CommandoRegistry {
      * Registers a single group
      * @param group - A CommandGroup instance
      * or the constructor parameters (with ID, name, and guarded properties)
-     * @see CommandoRegistry#registerGroups
+     * @see {@link CommandoRegistry.registerGroups CommandoRegistry#registerGroups}
      */
     public registerGroup(group: CommandGroup | { id: string; name?: string; guarded?: boolean }): this {
         const { client, groups } = this;
@@ -188,7 +188,7 @@ export default class CommandoRegistry {
     /**
      * Registers a single command
      * @param command - Either a Command instance, or a constructor for one
-     * @see CommandoRegistry#registerCommands
+     * @see {@link CommandoRegistry.registerCommands CommandoRegistry#registerCommands}
      */
     public registerCommand(command: Command): this {
         const { client, commands, groups, unknownCommand } = this;
@@ -276,7 +276,7 @@ export default class CommandoRegistry {
     /**
      * Registers a single argument type
      * @param type - Either an ArgumentType instance, or a constructor for one
-     * @see CommandoRegistry#registerTypes
+     * @see {@link CommandoRegistry.registerTypes CommandoRegistry#registerTypes}
      */
     public registerType(type: ArgumentType): this {
         const { client, types } = this;

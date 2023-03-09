@@ -116,7 +116,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
 
     /**
      * Parses the options data into usable arguments
-     * @see Command#run
+     * @see {@link Command.run Command#run}
      */
     public parseArgs<O extends APISlashCommandOption[]>(options?: O): SlashCommandBasicOptionsParser<O> {
         const optionsManager = this.options;

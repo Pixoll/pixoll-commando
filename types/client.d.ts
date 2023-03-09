@@ -80,7 +80,9 @@ export interface CommandoClientEvents extends OverwrittenClientEvents {
 }
 /** Discord.js Client with a command framework */
 export default class CommandoClient<Ready extends boolean = boolean> extends Client<Ready> {
-    /** Internal global command prefix, controlled by the {@link CommandoClient.prefix prefix} getter/setter */
+    /**
+     * Internal global command prefix, controlled by the {@link CommandoClient.prefix CommandoClient#prefix} getter/setter
+     */
     protected _prefix?: string | null;
     /** Invite for the bot */
     botInvite: string | null;
@@ -108,20 +110,21 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
     fetchInvite(invite: string, options?: ClientFetchInviteOptions): Promise<CommandoInvite>;
     /**
      * Global command prefix. An empty string indicates that there is no default prefix, and only mentions will be used.
-     * Setting to `null` means that the default prefix from {@link CommandoClient.options options} will be used instead.
+     * Setting to `null` means that the default prefix from {@link CommandoClient.options CommandoClient#options} will
+     * be used instead.
      * @emits {@link CommandoClientEvents.commandPrefixChange commandPrefixChange}
      */
     get prefix(): string | undefined;
     set prefix(prefix: string | undefined);
     /**
-     * Owners of the bot, set by the {@link CommandoClientOptions.owners owners} option
+     * Owners of the bot, set by the {@link CommandoClientOptions.owners CommandoClientOptions#owners} option
      * <info>If you simply need to check if a user is an owner of the bot, please instead use
-     * {@link CommandoClient.isOwner isOwner}.</info>
+     * {@link CommandoClient.isOwner CommandoClient#isOwner}.</info>
      * @readonly
      */
     get owners(): User[] | null;
     /**
-     * Checks whether a user is an owner of the bot (in {@link CommandoClientOptions.owners owners})
+     * Checks whether a user is an owner of the bot (in {@link CommandoClientOptions.owners CommandoClientOptions#owners})
      * @param user - User to check for ownership
      */
     isOwner(user: UserResolvable): boolean;

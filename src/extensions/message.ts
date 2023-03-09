@@ -159,7 +159,7 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
 
     /**
      * Parses the argString into usable arguments, based on the argsType and argsCount of the command
-     * @see Command#run
+     * @see {@link Command.run Command#run}
      */
     public parseArgs(): string[] | string {
         const { command, argString } = this;

@@ -78,8 +78,8 @@ export interface ArgumentInfo<T extends ArgumentTypeString = ArgumentTypeString>
     error?: string;
     /**
      * Type of the argument (must be the ID of one of the registered argument types or multiple IDs in order of priority
-     * in an array for a union type - see {@link CommandoRegistry.registerDefaultTypes registerDefaultTypes} for the
-     * built-in types)
+     * in an array for a union type - see {@link CommandoRegistry.registerDefaultTypes CommandoRegistry#registerDefaultTypes}
+     * for the built-in types)
      */
     type?: T | T[];
     /**
@@ -113,11 +113,11 @@ export interface ArgumentInfo<T extends ArgumentTypeString = ArgumentTypeString>
      * @default false;
      */
     infinite?: boolean;
-    /** Validator function for the argument (see {@link ArgumentType.validate validate}) */
+    /** Validator function for the argument (see {@link ArgumentType.validate ArgumentType#validate}) */
     validate?: (value: string | undefined, ...args: ArgumentCheckerParams<T>) => Awaitable<boolean | string>;
-    /** Parser function for the argument (see {@link ArgumentType.parse parse}) */
+    /** Parser function for the argument (see {@link ArgumentType.parse ArgumentType#parse}) */
     parse?: (value: string, ...args: ArgumentCheckerParams<T>) => Awaitable<ArgumentTypeStringMap[T] | null>;
-    /** Empty checker for the argument (see {@link ArgumentType.isEmpty isEmpty}) */
+    /** Empty checker for the argument (see {@link ArgumentType.isEmpty ArgumentType#isEmpty}) */
     isEmpty?: (value: string[] | string | undefined, ...args: ArgumentCheckerParams<T>) => boolean;
     /**
      * How long to wait for input (in seconds)
@@ -125,11 +125,11 @@ export interface ArgumentInfo<T extends ArgumentTypeString = ArgumentTypeString>
      */
     wait?: number;
     /**
-     * Whether the automatically generated slash option will be flagged as `autocomplete`.  
-     * This will only work for types {@link ArgumentTypeStringMap.string string},
-     * {@link ArgumentTypeStringMap.integer integer} and {@link ArgumentTypeStringMap.float float}.  
-     * Will only be used if {@link CommandInfo.autogenerateSlashCommand autogenerateSlashCommand} is set to `true` and
-     * {@link ArgumentInfo.oneOf oneOf} is not defined.
+     * Whether the automatically generated slash option will be flagged as `autocomplete`.
+     * - This will only work for types {@link ArgumentTypeStringMap.string string},
+     * {@link ArgumentTypeStringMap.integer integer} and {@link ArgumentTypeStringMap.float float}.
+     * - Will only be used if {@link CommandInfo.autogenerateSlashCommand CommandInfo#autogenerateSlashCommand}
+     * is set to `true` and {@link ArgumentInfo.oneOf ArgumentInfo#oneOf} is **not** defined.
      */
     autocomplete?: boolean;
 }
@@ -177,7 +177,7 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
     public prompt: string;
     /**
      * Error message for when a value is invalid
-     * @see ArgumentType#validate
+     * @see {@link ArgumentType.validate ArgumentType#validate}
      */
     public error: string | null;
     /** Type of the argument */
@@ -210,17 +210,17 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
     public infinite: boolean;
     /**
      * Validator function for validating a value for the argument
-     * @see ArgumentType#validate
+     * @see {@link ArgumentType.validate ArgumentType#validate}
      */
     protected validator: ArgumentInfo<T>['validate'] | null;
     /**
      * Parser function for parsing a value for the argument
-     * @see ArgumentType#parse
+     * @see {@link ArgumentType.parse ArgumentType#parse}
      */
     protected parser: ArgumentInfo<T>['parse'] | null;
     /**
      * Function to check whether a raw value is considered empty
-     * @see ArgumentType#isEmpty
+     * @see {@link ArgumentType.isEmpty ArgumentType#isEmpty}
      */
     protected emptyChecker: ArgumentInfo<T>['isEmpty'] | null;
     /** How long to wait for input (in seconds) */

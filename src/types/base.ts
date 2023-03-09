@@ -8,12 +8,12 @@ import CommandoMessage from '../extensions/message';
 export default abstract class ArgumentType<T extends ArgumentTypeString = ArgumentTypeString> {
     /** Client that this argument type is for */
     declare public readonly client: CommandoClient;
-    /** ID of this argument type (this is what you specify in {@link ArgumentInfo.type type}) */
+    /** ID of this argument type (this is what you specify in {@link ArgumentInfo.type ArgumentInfo#type}) */
     public id: T;
 
     /**
      * @param client - The client the argument type is for
-     * @param id - The argument type ID (this is what you specify in {@link ArgumentInfo.type type})
+     * @param id - The argument type ID (this is what you specify in {@link ArgumentInfo.type ArgumentInfo#type})
      */
     public constructor(client: CommandoClient, id: T) {
         if (!client) throw new Error('A client must be specified.');
@@ -65,7 +65,7 @@ export default abstract class ArgumentType<T extends ArgumentTypeString = Argume
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         currentMessage: CommandoMessage = originalMessage
     ): boolean {
-        if(Array.isArray(value)) return value.length === 0;
+        if (Array.isArray(value)) return value.length === 0;
         return !value;
     }
 }

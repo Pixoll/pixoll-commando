@@ -165,7 +165,7 @@ export interface Throttle {
 }
 /** The context that ran the command */
 export type CommandContext<InGuild extends boolean = boolean> = CommandoInteraction<InGuild> | CommandoMessage<InGuild>;
-/** The reason of {@link Command.onBlock onBlock} */
+/** The reason of {@link Command.onBlock Command#onBlock} */
 export type CommandBlockReason = 'clientPermissions' | 'dmOnly' | 'guildOnly' | 'guildOwnerOnly' | 'modPermissions' | 'nsfw' | 'ownerOnly' | 'throttling' | 'userPermissions';
 /** Additional data associated with the block */
 export interface CommandBlockData {
@@ -380,10 +380,10 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
      * Called when the command produces an error while running
      * @param err - Error that was thrown
      * @param context - The context the command is being run for
-     * @param args - Arguments for the command (see {@link Command.run run})
-     * @param fromPattern - Whether the args are pattern matches (see {@link Command.run run})
+     * @param args - Arguments for the command (see {@link Command.run Command#run})
+     * @param fromPattern - Whether the args are pattern matches (see {@link Command.run Command#run})
      * @param result - Result from obtaining the arguments from the collector
-     * (if applicable - see {@link Command.run run})
+     * (if applicable - see {@link Command.run Command#run})
      */
     onError(err: Error, context: CommandContext, args: Record<string, unknown> | string[] | string, fromPattern?: boolean, result?: ArgumentCollectorResult | null): Promise<Message | Message[] | null>;
     /**

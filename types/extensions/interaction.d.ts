@@ -47,7 +47,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
     isMessage(): this is CommandoMessage<InGuild>;
     /**
      * Parses the options data into usable arguments
-     * @see Command#run
+     * @see {@link Command.run Command#run}
      */
     parseArgs<O extends APISlashCommandOption[]>(options?: O): SlashCommandBasicOptionsParser<O>;
     /** Runs the command */

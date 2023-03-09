@@ -197,7 +197,7 @@ export type CommandContext<InGuild extends boolean = boolean> =
     | CommandoInteraction<InGuild>
     | CommandoMessage<InGuild>;
 
-/** The reason of {@link Command.onBlock onBlock} */
+/** The reason of {@link Command.onBlock Command#onBlock} */
 export type CommandBlockReason =
     | 'clientPermissions'
     | 'dmOnly'
@@ -599,10 +599,10 @@ export default abstract class Command<
      * Called when the command produces an error while running
      * @param err - Error that was thrown
      * @param context - The context the command is being run for
-     * @param args - Arguments for the command (see {@link Command.run run})
-     * @param fromPattern - Whether the args are pattern matches (see {@link Command.run run})
+     * @param args - Arguments for the command (see {@link Command.run Command#run})
+     * @param fromPattern - Whether the args are pattern matches (see {@link Command.run Command#run})
      * @param result - Result from obtaining the arguments from the collector
-     * (if applicable - see {@link Command.run run})
+     * (if applicable - see {@link Command.run Command#run})
      */
     public async onError(
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
