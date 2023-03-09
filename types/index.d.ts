@@ -13,7 +13,7 @@ export { default as ArgumentUnionType } from './types/union';
 export { default as FriendlyError } from './errors/friendly';
 export { default as CommandFormatError } from './errors/command-format';
 export { default as ClientDatabaseManager } from './database/ClientDatabaseManager';
-export { default as DatabaseManager, QuerySchema } from './database/DatabaseManager';
+export { default as DatabaseManager, QuerySchema, DatabaseFetchOptions } from './database/DatabaseManager';
 export { default as GuildDatabaseManager } from './database/GuildDatabaseManager';
 export { ActiveSchema, AfkSchema, AnySchema, BaseSchema, BaseSchemaWithTimestamps, DisabledSchema, DocumentFrom, ErrorSchema, FaqSchema, GuildAuditLog, GuildModule, McIpSchema, ModelFrom, ModerationSchema, ModerationType, ModuleSchema, PollSchema, PrefixSchema, ReactionRoleSchema, ReminderSchema, RuleSchema, SetupSchema, StickyRoleSchema, TimeBasedModerationType, TodoSchema, WelcomeSchema, } from './database/Schemas';
 export { default as Util, AbstractConstructable, Commandoify, CommandoifyMessage, Constructable, Destructure, Mutable, NonAbstractConstructable, OverrideClient, OverrideGuild, PropertiesOf, Require, SplitOptions, Tuple, } from './util';

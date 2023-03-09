@@ -1,18 +1,30 @@
 import { Collection, LimitedCollection } from 'discord.js';
 import { FilterQuery, UpdateAggregationStage, UpdateQuery } from 'mongoose';
 import CommandoGuild from '../extensions/guild';
-import { ModelFrom, AnySchema } from './Schemas';
+import { ModelFrom, AnySchema, BaseSchema } from './Schemas';
 export type QuerySchema<T extends AnySchema> = T extends {
     _id: string;
-} ? Omit<T, '__v' | 'createdAt' | 'updatedAt'> : Omit<T, '__v' | '_id' | 'createdAt' | 'updatedAt'>;
+} ? Omit<T, Exclude<keyof BaseSchema, '_id'>> : Omit<T, keyof BaseSchema>;
+export interface DatabaseFetchOptions {
+    /**
+     * Whether to cache the fetched data if it wasn't already
+     * @default true
+     */
+    cache?: boolean;
+    /**
+     * Whether to skip the cache check and request the API
+     * @default false
+     */
+    force?: boolean;
+}
 /** A MongoDB database schema manager */
 export default class DatabaseManager<T extends AnySchema, IncludeId extends boolean = boolean> {
     /** Guild for this database */
     readonly guild: CommandoGuild | null;
     /** The name of the schema this manager is for */
-    Schema: ModelFrom<T, IncludeId>;
+    readonly Schema: ModelFrom<T, IncludeId>;
     /** The cache for this manager */
-    cache: LimitedCollection<string, T>;
+    readonly cache: LimitedCollection<string, T>;
     /**
      * @param schema - The schema of this manager
      * @param guild - The guild this manager is for
@@ -42,13 +54,13 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
      * @param filter - The ID or fetching filter for this document
      * @returns The fetched document
      */
-    fetch(filter?: FilterQuery<QuerySchema<T>> | string): Promise<T | null>;
+    fetch(filter?: FilterQuery<QuerySchema<T>> | string, options?: DatabaseFetchOptions): Promise<T | null>;
     /**
      * Fetch multiple documents
      * @param filter - The fetching filter for the documents
      * @returns The fetched documents
      */
-    fetchMany(filter?: FilterQuery<QuerySchema<T>>): Promise<Collection<string, T>>;
+    fetchMany(filter?: FilterQuery<QuerySchema<T>>, options?: DatabaseFetchOptions): Promise<Collection<string, T>>;
     /** Filtering function for fetching documents. May only be used in `Array.filter()` or `Collection.filter()` */
     protected filterDocuments(filter: FilterQuery<Omit<T, 'createdAt' | 'updatedAt'>>): (doc: T) => boolean;
 }

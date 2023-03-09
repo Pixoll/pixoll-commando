@@ -6,17 +6,35 @@ import Util from '../util';
 import { ModelFrom, AnySchema, BaseSchema } from './Schemas';
 
 export type QuerySchema<T extends AnySchema> = T extends { _id: string }
-    ? Omit<T, '__v' | 'createdAt' | 'updatedAt'>
-    : Omit<T, '__v' | '_id' |'createdAt' | 'updatedAt'>;
+    ? Omit<T, Exclude<keyof BaseSchema, '_id'>>
+    : Omit<T, keyof BaseSchema>;
+
+export interface DatabaseFetchOptions {
+    /**
+     * Whether to cache the fetched data if it wasn't already
+     * @default true
+     */
+    cache?: boolean;
+    /**
+     * Whether to skip the cache check and request the API
+     * @default false
+     */
+    force?: boolean;
+}
+
+const defaultFetchOptions: DatabaseFetchOptions = {
+    cache: true,
+    force: false,
+};
 
 /** A MongoDB database schema manager */
 export default class DatabaseManager<T extends AnySchema, IncludeId extends boolean = boolean> {
     /** Guild for this database */
     declare public readonly guild: CommandoGuild | null;
     /** The name of the schema this manager is for */
-    public Schema: ModelFrom<T, IncludeId>;
+    public readonly Schema: ModelFrom<T, IncludeId>;
     /** The cache for this manager */
-    public cache: LimitedCollection<string, T>;
+    public readonly cache: LimitedCollection<string, T>;
 
     /**
      * @param schema - The schema of this manager
@@ -68,7 +86,7 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
         if (typeof doc === 'string') {
             const fetched = await this.fetch(doc);
             if (!fetched) {
-                throw new Error(`Could not fetch document with _id "${doc}" in schema "${Schema.collection.name}#.`);
+                throw new Error(`Could not fetch document with _id "${doc}" in schema "${Schema.collection.name}".`);
             }
             doc = fetched;
         }
@@ -127,26 +145,29 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
      * @param filter - The ID or fetching filter for this document
      * @returns The fetched document
      */
-    public async fetch(filter: FilterQuery<QuerySchema<T>> | string = {}): Promise<T | null> {
+    public async fetch(
+        filter: FilterQuery<QuerySchema<T>> | string = {},
+        options: DatabaseFetchOptions = defaultFetchOptions
+    ): Promise<T | null> {
         const { cache, guild, Schema } = this;
         if (typeof filter === 'string') {
             const existing = cache.get(filter);
             if (existing) return existing;
             const rawData = await Schema.findById(filter) as Document<BaseSchema>;
             const data = rawData?.toJSON() as T | undefined ?? null;
-            if (data) cache.set(data._id.toString(), data);
+            if (data && options.cache) cache.set(data._id.toString(), data);
             return data;
         }
 
-        if (cache.size === 0) return null;
+        if (cache.size === 0 && !options.force) return null;
 
         if (guild) filter.guild ??= guild.id;
         const existing = cache.find(this.filterDocuments(filter));
-        if (existing) return existing;
+        if (existing && !options.force) return existing;
 
         const rawDoc = await Schema.findOne(filter) as Document<BaseSchema>;
         const doc = rawDoc?.toJSON() as T | undefined ?? null;
-        if (doc) cache.set(doc._id.toString(), doc);
+        if (doc && options.cache) cache.set(doc._id.toString(), doc);
         return doc;
     }
 
@@ -155,13 +176,16 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
      * @param filter - The fetching filter for the documents
      * @returns The fetched documents
      */
-    public async fetchMany(filter: FilterQuery<QuerySchema<T>> = {}): Promise<Collection<string, T>> {
+    public async fetchMany(
+        filter: FilterQuery<QuerySchema<T>> = {},
+        options: DatabaseFetchOptions = defaultFetchOptions
+    ): Promise<Collection<string, T>> {
         const { cache, guild, Schema } = this;
-        if (cache.size === 0) return cache;
+        if (cache.size === 0 && !options.force) return cache;
 
         if (guild) filter.guild ??= guild.id;
         const filtered = cache.filter(this.filterDocuments(filter));
-        if (filtered.size !== 0) return filtered;
+        if (filtered.size !== 0 && !options.force) return filtered;
 
         const rawData = await Schema.find(filter) as Array<Document<BaseSchema>>;
         const fetched: Collection<string, T> = new LimitedCollection({
@@ -172,7 +196,7 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
             const doc = rawDoc.toJSON() as T;
             const id = doc._id.toString();
             if (!guild && doc.guild) continue;
-            if (!cache.get(id)) cache.set(id, doc);
+            if (!cache.get(id) && options.cache) cache.set(id, doc);
             fetched.set(id, doc);
         }
         return fetched;
