@@ -6,6 +6,12 @@ export interface BaseSchema {
     readonly createdAt?: Date;
     readonly updatedAt?: Date;
 }
+export interface SchemaResolvable {
+    _id: Types.ObjectId | string;
+}
+export type JSONIfySchema<T extends SchemaResolvable> = Omit<T, '__v' | '_id'> & {
+    readonly _id: string;
+};
 export interface BaseSchemaWithTimestamps extends Require<BaseSchema, 'createdAt' | 'updatedAt'> {
 }
 export interface BaseSchemaWithoutTimestamps extends Omit<BaseSchema, 'createdAt' | 'updatedAt'> {

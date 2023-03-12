@@ -8,6 +8,14 @@ export interface BaseSchema {
     readonly updatedAt?: Date;
 }
 
+export interface SchemaResolvable {
+    _id: Types.ObjectId | string;
+}
+
+export type JSONIfySchema<T extends SchemaResolvable> = Omit<T, '__v' | '_id'> & {
+    readonly _id: string;
+};
+
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface BaseSchemaWithTimestamps extends Require<BaseSchema, 'createdAt' | 'updatedAt'> { }
 

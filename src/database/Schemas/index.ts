@@ -1,5 +1,12 @@
 import { Model } from 'mongoose';
-import { BaseSchema, DocumentFrom, BaseSchemaWithTimestamps } from './base';
+import {
+    BaseSchema,
+    BaseSchemaWithTimestamps,
+    BaseSchemaWithoutTimestamps,
+    DocumentFrom,
+    JSONIfySchema,
+    SchemaResolvable,
+} from './base';
 import ActiveModel, { ActiveSchema } from './active';
 import AfkModel, { AfkSchema } from './afk';
 import DisabledModel, { DisabledSchema } from './disabled';
@@ -20,10 +27,13 @@ import WelcomeModel, { WelcomeSchema } from './welcome';
 
 export {
     BaseSchemaWithTimestamps,
+    BaseSchemaWithoutTimestamps,
     DocumentFrom,
     GuildAuditLog,
     GuildModule,
+    JSONIfySchema,
     ModerationType,
+    SchemaResolvable,
     TimeBasedModerationType,
 };
 

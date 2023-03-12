@@ -1,5 +1,5 @@
 import { Model } from 'mongoose';
-import { BaseSchema, DocumentFrom, BaseSchemaWithTimestamps } from './base';
+import { BaseSchema, BaseSchemaWithTimestamps, BaseSchemaWithoutTimestamps, DocumentFrom, JSONIfySchema, SchemaResolvable } from './base';
 import { ActiveSchema } from './active';
 import { AfkSchema } from './afk';
 import { DisabledSchema } from './disabled';
@@ -17,7 +17,7 @@ import { SetupSchema } from './setup';
 import { StickyRoleSchema } from './sticky-roles';
 import { TodoSchema } from './todo';
 import { WelcomeSchema } from './welcome';
-export { BaseSchemaWithTimestamps, DocumentFrom, GuildAuditLog, GuildModule, ModerationType, TimeBasedModerationType, };
+export { BaseSchemaWithTimestamps, BaseSchemaWithoutTimestamps, DocumentFrom, GuildAuditLog, GuildModule, JSONIfySchema, ModerationType, SchemaResolvable, TimeBasedModerationType, };
 export type ModelFrom<T extends BaseSchema | (Omit<BaseSchema, '_id'> & {
     readonly _id: string;
 }) = BaseSchema, IncludeId extends boolean = boolean> = Model<DocumentFrom<T, IncludeId>>;

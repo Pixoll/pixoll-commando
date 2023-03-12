@@ -1,18 +1,19 @@
 import { Collection, LimitedCollection } from 'discord.js';
-import { connect, Model } from 'mongoose';
+import mongoose, { Document } from 'mongoose';
 import requireAll from 'require-all';
 import CommandoClient from '../client';
-import Schemas, { BaseSchema } from './Schemas';
+import Schemas, { BaseSchema, JSONIfySchema, ModelFrom } from './Schemas';
 import Util from '../util';
+// import { toJSONOptions } from './DatabaseManager';
 
-type ModuleLoader = (client: CommandoClient) => Promise<unknown>;
+type ModuleLoader = (client: CommandoClient<true>) => Promise<unknown>;
 type Module = ModuleLoader | {
     default: ModuleLoader;
     [k: string]: ModuleLoader;
 };
 
 type GeneralSchema = BaseSchema & { guild?: string };
-type GeneralModel = Model<GeneralSchema>;
+type GeneralModel = ModelFrom<GeneralSchema>;
 
 /**
  * Connects to MongoDB, caches the database and loads all client modules.
@@ -35,7 +36,8 @@ async function connectDB(client: CommandoClient<true>): Promise<boolean> {
     const uri = mongoDbURI ?? MONGO_DB_URI;
 
     if (!uri) return false;
-    await connect(uri, { keepAlive: true });
+    mongoose.set('strictQuery', true);
+    await mongoose.connect(uri, { keepAlive: true });
     client.emit('debug', 'Established database connection');
     return true;
 }
@@ -47,15 +49,16 @@ async function connectDB(client: CommandoClient<true>): Promise<boolean> {
 async function cacheDB(client: CommandoClient<true>): Promise<void> {
     const { database, databases, guilds } = client;
 
-    // @ts-expect-error: we only care about the general schema type
     const schemas = Object.values(Schemas) as GeneralModel[];
     // Resolves all promises at once after getting all data.
-    const schemasData = await Promise.all(schemas.map(schema => schema.find({})));
+    const schemasData = await Promise.all(schemas.map(schema => schema.find<Document<GeneralSchema>>()));
 
-    const data = new Collection<string, LimitedCollection<string, GeneralSchema>>();
+    const data = new Collection<string, LimitedCollection<string, JSONIfySchema<GeneralSchema>>>();
     for (let i = 0; i < schemas.length; i++) {
         const schemaName = Util.removeDashes(schemas[i].collection.name);
-        const entries = schemasData[i].map<[string, GeneralSchema]>(doc => [doc._id.toString(), doc.toJSON()]);
+        const entries = schemasData[i].map<[string, JSONIfySchema<GeneralSchema>]>(doc =>
+            [doc._id?.toString() ?? '', Util.jsonifyDocument(doc)]
+        );
 
         const documents = new LimitedCollection({
             maxSize: 200,

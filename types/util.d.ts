@@ -1,5 +1,7 @@
 import { Client, Collection, Guild, If, Message, MessageCreateOptions, PartialMessage, PermissionsString } from 'discord.js';
+import { Document } from 'mongoose';
 import CommandoClient from './client';
+import { JSONIfySchema, SchemaResolvable } from './database/Schemas';
 import CommandoGuild from './extensions/guild';
 import CommandoMessage from './extensions/message';
 export type Tuple<T, N extends number, R extends T[] = []> = R['length'] extends N ? R : Tuple<T, N, [T, ...R]>;
@@ -130,6 +132,7 @@ export default class Util extends null {
     static deepCopy<T>(value: T): T;
     static pick<T extends object, K extends keyof T>(object: T, keys: K[]): Pick<T, K>;
     static omit<T extends object, K extends keyof T>(object: T, keys: K[]): Omit<T, K>;
+    static jsonifyDocument<T extends SchemaResolvable, U extends Document<T> | null>(doc: Document<T> | U): JSONIfySchema<T> | (U extends Document ? never : null);
     protected static omitOrPick<Kind extends 'omit' | 'pick', T extends object, K extends keyof T>(kind: Kind, object: T, keys: K[]): Kind extends 'omit' ? Omit<T, K> : Pick<T, K>;
     /**
      * Verifies the provided data is a string, otherwise throws provided error.

@@ -42,13 +42,12 @@ export default class ClientDatabaseManager {
      * Initializes the caching of this client's data
      * @param data - The data to assign to the client
      */
-    protected init(data: Collection<string, LimitedCollection<string, AnySchema>>): this {
+    protected async init(data: Collection<string, LimitedCollection<string, AnySchema>>): Promise<void> {
         for (const [name, schema] of data) {
             const dbManager = this[name as SchemaKey];
             if (!dbManager) continue;
             // @ts-expect-error: AnySchema not assignable to individual schema types
             dbManager.cache = schema;
         }
-        return this;
     }
 }

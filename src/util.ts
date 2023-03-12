@@ -1,6 +1,8 @@
 import { Client, Collection, Guild, If, Message, MessageCreateOptions, PartialMessage, PermissionsString } from 'discord.js';
 import { capitalize } from 'lodash';
+import { Document } from 'mongoose';
 import CommandoClient from './client';
+import { JSONIfySchema, SchemaResolvable } from './database/Schemas';
 import CommandoGuild from './extensions/guild';
 import CommandoMessage from './extensions/message';
 
@@ -307,6 +309,18 @@ export default class Util extends null {
 
     public static omit<T extends object, K extends keyof T>(object: T, keys: K[]): Omit<T, K> {
         return Util.omitOrPick('omit', object, keys);
+    }
+
+    public static jsonifyDocument<T extends SchemaResolvable, U extends Document<T> | null>(
+        doc: Document<T> | U
+    ): JSONIfySchema<T> | (U extends Document ? never : null) {
+        if (!doc) return null as U extends Document ? never : null;
+        const jsonified = doc.toJSON({
+            flattenMaps: false,
+            versionKey: false,
+        }) as T;
+        jsonified._id = jsonified._id.toString();
+        return jsonified as JSONIfySchema<T>;
     }
 
     protected static omitOrPick<Kind extends 'omit' | 'pick', T extends object, K extends keyof T>(
