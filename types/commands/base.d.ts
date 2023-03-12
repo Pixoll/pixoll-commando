@@ -1,12 +1,13 @@
 /// <reference types="node" />
-import { Message, PermissionsString, User, ApplicationCommandOptionType as SlashCommandOptionType, ChatInputApplicationCommandData, RESTPostAPIChatInputApplicationCommandsJSONBody as RESTPostAPISlashCommand, Awaitable } from 'discord.js';
+import { Message, PermissionsString, User, ApplicationCommandOptionType as SlashCommandOptionType, ChatInputApplicationCommandData, RESTPostAPIContextMenuApplicationCommandsJSONBody as APIContextMenuCommand, RESTPostAPIChatInputApplicationCommandsJSONBody as RESTPostAPISlashCommand, Awaitable, ContextMenuCommandType, LocalizationMap } from 'discord.js';
 import ArgumentCollector, { ArgumentCollectorResult, ParseRawArguments } from './collector';
+import { Require } from '../util';
 import CommandoClient from '../client';
 import CommandGroup from './group';
 import { ArgumentInfo, ArgumentInfoResolvable } from './argument';
 import CommandoMessage from '../extensions/message';
 import CommandoInteraction from '../extensions/interaction';
-import { CommandoAutocompleteInteraction, CommandoGuildResolvable } from '../discord.overrides';
+import { CommandoAutocompleteInteraction, CommandoGuildResolvable, CommandoMessageContextMenuCommandInteraction, CommandoUserContextMenuCommandInteraction } from '../discord.overrides';
 /** Options for throttling usages of the command. */
 export interface ThrottlingOptions {
     /** Maximum number of usages of the command allowed in the time frame. */
@@ -19,6 +20,8 @@ export type CommandArgumentsResolvable = ArgumentInfoResolvable[] | readonly Arg
 export interface CommandInfo<InGuild extends boolean = boolean, Args extends CommandArgumentsResolvable = ArgumentInfo[]> {
     /** The name of the command (must be lowercase). */
     name: string;
+    /** Localizations map for the command's name - only used in application commands */
+    nameLocalizations?: LocalizationMap;
     /** Alternative names for the command (all must be lowercase). */
     aliases?: string[];
     /**
@@ -35,10 +38,12 @@ export interface CommandInfo<InGuild extends boolean = boolean, Args extends Com
     memberName?: string;
     /** A short description of the command. */
     description: string;
+    /** Localizations map for the command's description - only used in slash commands */
+    descriptionLocalizations?: LocalizationMap;
     /** The command usage format string - will be automatically generated if not specified, and `args` is specified. */
     format?: string;
     /** A detailed description of the command and its functionality. */
-    details?: string;
+    detailedDescription?: string;
     /** Usage examples of the command. */
     examples?: string[];
     /**
@@ -84,10 +89,10 @@ export interface CommandInfo<InGuild extends boolean = boolean, Args extends Com
     /** Options for throttling usages of the command. */
     throttling?: ThrottlingOptions;
     /**
-     * Whether the slash command will be registered in the test guild only or not.
+     * Whether the application commands will be registered in the test guild only.
      * @default false
      */
-    testEnv?: boolean;
+    testAppCommand?: boolean;
     /** Arguments for the command. */
     args?: Args;
     /**
@@ -153,6 +158,8 @@ export interface CommandInfo<InGuild extends boolean = boolean, Args extends Com
      * @default false
      */
     autogenerateSlashCommand?: boolean;
+    /** Types of context menu commands to register. */
+    contextMenuCommandTypes?: ContextMenuCommandType[];
 }
 /** Throttling object of the command. */
 export interface Throttle {
@@ -185,11 +192,12 @@ export interface CommandBlockData {
      */
     missing?: PermissionsString[];
 }
-export interface SlashCommandInfo extends Omit<ChatInputApplicationCommandData, 'defaultMemberPermissions' | 'description' | 'dmPermission' | 'name' | 'type'> {
+type OmittedChatInputDataKeys = 'defaultMemberPermissions' | 'description' | 'descriptionLocalizations' | 'dmPermission' | 'name' | 'nameLocalizations' | 'type';
+export interface SlashCommandInfo extends Omit<ChatInputApplicationCommandData, OmittedChatInputDataKeys> {
     /** Whether the deferred reply should be ephemeral or not */
     deferEphemeral?: boolean;
 }
-export type APISlashCommand = Required<Pick<SlashCommandInfo, 'deferEphemeral'>> & RESTPostAPISlashCommand;
+export type APISlashCommand = Require<RESTPostAPISlashCommand, 'type'> & Required<Pick<SlashCommandInfo, 'deferEphemeral'>>;
 declare const argumentTypeToSlashMap: {
     readonly boolean: SlashCommandOptionType.Boolean;
     readonly 'category-channel': SlashCommandOptionType.Channel;
@@ -327,10 +335,12 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
     deprecated: boolean;
     /** The name or alias of the command that is replacing the deprecated command. Required if `deprecated` is `true`. */
     deprecatedReplacement: string | null;
-    /** Whether this command will be registered in the test guild only or not */
-    testEnv: boolean;
-    /** The data for the slash command */
-    slashInfo: APISlashCommand | null;
+    /** Whether the application commands will be registered in the test guild only */
+    testAppCommand: boolean;
+    /** Data for the slash command */
+    slashCommand: APISlashCommand | null;
+    /** Data for the context menu commands */
+    contextMenuCommands: APIContextMenuCommand[];
     /** Whether the command is enabled globally */
     protected _globalEnabled: boolean;
     /** Current throttle objects for the command, mapped by user ID */
@@ -358,6 +368,16 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
      * @param interaction - The auto-complete interaction
      */
     runAutocomplete?(interaction: CommandoAutocompleteInteraction): Awaitable<void>;
+    /**
+     * Run the slash command auto-complete interaction logic.
+     * @param interaction - The auto-complete interaction
+     */
+    runMessageContextMenu?(interaction: CommandoMessageContextMenuCommandInteraction): Awaitable<void>;
+    /**
+     * Run the slash command auto-complete interaction logic.
+     * @param interaction - The auto-complete interaction
+     */
+    runUserContextMenu?(interaction: CommandoUserContextMenuCommandInteraction): Awaitable<void>;
     /**
      * Checks whether the user has permission to use the command
      * @param context - The triggering command context
@@ -439,5 +459,11 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
      * @param slashInfo - Slash info to validate
      */
     protected static validateAndParseSlashInfo(info: CommandInfo, slashInfo?: SlashCommandInfo): APISlashCommand | null;
+    /**
+     * Validates the slash command information
+     * @param info - Info to validate
+     * @param slashInfo - Slash info to validate
+     */
+    protected static validateAndParseContextMenuInfo(info: CommandInfo): APIContextMenuCommand[];
 }
 export {};

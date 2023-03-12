@@ -1,8 +1,9 @@
-import { Collection } from 'discord.js';
+import { Collection, RESTPostAPIContextMenuApplicationCommandsJSONBody as APIContextMenuCommand, ApplicationCommand } from 'discord.js';
 import CommandoClient from './client';
 import { ArgumentTypeString } from './commands/argument';
 import Command, { APISlashCommand, CommandContext } from './commands/base';
 import CommandGroup from './commands/group';
+import CommandoGuild from './extensions/guild';
 import CommandoMessage from './extensions/message';
 import ArgumentType from './types/base';
 export interface RequireAllOptions {
@@ -30,8 +31,8 @@ export type CommandResolvable = Command | CommandoMessage | string;
  * - A group ID
  */
 export type CommandGroupResolvable = CommandGroup | string;
-interface SlashCommandEntry {
-    command: APISlashCommand;
+interface ApplicationCommandEntry {
+    commands: Array<APIContextMenuCommand | APISlashCommand>;
     global: boolean;
 }
 /** Handles registration and searching of commands and groups */
@@ -52,12 +53,12 @@ export default class CommandoRegistry {
      * @param client - Client to use
      */
     constructor(client: CommandoClient);
-    /** Registers every client and guild slash command available - this may only be called upon startup. */
-    protected registerSlashCommands(): Promise<void>;
-    /** Registers a slash command. */
-    protected registerSlashCommand(command: Omit<APISlashCommand, 'deferEphemeral'>, global: boolean): Promise<void>;
-    /** Deletes any slash commands that have been removed from the program. */
-    protected deleteUnusedSlashCommands(currentCommands: Collection<string, SlashCommandEntry>): Promise<void>;
+    /** Registers every global and guild application command available - this may only be called upon startup. */
+    protected registerApplicationCommands(): Promise<void>;
+    /** Registers an application command. */
+    protected registerApplicationCommandEntry(entry: ApplicationCommandEntry, testAppGuild: CommandoGuild | null, registeredCommands: Collection<string, ApplicationCommand>): Promise<void>;
+    /** Deletes any application commands that have been removed from the program. */
+    protected deleteUnusedApplicationCommands(currentCommands: Collection<string, ApplicationCommandEntry>, registeredCommands: Collection<string, ApplicationCommand>): Promise<void>;
     /**
      * Registers a single group
      * @param group - A CommandGroup instance

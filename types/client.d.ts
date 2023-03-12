@@ -34,7 +34,7 @@ export interface CommandoClientOptions extends ClientOptions {
     /** Invite options for the bot */
     inviteOptions?: InviteGenerationOptions | string;
     /** The test guild ID or the slash commands */
-    testGuild?: string;
+    testAppGuild?: string;
     /** The URI which will establish your connection with MongoDB */
     mongoDbURI?: string;
     /** The directory in which your modules are stored in */

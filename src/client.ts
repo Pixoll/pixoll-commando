@@ -58,7 +58,7 @@ export interface CommandoClientOptions extends ClientOptions {
     /** Invite options for the bot */
     inviteOptions?: InviteGenerationOptions | string;
     /** The test guild ID or the slash commands */
-    testGuild?: string;
+    testAppGuild?: string;
     /** The URI which will establish your connection with MongoDB */
     mongoDbURI?: string;
     /** The directory in which your modules are stored in */
@@ -279,18 +279,15 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
         // Set up slash command handling
         this.once('ready', () =>
             // @ts-expect-error: registerSlashCommands is protected in CommandoRegistry
-            this.registry.registerSlashCommands()
+            this.registry.registerApplicationCommands()
         );
         this.on('interactionCreate', interaction => {
             if (interaction.channel?.type === ChannelType.GuildStageVoice) return;
-            if (interaction.isAutocomplete()) {
-                // @ts-expect-error: handleSlashAutocomplete is protected in CommandDispatcher
-                this.dispatcher.handleSlashAutocomplete(interaction).catch(catchErr);
-            }
-            if (!interaction.isChatInputCommand()) return;
-            const commando = new CommandoInteraction(this as CommandoClient<true>, interaction);
-            // @ts-expect-error: handleSlashCommand is protected in CommandDispatcher
-            this.dispatcher.handleSlashCommand(commando).catch(catchErr);
+            const parsedInteraction = interaction.isChatInputCommand()
+                ? new CommandoInteraction(this as CommandoClient<true>, interaction)
+                : interaction;
+            // @ts-expect-error: handleInteraction is protected in CommandDispatcher
+            this.dispatcher.handleInteraction(parsedInteraction).catch(catchErr);
         });
 
         // Establishes MongoDB connection and loads all modules

@@ -41,6 +41,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
     /** The guild this interaction was used in */
     get guild(): If<InGuild, CommandoGuild>;
     inGuild(): this is CommandoInteraction<true>;
+    isChatInputCommand(): this is CommandoInteraction<InGuild>;
     /** Whether this interaction is able to been edited (has been previously deferred or replied to) */
     isEditable(): boolean;
     isInteraction(): this is CommandoInteraction<InGuild>;

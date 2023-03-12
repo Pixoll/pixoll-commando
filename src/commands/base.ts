@@ -9,25 +9,37 @@ import {
     ApplicationCommandOptionType as SlashCommandOptionType,
     ApplicationCommandOptionBase,
     ApplicationCommandOptionData as SlashCommandOptionData,
+    APIApplicationCommandOption,
     APIApplicationCommandOptionChoice,
     SharedNameAndDescription,
     SharedSlashCommandOptions,
     ChatInputApplicationCommandData,
+    RESTPostAPIContextMenuApplicationCommandsJSONBody as APIContextMenuCommand,
     RESTPostAPIChatInputApplicationCommandsJSONBody as RESTPostAPISlashCommand,
     Awaitable,
     MessageCreateOptions,
     ChannelType,
+    ContextMenuCommandType,
+    LocalizationMap,
+    ContextMenuCommandBuilder,
+    ApplicationCommandType,
 } from 'discord.js';
 import path from 'path';
 import ArgumentCollector, { ArgumentCollectorResult, ParseRawArguments } from './collector';
-import Util from '../util';
+import Util, { Require } from '../util';
 import CommandoClient from '../client';
 import CommandGroup from './group';
 import { ArgumentInfo, ArgumentInfoResolvable } from './argument';
 import CommandoMessage from '../extensions/message';
 import CommandoGuild from '../extensions/guild';
 import CommandoInteraction from '../extensions/interaction';
-import { CommandoAutocompleteInteraction, CommandoGuildMember, CommandoGuildResolvable } from '../discord.overrides';
+import {
+    CommandoAutocompleteInteraction,
+    CommandoGuildMember,
+    CommandoGuildResolvable,
+    CommandoMessageContextMenuCommandInteraction,
+    CommandoUserContextMenuCommandInteraction,
+} from '../discord.overrides';
 
 /** Options for throttling usages of the command. */
 export interface ThrottlingOptions {
@@ -46,6 +58,8 @@ export interface CommandInfo<
 > {
     /** The name of the command (must be lowercase). */
     name: string;
+    /** Localizations map for the command's name - only used in application commands */
+    nameLocalizations?: LocalizationMap;
     /** Alternative names for the command (all must be lowercase). */
     aliases?: string[];
     /**
@@ -62,10 +76,12 @@ export interface CommandInfo<
     memberName?: string;
     /** A short description of the command. */
     description: string;
+    /** Localizations map for the command's description - only used in slash commands */
+    descriptionLocalizations?: LocalizationMap;
     /** The command usage format string - will be automatically generated if not specified, and `args` is specified. */
     format?: string;
     /** A detailed description of the command and its functionality. */
-    details?: string;
+    detailedDescription?: string;
     /** Usage examples of the command. */
     examples?: string[];
     /**
@@ -111,10 +127,10 @@ export interface CommandInfo<
     /** Options for throttling usages of the command. */
     throttling?: ThrottlingOptions;
     /**
-     * Whether the slash command will be registered in the test guild only or not.
+     * Whether the application commands will be registered in the test guild only.
      * @default false
      */
-    testEnv?: boolean;
+    testAppCommand?: boolean;
     /** Arguments for the command. */
     args?: Args;
     /**
@@ -180,6 +196,8 @@ export interface CommandInfo<
      * @default false
      */
     autogenerateSlashCommand?: boolean;
+    /** Types of context menu commands to register. */
+    contextMenuCommandTypes?: ContextMenuCommandType[];
 }
 
 /** Throttling object of the command. */
@@ -228,14 +246,23 @@ export interface CommandBlockData {
     missing?: PermissionsString[];
 }
 
-export interface SlashCommandInfo extends Omit<
-    ChatInputApplicationCommandData, 'defaultMemberPermissions' | 'description' | 'dmPermission' | 'name' | 'type'
-> {
+type OmittedChatInputDataKeys =
+    | 'defaultMemberPermissions'
+    | 'description'
+    | 'descriptionLocalizations'
+    | 'dmPermission'
+    | 'name'
+    | 'nameLocalizations'
+    | 'type';
+
+export interface SlashCommandInfo extends Omit<ChatInputApplicationCommandData, OmittedChatInputDataKeys> {
     /** Whether the deferred reply should be ephemeral or not */
     deferEphemeral?: boolean;
 }
 
-export type APISlashCommand = Required<Pick<SlashCommandInfo, 'deferEphemeral'>> & RESTPostAPISlashCommand;
+export type APISlashCommand =
+    & Require<RESTPostAPISlashCommand, 'type'>
+    & Required<Pick<SlashCommandInfo, 'deferEphemeral'>>;
 
 type BasicSlashCommandOptionData = Exclude<SlashCommandOptionData, {
     type: SlashCommandOptionType.Subcommand | SlashCommandOptionType.SubcommandGroup;
@@ -402,10 +429,12 @@ export default abstract class Command<
     public deprecated: boolean;
     /** The name or alias of the command that is replacing the deprecated command. Required if `deprecated` is `true`. */
     public deprecatedReplacement: string | null;
-    /** Whether this command will be registered in the test guild only or not */
-    public testEnv: boolean;
-    /** The data for the slash command */
-    public slashInfo: APISlashCommand | null;
+    /** Whether the application commands will be registered in the test guild only */
+    public testAppCommand: boolean;
+    /** Data for the slash command */
+    public slashCommand: APISlashCommand | null;
+    /** Data for the context menu commands */
+    public contextMenuCommands: APIContextMenuCommand[];
     /** Whether the command is enabled globally */
     protected _globalEnabled: boolean;
     /** Current throttle objects for the command, mapped by user ID */
@@ -418,7 +447,6 @@ export default abstract class Command<
      */
     public constructor(client: CommandoClient, info: CommandInfo<InGuild, Args>, slashInfo?: SlashCommandInfo) {
         Command.validateInfo(client, info as CommandInfo);
-        const parsedSlashInfo = Command.validateAndParseSlashInfo(info as CommandInfo, slashInfo);
 
         Object.defineProperty(this, 'client', { value: client });
 
@@ -435,7 +463,7 @@ export default abstract class Command<
         this.memberName = info.memberName ?? this.name;
         this.description = info.description;
         this.format = info.format ?? null;
-        this.details = info.details ?? null;
+        this.details = info.detailedDescription ?? null;
         this.examples = info.examples ?? null;
         this.dmOnly = !!info.dmOnly;
         this.guildOnly = !!info.guildOnly as InGuild;
@@ -467,8 +495,9 @@ export default abstract class Command<
         this.unknown = !!info.unknown;
         this.deprecated = !!info.deprecated;
         this.deprecatedReplacement = info.deprecatedReplacement ?? null;
-        this.testEnv = !!info.testEnv;
-        this.slashInfo = parsedSlashInfo;
+        this.testAppCommand = !!info.testAppCommand;
+        this.slashCommand = Command.validateAndParseSlashInfo(info as CommandInfo, slashInfo);
+        this.contextMenuCommands = Command.validateAndParseContextMenuInfo(info as CommandInfo);
         this._globalEnabled = true;
         this._throttles = new Map();
     }
@@ -496,6 +525,18 @@ export default abstract class Command<
      * @param interaction - The auto-complete interaction
      */
     public runAutocomplete?(interaction: CommandoAutocompleteInteraction): Awaitable<void>;
+
+    /**
+     * Run the slash command auto-complete interaction logic.
+     * @param interaction - The auto-complete interaction
+     */
+    public runMessageContextMenu?(interaction: CommandoMessageContextMenuCommandInteraction): Awaitable<void>;
+
+    /**
+     * Run the slash command auto-complete interaction logic.
+     * @param interaction - The auto-complete interaction
+     */
+    public runUserContextMenu?(interaction: CommandoUserContextMenuCommandInteraction): Awaitable<void>;
 
     /**
      * Checks whether the user has permission to use the command
@@ -776,10 +817,10 @@ export default abstract class Command<
         if (info.name !== info.name.toLowerCase()) throw new Error('Command name must be lowercase.');
         if (info.name.replace(/ +/g, '') !== info.name) throw new Error('Command name must not include spaces.');
         if ('aliases' in info) {
-            if (!Array.isArray(info.aliases) || info.aliases.some(ali => typeof ali !== 'string')) {
+            if (!Array.isArray(info.aliases) || info.aliases.some(alias => typeof alias !== 'string')) {
                 throw new TypeError('Command aliases must be an Array of strings.');
             }
-            if (info.aliases.some(ali => ali !== ali.toLowerCase())) {
+            if (info.aliases.some(alias => alias !== alias.toLowerCase())) {
                 throw new RangeError('Command aliases must be lowercase.');
             }
         }
@@ -793,7 +834,9 @@ export default abstract class Command<
         }
         if (typeof info.description !== 'string') throw new TypeError('Command description must be a string.');
         if ('format' in info && typeof info.format !== 'string') throw new TypeError('Command format must be a string.');
-        if ('details' in info && typeof info.details !== 'string') throw new TypeError('Command details must be a string.');
+        if ('details' in info && typeof info.detailedDescription !== 'string') {
+            throw new TypeError('Command details must be a string.');
+        }
         if ('examples' in info && (!Array.isArray(info.examples) || info.examples.some(ex => typeof ex !== 'string'))) {
             throw new TypeError('Command examples must be an Array of strings.');
         }
@@ -856,13 +899,20 @@ export default abstract class Command<
      * @param slashInfo - Slash info to validate
      */
     protected static validateAndParseSlashInfo(info: CommandInfo, slashInfo?: SlashCommandInfo): APISlashCommand | null {
-        const { autogenerateSlashCommand, name, description, userPermissions, dmOnly, guildOnly, args } = info;
-        if (!slashInfo && !autogenerateSlashCommand) return null;
         const {
+            autogenerateSlashCommand,
+            name,
             nameLocalizations = null,
+            description,
             descriptionLocalizations = null,
-            options: slashOptions,
-        } = slashInfo ?? {};
+            userPermissions,
+            dmOnly,
+            guildOnly,
+            args,
+            testAppCommand,
+        } = info;
+        if (!slashInfo && !autogenerateSlashCommand) return null;
+        const slashOptions = (slashInfo ?? {}).options;
         const memberPermissions = dmOnly ? '0' : (userPermissions && PermissionsBitField.resolve(userPermissions));
 
         const slash = new SlashCommandBuilder()
@@ -870,7 +920,7 @@ export default abstract class Command<
             .setNameLocalizations(nameLocalizations)
             .setDescription(description)
             .setDescriptionLocalizations(descriptionLocalizations)
-            .setDMPermission(!guildOnly)
+            .setDMPermission(!testAppCommand ? !guildOnly : null)
             .setDefaultMemberPermissions(memberPermissions);
 
         if (slashOptions || args) {
@@ -883,10 +933,54 @@ export default abstract class Command<
 
         // Validate data
         const validatedData = slash.toJSON();
+        removeEmptyOptions(validatedData.options);
         return {
+            type: ApplicationCommandType.ChatInput,
             ...validatedData,
             deferEphemeral: !!slashInfo?.deferEphemeral,
         };
+    }
+
+    /**
+     * Validates the slash command information
+     * @param info - Info to validate
+     * @param slashInfo - Slash info to validate
+     */
+    protected static validateAndParseContextMenuInfo(info: CommandInfo): APIContextMenuCommand[] {
+        const {
+            contextMenuCommandTypes,
+            name,
+            nameLocalizations = null,
+            userPermissions,
+            dmOnly,
+            guildOnly,
+            testAppCommand,
+        } = info;
+        if (!contextMenuCommandTypes || contextMenuCommandTypes.length === 0) return [];
+
+        const memberPermissions = dmOnly ? '0' : (userPermissions && PermissionsBitField.resolve(userPermissions));
+        const contextMenuCommands = contextMenuCommandTypes.map(type => new ContextMenuCommandBuilder()
+            .setType(type)
+            .setName(name)
+            .setNameLocalizations(nameLocalizations)
+            .setDMPermission(!testAppCommand ? !guildOnly : null)
+            .setDefaultMemberPermissions(memberPermissions)
+            .toJSON()
+        );
+
+        return contextMenuCommands;
+    }
+}
+
+function removeEmptyOptions(options?: APIApplicationCommandOption[]): void {
+    if (!options) return;
+    for (const option of options) {
+        if (!('options' in option) || !option.options) continue;
+        if (option.options.length === 0) {
+            delete option.options;
+            continue;
+        }
+        removeEmptyOptions(option.options);
     }
 }
 

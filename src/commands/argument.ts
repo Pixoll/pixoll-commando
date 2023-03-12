@@ -569,11 +569,10 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
         if (info.label && typeof info.label !== 'string') throw new TypeError('Argument label must be a string.');
         if (typeof info.prompt !== 'string') throw new TypeError('Argument prompt must be a string.');
         if (info.error && typeof info.error !== 'string') throw new TypeError('Argument error must be a string.');
-        if (Array.isArray(info.type)) info.type = info.type.join('|') as T;
-        if (info.type && typeof info.type !== 'string') {
+        if (info.type && typeof info.type !== 'string' && !Array.isArray(info.type)) {
             throw new TypeError('Argument type must be a string or an Array of strings.');
         }
-        if (info.type && !info.type.includes('|') && !client.registry.types.has(info.type)) {
+        if (info.type && !Array.isArray(info.type) && !client.registry.types.has(info.type)) {
             throw new RangeError(`Argument type "${info.type}" isn't registered.`);
         }
         if (!info.type && !info.validate) {

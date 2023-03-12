@@ -1,11 +1,17 @@
 /* eslint-disable new-cap */
-import { Collection } from 'discord.js';
+import {
+    Collection,
+    RESTPostAPIContextMenuApplicationCommandsJSONBody as APIContextMenuCommand,
+    APIApplicationCommand,
+    ApplicationCommand,
+} from 'discord.js';
 import path from 'path';
 import requireAll from 'require-all';
 import CommandoClient from './client';
 import { ArgumentTypeString } from './commands/argument';
 import Command, { APISlashCommand, CommandContext } from './commands/base';
 import CommandGroup from './commands/group';
+import CommandoGuild from './extensions/guild';
 import CommandoMessage from './extensions/message';
 import ArgumentType from './types/base';
 import Util, { Constructable, NonAbstractConstructable } from './util';
@@ -46,8 +52,8 @@ export type CommandGroupResolvable =
     | CommandGroup
     | string;
 
-interface SlashCommandEntry {
-    command: APISlashCommand;
+interface ApplicationCommandEntry {
+    commands: Array<APIContextMenuCommand | APISlashCommand>;
     global: boolean;
 }
 
@@ -79,63 +85,77 @@ export default class CommandoRegistry {
         this.unknownCommand = null;
     }
 
-    /** Registers every client and guild slash command available - this may only be called upon startup. */
-    protected async registerSlashCommands(): Promise<void> {
+    /** Registers every global and guild application command available - this may only be called upon startup. */
+    protected async registerApplicationCommands(): Promise<void> {
         const { client, commands } = this;
-
-        const slashCommands = Util.filterNullishValues(commands.mapValues(command => ({
-            command: command.slashInfo,
-            global: !command.testEnv,
-        }))).filter((command): command is SlashCommandEntry =>
-            !Util.isNullish(command.command)
-        );
-
-        await Promise.all(slashCommands.map(({ command, global }) =>
-            this.registerSlashCommand(Util.omit(command, ['deferEphemeral']), global)
-        ));
-        await this.deleteUnusedSlashCommands(slashCommands);
-
-        const guildOnlyAmount = slashCommands.filter(command => !command.global).size;
-        const globalAmount = slashCommands.filter(command => command.global).size;
-
-        if (guildOnlyAmount) client.emit('debug', `Loaded ${guildOnlyAmount} guild slash commands`);
-        if (globalAmount) client.emit('debug', `Loaded ${globalAmount} global slash commands`);
-    }
-
-    /** Registers a slash command. */
-    protected async registerSlashCommand(command: Omit<APISlashCommand, 'deferEphemeral'>, global: boolean): Promise<void> {
-        const { application, options, guilds } = this.client as CommandoClient<true>;
-
-        const guild = !global && options.testGuild ? await guilds.fetch(options.testGuild) : null;
-        const commandManager = !global && guild ? guild.commands : application.commands;
-        const allCommands = await commandManager.fetch({});
-        const registeredCommand = allCommands.find(cmd => cmd.name === command.name);
-
-        if (!registeredCommand) {
-            await commandManager.create(command);
-            return;
-        }
-
-        if (!registeredCommand.equals(command)) {
-            await registeredCommand.edit(command);
-            return;
-        }
-    }
-
-    /** Deletes any slash commands that have been removed from the program. */
-    protected async deleteUnusedSlashCommands(currentCommands: Collection<string, SlashCommandEntry>): Promise<void> {
-        const client = this.client as CommandoClient<true>;
         const { application, options, guilds } = client as CommandoClient<true>;
 
-        const guild = !global && options.testGuild ? await guilds.fetch(options.testGuild) : null;
+        const testAppGuild = await guilds.fetch(options.testAppGuild ?? '').catch(() => null);
         const registeredCommands = await Promise.all([
-            guild?.commands.fetch(),
+            testAppGuild?.commands.fetch(),
             application.commands.fetch(),
         ]).then(commands => commands[1].concat(commands[0] ?? new Collection()));
 
-        const removedCommands = registeredCommands.filter(command => !currentCommands.has(command.name));
+        const appCommandsToRegister = commands.mapValues<ApplicationCommandEntry>(command => ({
+            commands: Util.filterNullishItems([command.slashCommand, ...command.contextMenuCommands]),
+            global: !command.testAppCommand,
+        }));
+
+        await Promise.all(appCommandsToRegister.map(entry =>
+            this.registerApplicationCommandEntry(entry, testAppGuild, registeredCommands)
+        ));
+        await this.deleteUnusedApplicationCommands(appCommandsToRegister, registeredCommands);
+
+        const guildOnlyAmount = appCommandsToRegister.filter(command => !command.global).size;
+        const globalAmount = appCommandsToRegister.filter(command => command.global).size;
+
+        if (guildOnlyAmount) client.emit('debug', `Loaded ${guildOnlyAmount} guild application commands`);
+        if (globalAmount) client.emit('debug', `Loaded ${globalAmount} global application commands`);
+    }
+
+    /** Registers an application command. */
+    protected async registerApplicationCommandEntry(
+        entry: ApplicationCommandEntry,
+        testAppGuild: CommandoGuild | null,
+        registeredCommands: Collection<string, ApplicationCommand>
+    ): Promise<void> {
+        const { commands, global } = entry;
+        if (commands.length === 0) return;
+
+        const { application } = this.client as CommandoClient<true>;
+        const commandManager = !global && testAppGuild ? testAppGuild.commands : application.commands;
+
+        await Promise.all(commands.map(async command => {
+            const rawCommand = 'description' in  command ? Util.omit(command, ['deferEphemeral']) : command;
+            const registeredCommand = registeredCommands.find(cmd =>
+                cmd.name === command.name && cmd.type === rawCommand.type
+            );
+            if (!registeredCommand) {
+                await commandManager.create(rawCommand);
+                return;
+            }
+            if (!registeredCommand.equals(rawCommand as APIApplicationCommand)) {
+                await registeredCommand.edit(rawCommand);
+                return;
+            }
+        }));
+    }
+
+    /** Deletes any application commands that have been removed from the program. */
+    protected async deleteUnusedApplicationCommands(
+        currentCommands: Collection<string, ApplicationCommandEntry>,
+        registeredCommands: Collection<string, ApplicationCommand>
+    ): Promise<void> {
+        const client = this.client as CommandoClient<true>;
+
+        const removedCommands = registeredCommands.filter(command => {
+            const currentCommand = currentCommands.get(command.name);
+            if (!currentCommand || currentCommand.commands.length === 0) return true;
+            return !currentCommand.commands.some(cmd => cmd.type === command.type);
+        });
         await Promise.all(removedCommands.map(command => command.delete()));
-        client.emit('debug', `Deleted ${removedCommands.size} unused slash commands`);
+        const removedAmount = removedCommands.size;
+        if (removedAmount) client.emit('debug', `Deleted ${removedAmount} unused application commands`);
     }
 
     /**

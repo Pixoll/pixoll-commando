@@ -101,6 +101,11 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
         return super.inGuild();
     }
 
+    // @ts-expect-error: This is meant to narrow this extension's types
+    public isChatInputCommand(): this is CommandoInteraction<InGuild> {
+        return super.isChatInputCommand();
+    }
+
     /** Whether this interaction is able to been edited (has been previously deferred or replied to) */
     public isEditable(): boolean {
         return this.deferred || this.replied;
@@ -241,13 +246,13 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
         }
 
         // Parses the options into an arguments object. Array.from to prevent "readonly" error.
-        const args = this.parseArgs(this.command.slashInfo?.options);
+        const args = this.parseArgs(this.command.slashCommand?.options);
 
         // Run the command
         try {
             const location = guildId ? `${guildId}:${channelId}` : `DM:${author.id}`;
             client.emit('debug', `Running slash command "${groupId}:${memberName}" at "${location}".`);
-            await this.deferReply({ ephemeral: command.slashInfo?.deferEphemeral });
+            await this.deferReply({ ephemeral: command.slashCommand?.deferEphemeral });
             const promise = command.run(this, args);
 
             client.emit('commandRun', command, promise, this, args);

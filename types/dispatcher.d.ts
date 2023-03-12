@@ -1,6 +1,6 @@
 import { Message } from 'discord.js';
 import CommandoClient from './client';
-import { CommandoAutocompleteInteraction } from './discord.overrides';
+import { CommandoChatInputCommandInteraction, CommandoifiedInteraction } from './discord.overrides';
 import CommandoInteraction from './extensions/interaction';
 import CommandoMessage, { CommandoMessageResponse } from './extensions/message';
 import CommandoRegistry from './registry';
@@ -19,6 +19,7 @@ export interface Inhibition {
  * - An Inhibition object
  */
 type Inhibitor = (msg: CommandoMessage) => Inhibition | string;
+type UsableInteraction = CommandoInteraction | Exclude<CommandoifiedInteraction, CommandoChatInputCommandInteraction>;
 /** Handles parsing messages and running commands from them */
 export default class CommandDispatcher {
     /** Client this dispatcher handles messages for */
@@ -65,26 +66,21 @@ export default class CommandDispatcher {
      */
     protected handleMessage(message: CommandoMessage, oldMessage?: Message): Promise<void>;
     /**
+     * Handle a new interaction
+     * @param interaction - The interaction to handle
+     */
+    protected handleInteraction(interaction: UsableInteraction): Promise<void>;
+    /**
      * Handle a new slash command interaction
      * @param interaction - The interaction to handle
      */
-    protected handleSlashCommand(interaction: CommandoInteraction): Promise<void>;
-    /**
-     * Handle a new slash command auto-complete interaction
-     * @param interaction - The interaction to handle
-     */
-    protected handleSlashAutocomplete(interaction: CommandoAutocompleteInteraction): Promise<void>;
+    protected handleChatInputCommand(interaction: CommandoInteraction): Promise<void>;
     /**
      * Check whether a message should be handled
      * @param message - The message to handle
      * @param oldMessage - The old message before the update
      */
     protected shouldHandleMessage(message: CommandoMessage, oldMessage?: Message): boolean;
-    /**
-     * Check whether a slash command interaction should be handled
-     * @param interaction - The interaction to check
-     */
-    protected shouldHandleSlashCommand(interaction: CommandoInteraction): boolean;
     /**
      * Inhibits a command message
      * @param message - Command message to inhibit

@@ -1,14 +1,8 @@
-import {
-    EmbedBuilder,
-    Message,
-    Colors,
-    InteractionType,
-    ApplicationCommandType,
-} from 'discord.js';
+import { EmbedBuilder, Message, Colors } from 'discord.js';
 import CommandoClient from './client';
 import { ArgumentResponse } from './commands/argument';
 import { CommandBlockReason } from './commands/base';
-import { CommandoAutocompleteInteraction } from './discord.overrides';
+import { CommandoChatInputCommandInteraction, CommandoifiedInteraction } from './discord.overrides';
 import CommandoInteraction from './extensions/interaction';
 import CommandoMessage, { CommandoMessageResponse } from './extensions/message';
 import CommandoRegistry from './registry';
@@ -30,6 +24,10 @@ export interface Inhibition {
  * - An Inhibition object
  */
 type Inhibitor = (msg: CommandoMessage) => Inhibition | string;
+
+type UsableInteraction =
+    | CommandoInteraction
+    | Exclude<CommandoifiedInteraction, CommandoChatInputCommandInteraction>;
 
 /** Handles parsing messages and running commands from them */
 export default class CommandDispatcher {
@@ -164,12 +162,43 @@ export default class CommandDispatcher {
     }
 
     /**
+     * Handle a new interaction
+     * @param interaction - The interaction to handle
+     */
+    protected async handleInteraction(interaction: UsableInteraction): Promise<void> {
+        if (interaction.isChatInputCommand()) {
+            await this.handleChatInputCommand(interaction);
+            return;
+        }
+
+        if (!interaction.isAutocomplete() && !interaction.isContextMenuCommand()) return;
+
+        const { client, commandName } = interaction;
+        const command = client.registry.resolveCommand(commandName);
+        if (interaction.isAutocomplete()) {
+            if (!command.runAutocomplete) return;
+            await command.runAutocomplete(interaction);
+            return;
+        }
+
+        if (interaction.isMessageContextMenuCommand()) {
+            if (!command.runMessageContextMenu) return;
+            await command.runMessageContextMenu(interaction);
+            return;
+        }
+
+        if (interaction.isUserContextMenuCommand()) {
+            if (!command.runUserContextMenu) return;
+            await command.runUserContextMenu(interaction);
+            return;
+        }
+    }
+
+    /**
      * Handle a new slash command interaction
      * @param interaction - The interaction to handle
      */
-    protected async handleSlashCommand(interaction: CommandoInteraction): Promise<void> {
-        if (!this.shouldHandleSlashCommand(interaction)) return;
-
+    protected async handleChatInputCommand(interaction: CommandoInteraction): Promise<void> {
         const { command, guild } = interaction;
 
         if (!command.isEnabledIn(guild)) {
@@ -185,17 +214,6 @@ export default class CommandDispatcher {
         }
 
         await interaction.run();
-    }
-
-    /**
-     * Handle a new slash command auto-complete interaction
-     * @param interaction - The interaction to handle
-     */
-    protected async handleSlashAutocomplete(interaction: CommandoAutocompleteInteraction): Promise<void> {
-        const { client, commandName } = interaction;
-        const command = client.registry.resolveCommand(commandName);
-        if (!command.runAutocomplete) return;
-        await command.runAutocomplete(interaction);
     }
 
     /**
@@ -216,23 +234,6 @@ export default class CommandDispatcher {
 
         // Make sure the edit actually changed the message content
         if (oldMessage && content === oldMessage.content) return false;
-
-        return true;
-    }
-
-    /**
-     * Check whether a slash command interaction should be handled
-     * @param interaction - The interaction to check
-     */
-    protected shouldHandleSlashCommand(interaction: CommandoInteraction): boolean {
-        const { author, client, commandType, type } = interaction;
-
-        // Ignore bot messages
-        if (author.bot || author.id === client.user.id) return false;
-
-        // Ignore anything but slash commands
-        if (type !== InteractionType.ApplicationCommand) return false;
-        if (commandType !== ApplicationCommandType.ChatInput) return false;
 
         return true;
     }
