@@ -101,13 +101,17 @@ export default class CommandoRegistry {
             global: !command.testAppCommand,
         }));
 
+        await this.deleteUnusedApplicationCommands(appCommandsToRegister, registeredCommands);
         await Promise.all(appCommandsToRegister.map(entry =>
             this.registerApplicationCommandEntry(entry, testAppGuild, registeredCommands)
         ));
-        await this.deleteUnusedApplicationCommands(appCommandsToRegister, registeredCommands);
 
-        const guildOnlyAmount = appCommandsToRegister.filter(command => !command.global).size;
-        const globalAmount = appCommandsToRegister.filter(command => command.global).size;
+        const guildOnlyAmount = appCommandsToRegister
+            .filter(command => !command.global)
+            .reduce((amount, entry) => amount + entry.commands.length, 0);
+        const globalAmount = appCommandsToRegister
+            .filter(command => command.global)
+            .reduce((amount, entry) => amount + entry.commands.length, 0);
 
         if (guildOnlyAmount) client.emit('debug', `Loaded ${guildOnlyAmount} guild application commands`);
         if (globalAmount) client.emit('debug', `Loaded ${globalAmount} global application commands`);
@@ -126,7 +130,7 @@ export default class CommandoRegistry {
         const commandManager = !global && testAppGuild ? testAppGuild.commands : application.commands;
 
         await Promise.all(commands.map(async command => {
-            const rawCommand = 'description' in  command ? Util.omit(command, ['deferEphemeral']) : command;
+            const rawCommand = 'description' in command ? Util.omit(command, ['deferEphemeral']) : command;
             const registeredCommand = registeredCommands.find(cmd =>
                 cmd.name === command.name && cmd.type === rawCommand.type
             );
@@ -475,11 +479,9 @@ export default class CommandoRegistry {
      */
     public findCommands(searchString: string | null = null, exact = false, context?: CommandContext): Command[] {
         const { commands } = this;
-        if (!searchString) {
-            return context
-                ? commands.filter(cmd => cmd.isUsable(context)).toJSON()
-                : commands.toJSON();
-        }
+        if (!searchString) return context
+            ? commands.filter(cmd => cmd.isUsable(context)).toJSON()
+            : commands.toJSON();
 
         // Find all matches
         const lcSearch = searchString.toLowerCase();

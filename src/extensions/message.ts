@@ -521,11 +521,11 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
             if (!pos) continue;
             for (let i = pos + 1; i < responses.length; i++) {
                 const response = responses[i];
-                if (Array.isArray(response)) {
-                    for (const resp of response) resp?.delete();
+                if (!Array.isArray(response)) {
+                    response?.delete();
                     continue;
                 }
-                response?.delete();
+                for (const resp of response) resp?.delete();
             }
         }
     }

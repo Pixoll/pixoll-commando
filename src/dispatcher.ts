@@ -246,23 +246,19 @@ export default class CommandDispatcher {
         const { inhibitors, client } = this;
         for (const inhibitor of inhibitors) {
             let inhibit = inhibitor(message);
-            if (inhibit) {
-                if (typeof inhibit !== 'object') inhibit = { reason: inhibit, response: null };
+            if (!inhibit) continue;
+            if (typeof inhibit !== 'object') inhibit = { reason: inhibit, response: null };
 
-                const valid = typeof inhibit.reason === 'string'
-                    && (
-                        Util.isNullish(inhibit.response)
-                        || Util.isPromise(inhibit.response)
-                    );
-                if (!valid) {
-                    throw new TypeError(
-                        `Inhibitor "${inhibitor.name}" had an invalid result must be a string or an Inhibition object.`
-                    );
-                }
+            const valid = typeof inhibit.reason === 'string' && (
+                Util.isNullish(inhibit.response)
+                || Util.isPromise(inhibit.response)
+            );
+            if (!valid) throw new TypeError(
+                `Inhibitor "${inhibitor.name}" had an invalid result must be a string or an Inhibition object.`
+            );
 
-                client.emit('commandBlock', message, inhibit.reason as CommandBlockReason);
-                return inhibit;
-            }
+            client.emit('commandBlock', message, inhibit.reason as CommandBlockReason);
+            return inhibit;
         }
         return null;
     }
