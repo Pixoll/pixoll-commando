@@ -1023,11 +1023,13 @@ function parseMessageArgToSlashOption(arg: ArgumentInfo): BasicSlashCommandOptio
         ...defaultData,
         maxLength: max,
         minLength: min,
-        choices: oneOf?.filter((c): c is string => typeof c === 'string').map(choice => ({
-            name: choice,
-            value: choice,
-        })),
-        ...!oneOf && { autocomplete },
+        ...autocomplete && { autocomplete },
+        ...!autocomplete && oneOf && {
+            choices: oneOf.filter((c): c is string => typeof c === 'string').map(choice => ({
+                name: choice,
+                value: choice,
+            })),
+        },
     };
 
     if (Util.equals(type, [SlashCommandOptionType.Integer, SlashCommandOptionType.Number])) return {
@@ -1035,11 +1037,13 @@ function parseMessageArgToSlashOption(arg: ArgumentInfo): BasicSlashCommandOptio
         ...defaultData,
         maxValue: max,
         minValue: min,
-        choices: oneOf?.filter((c): c is number => typeof c === 'number').map(choice => ({
-            name: choice.toString(),
-            value: choice,
-        })),
-        ...!oneOf && { autocomplete },
+        ...autocomplete && { autocomplete },
+        ...!autocomplete && oneOf && {
+            choices: oneOf.filter((c): c is number => typeof c === 'number').map(choice => ({
+                name: choice.toString(),
+                value: choice,
+            })),
+        },
     };
 
     return null;
@@ -1093,12 +1097,11 @@ function addSlashOptions<T extends SharedSlashCommandOptions<false> | SlashComma
                     optBuilder.addChoices(...option.choices as Array<APIApplicationCommandOptionChoice<number>>);
                 }
 
-                if ('minValue' in option) {
-                    const maxValue = option.maxValue ?? option.max_value;
-                    if (!Util.isNullish(maxValue)) optBuilder.setMaxValue(maxValue);
-                    const minValue = option.minValue ?? option.min_value;
-                    if (!Util.isNullish(minValue)) optBuilder.setMinValue(minValue);
-                }
+                const maxValue = option.maxValue ?? option.max_value;
+                if (!Util.isNullish(maxValue)) optBuilder.setMaxValue(maxValue);
+                const minValue = option.minValue ?? option.min_value;
+                if (!Util.isNullish(minValue)) optBuilder.setMinValue(minValue);
+
                 return optBuilder;
             });
         }
@@ -1114,12 +1117,11 @@ function addSlashOptions<T extends SharedSlashCommandOptions<false> | SlashComma
                     optBuilder.addChoices(...option.choices as Array<APIApplicationCommandOptionChoice<number>>);
                 }
 
-                if ('minValue' in option) {
-                    const maxValue = option.maxValue ?? option.max_value;
-                    if (!Util.isNullish(maxValue)) optBuilder.setMaxValue(maxValue);
-                    const minValue = option.minValue ?? option.min_value;
-                    if (!Util.isNullish(minValue)) optBuilder.setMinValue(minValue);
-                }
+                const maxValue = option.maxValue ?? option.max_value;
+                if (!Util.isNullish(maxValue)) optBuilder.setMaxValue(maxValue);
+                const minValue = option.minValue ?? option.min_value;
+                if (!Util.isNullish(minValue)) optBuilder.setMinValue(minValue);
+
                 return optBuilder;
             });
         }
@@ -1135,12 +1137,11 @@ function addSlashOptions<T extends SharedSlashCommandOptions<false> | SlashComma
                     optBuilder.addChoices(...option.choices as Array<APIApplicationCommandOptionChoice<string>>);
                 }
 
-                if ('minLength' in option) {
-                    const maxLength = option.maxLength ?? option.max_length;
-                    if (!Util.isNullish(maxLength)) optBuilder.setMaxLength(maxLength);
-                    const minLength = option.minLength ?? option.min_length;
-                    if (!Util.isNullish(minLength)) optBuilder.setMinLength(minLength);
-                }
+                const maxLength = option.maxLength ?? option.max_length;
+                if (!Util.isNullish(maxLength)) optBuilder.setMaxLength(maxLength);
+                const minLength = option.minLength ?? option.min_length;
+                if (!Util.isNullish(minLength)) optBuilder.setMinLength(minLength);
+
                 return optBuilder;
             });
         }

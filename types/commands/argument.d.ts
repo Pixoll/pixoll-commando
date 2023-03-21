@@ -103,7 +103,7 @@ export interface ArgumentInfo<T extends ArgumentTypeString = ArgumentTypeString>
      * - This will only work for types {@link ArgumentTypeStringMap.string string},
      * {@link ArgumentTypeStringMap.integer integer} and {@link ArgumentTypeStringMap.float float}.
      * - Will only be used if {@link CommandInfo.autogenerateSlashCommand CommandInfo#autogenerateSlashCommand}
-     * is set to `true` and {@link ArgumentInfo.oneOf ArgumentInfo#oneOf} is **not** defined.
+     * is set to `true`. If so, {@link ArgumentInfo.oneOf ArgumentInfo#oneOf} will be ignored.
      */
     autocomplete?: boolean;
 }
