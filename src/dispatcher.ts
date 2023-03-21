@@ -176,20 +176,17 @@ export default class CommandDispatcher {
         const { client, commandName } = interaction;
         const command = client.registry.resolveCommand(commandName);
         if (interaction.isAutocomplete()) {
-            if (!command.runAutocomplete) return;
-            await command.runAutocomplete(interaction);
+            await command.runAutocomplete?.(interaction);
             return;
         }
 
         if (interaction.isMessageContextMenuCommand()) {
-            if (!command.runMessageContextMenu) return;
-            await command.runMessageContextMenu(interaction);
+            await command.runMessageContextMenu?.(interaction);
             return;
         }
 
         if (interaction.isUserContextMenuCommand()) {
-            if (!command.runUserContextMenu) return;
-            await command.runUserContextMenu(interaction);
+            await command.runUserContextMenu?.(interaction);
             return;
         }
     }
