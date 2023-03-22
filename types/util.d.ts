@@ -74,7 +74,7 @@ export default class Util extends null {
      * @param msg - The message instance.
      * @returns A {@link MessageCreateOptions} object.
      */
-    static noReplyPingInDMs(msg: CommandoMessage | Message): MessageCreateOptions;
+    static noReplyPingInDMs(msg: CommandoMessage | Message): Pick<MessageCreateOptions, 'allowedMentions'>;
     /**
      * Disambiguate items from an array into a list.
      * @param items - An array of strings or objects.

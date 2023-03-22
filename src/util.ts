@@ -148,8 +148,8 @@ export default class Util extends null {
      * @param msg - The message instance.
      * @returns A {@link MessageCreateOptions} object.
      */
-    public static noReplyPingInDMs(msg: CommandoMessage | Message): MessageCreateOptions {
-        const options: MessageCreateOptions = msg.channel.isDMBased() ? {
+    public static noReplyPingInDMs(msg: CommandoMessage | Message): Pick<MessageCreateOptions, 'allowedMentions'> {
+        const options: Pick<MessageCreateOptions, 'allowedMentions'> = msg.channel.isDMBased() ? {
             allowedMentions: { repliedUser: false },
         } : {};
 
