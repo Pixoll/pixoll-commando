@@ -165,7 +165,7 @@ export interface CommandInfo<
      */
     guarded?: boolean;
     /**
-     * Whether the command should be hidden from the help command.
+     * Whether to hide the command from {@link Command.onBlock Command#onBlock} responses.
      * @default false
      */
     hidden?: boolean;
@@ -584,10 +584,12 @@ export default abstract class Command<
      * - throttling: `throttle` ({@link Throttle}), `remaining` (number) time in seconds
      * - userPermissions & clientPermissions: `missing` (Array<string>) permission names
      */
-    public onBlock(
+    public async onBlock(
         context: CommandContext, reason: CommandBlockReason, data: CommandBlockData = {}
     ): Promise<Message | null> {
-        const { name } = this;
+        const { name, hidden } = this;
+        if (hidden) return null;
+
         const { missing, remaining } = data;
         const useCommandOnlyIf = (location: string): string => `The \`${name}\` command can only be used ${location}.`;
 

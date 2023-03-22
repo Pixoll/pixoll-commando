@@ -127,7 +127,7 @@ export interface CommandInfo<InGuild extends boolean = boolean, Args extends Com
      */
     guarded?: boolean;
     /**
-     * Whether the command should be hidden from the help command.
+     * Whether to hide the command from {@link Command.onBlock Command#onBlock} responses.
      * @default false
      */
     hidden?: boolean;
