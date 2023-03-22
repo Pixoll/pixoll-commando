@@ -127,7 +127,7 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
             throw new TypeError('Document cannot be undefined or null.');
         }
 
-        await Schema.updateOne({ _id: doc._id }, update);
+        await Schema.updateOne({ _id: doc._id }, update as UpdateWithAggregationPipeline);
         const rawDoc = await Schema.findOne({ _id: doc._id }) as Document<T>;
         const updatedDoc = Util.jsonifyDocument(rawDoc);
         cache.set(updatedDoc._id.toString(), updatedDoc);
