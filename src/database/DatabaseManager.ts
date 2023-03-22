@@ -162,10 +162,8 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
         const existing = cache.find(this.filterDocuments(filter));
         if (existing && !force) return existing;
 
-        const rawDocs = await Schema.find<Document<T>>();
-        const doc = rawDocs
-            .map(Util.jsonifyDocument)
-            .find(this.filterDocuments(filter)) ?? null;
+        const rawDoc = await Schema.findOne<Document<T>>(filter);
+        const doc = Util.jsonifyDocument(rawDoc);
         if (doc && shouldCache) cache.set(doc._id.toString(), doc);
         return doc;
     }
@@ -187,14 +185,13 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
         const filtered = cache.filter(this.filterDocuments(filter));
         if (filtered.size !== 0 && !force) return filtered;
 
-        const rawDocs = await Schema.find<Document<T>>();
+        const rawDocs = await Schema.find<Document<T>>(filter);
         const fetched: Collection<string, JSONIfySchema<T>> = new LimitedCollection({
             maxSize: 200,
         });
 
         const jsonFiltered = rawDocs
             .map(Util.jsonifyDocument)
-            .filter(this.filterDocuments(filter))
             .slice(0, 200);
         for (const doc of jsonFiltered) {
             const id = doc._id.toString();
