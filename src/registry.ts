@@ -286,13 +286,8 @@ export default class CommandoRegistry {
      * registry.registerCommandsIn(path.join(__dirname, 'commands'));
      */
     public registerCommandsIn(options: RequireAllOptions | string): this {
-        const obj: Record<string, Record<string, Command>> = requireAll(options);
-        const commands: Command[] = [];
-        for (const group of Object.values(obj)) {
-            for (const command of Object.values(group)) {
-                commands.push(command);
-            }
-        }
+        const commandsFolder: Record<string, Record<string, Command>> = requireAll(options);
+        const commands = Object.values(commandsFolder).flatMap(subFolder => Object.values(subFolder));
         if (typeof options === 'string' && !this.commandsPath) this.commandsPath = options;
         else if (typeof options === 'object' && !this.commandsPath) this.commandsPath = options.dirname;
         return this.registerCommands(commands, true);

@@ -1257,10 +1257,6 @@ function isModerator(member: CommandoGuildMember): boolean {
     const { permissions } = member;
     if (permissions.has('Administrator')) return true;
 
-    const values: boolean[] = [];
-    for (const condition of isModConditions) {
-        values.push(permissions.has(condition));
-    }
-
+    const values = isModConditions.map(condition => permissions.has(condition));
     return values.some(b => b === true);
 }
