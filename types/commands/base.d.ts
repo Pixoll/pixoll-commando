@@ -207,12 +207,14 @@ declare const argumentTypeToSlashMap: {
     readonly 'default-emoji': SlashCommandOptionType.String;
     readonly duration: SlashCommandOptionType.String;
     readonly float: SlashCommandOptionType.Number;
+    readonly 'forum-channel': SlashCommandOptionType.Channel;
     readonly group: SlashCommandOptionType.String;
     readonly 'guild-emoji': SlashCommandOptionType.String;
     readonly integer: SlashCommandOptionType.Integer;
     readonly invite: SlashCommandOptionType.String;
     readonly member: SlashCommandOptionType.User;
     readonly message: SlashCommandOptionType.String;
+    readonly 'news-channel': SlashCommandOptionType.Channel;
     readonly role: SlashCommandOptionType.Role;
     readonly 'stage-channel': SlashCommandOptionType.Channel;
     readonly string: SlashCommandOptionType.String;

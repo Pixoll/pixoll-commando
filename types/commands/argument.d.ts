@@ -1,6 +1,6 @@
 import { Message, Awaitable } from 'discord.js';
 import CommandoClient from '../client';
-import { CommandoCategoryChannel, CommandoChannel, CommandoGuildEmoji, CommandoGuildMember, CommandoifiedMessage, CommandoInvite, CommandoRole, CommandoStageChannel, CommandoTextChannel, CommandoThreadChannel, CommandoUser, CommandoVoiceChannel } from '../discord.overrides';
+import { CommandoCategoryChannel, CommandoChannel, CommandoForumChannel, CommandoGuildEmoji, CommandoGuildMember, CommandoifiedMessage, CommandoInvite, CommandoNewsChannel, CommandoRole, CommandoStageChannel, CommandoTextChannel, CommandoThreadChannel, CommandoUser, CommandoVoiceChannel } from '../discord.overrides';
 import CommandoMessage from '../extensions/message';
 import ArgumentType from '../types/base';
 import Command from './base';
@@ -19,12 +19,14 @@ export interface ArgumentTypeStringMap {
     'default-emoji': string;
     duration: number;
     float: number;
+    'forum-channel': CommandoForumChannel;
     group: CommandGroup;
     'guild-emoji': CommandoGuildEmoji;
     integer: number;
     invite: CommandoInvite;
     member: CommandoGuildMember;
     message: CommandoifiedMessage;
+    'news-channel': CommandoNewsChannel;
     role: CommandoRole;
     'stage-channel': CommandoStageChannel;
     string: string;

@@ -4,10 +4,12 @@ import CommandoClient from '../client';
 import {
     CommandoCategoryChannel,
     CommandoChannel,
+    CommandoForumChannel,
     CommandoGuildEmoji,
     CommandoGuildMember,
     CommandoifiedMessage,
     CommandoInvite,
+    CommandoNewsChannel,
     CommandoRole,
     CommandoStageChannel,
     CommandoTextChannel,
@@ -40,12 +42,14 @@ export interface ArgumentTypeStringMap {
     'default-emoji': string;
     duration: number;
     float: number;
+    'forum-channel': CommandoForumChannel;
     group: CommandGroup;
     'guild-emoji': CommandoGuildEmoji;
     integer: number;
     invite: CommandoInvite;
     member: CommandoGuildMember;
     message: CommandoifiedMessage;
+    'news-channel': CommandoNewsChannel;
     role: CommandoRole;
     'stage-channel': CommandoStageChannel;
     string: string;

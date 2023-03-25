@@ -23,6 +23,7 @@ import {
     LocalizationMap,
     ContextMenuCommandBuilder,
     ApplicationCommandType,
+    ApplicationCommandOptionAllowedChannelTypes,
 } from 'discord.js';
 import path from 'path';
 import ArgumentCollector, { ArgumentCollectorResult, ParseRawArguments } from './collector';
@@ -277,12 +278,14 @@ const argumentTypeToSlashMap/* : Record<ArgumentTypeString, SlashCommandOptionTy
     'default-emoji': SlashCommandOptionType.String,
     duration: SlashCommandOptionType.String,
     float: SlashCommandOptionType.Number,
+    'forum-channel': SlashCommandOptionType.Channel,
     group: SlashCommandOptionType.String,
     'guild-emoji': SlashCommandOptionType.String,
     integer: SlashCommandOptionType.Integer,
     invite: SlashCommandOptionType.String,
     member: SlashCommandOptionType.User,
     message: SlashCommandOptionType.String,
+    'news-channel': SlashCommandOptionType.Channel,
     role: SlashCommandOptionType.Role,
     'stage-channel': SlashCommandOptionType.Channel,
     string: SlashCommandOptionType.String,
@@ -301,9 +304,21 @@ type ChannelTypeMapKey = keyof {
     ]: SlashCommandOptionType.Channel;
 };
 
-const channelTypeMap: Record<ChannelTypeMapKey, ChannelType[] | null[]> = {
+const channelTypeMap: Record<ChannelTypeMapKey, ApplicationCommandOptionAllowedChannelTypes[]> = {
     'category-channel': [ChannelType.GuildCategory],
-    channel: [null],
+    channel: [
+        ChannelType.AnnouncementThread,
+        ChannelType.GuildAnnouncement,
+        ChannelType.GuildCategory,
+        ChannelType.GuildForum,
+        ChannelType.GuildStageVoice,
+        ChannelType.GuildText,
+        ChannelType.GuildVoice,
+        ChannelType.PrivateThread,
+        ChannelType.PublicThread,
+    ],
+    'forum-channel': [ChannelType.GuildForum],
+    'news-channel': [ChannelType.GuildAnnouncement],
     'stage-channel': [ChannelType.GuildStageVoice],
     'text-channel': [ChannelType.GuildText],
     'thread-channel': [
@@ -313,6 +328,8 @@ const channelTypeMap: Record<ChannelTypeMapKey, ChannelType[] | null[]> = {
     ],
     'voice-channel': [ChannelType.GuildVoice],
 };
+
+const channelTypeMapKeys = Object.keys(channelTypeMap) as ChannelTypeMapKey[];
 
 /**
  * A command that can be run in a client
@@ -1004,20 +1021,19 @@ function parseMessageArgToSlashOption(arg: ArgumentInfo): BasicSlashCommandOptio
         SlashCommandOptionType.Boolean, SlashCommandOptionType.User, SlashCommandOptionType.Role,
     ])) return { type, ...defaultData };
 
-    if (type === SlashCommandOptionType.Channel && Util.equals(argType, [
-        'category-channel', 'channel', 'text-channel', 'thread-channel', 'stage-channel', 'voice-channel',
-    ])) return {
+    if (type === SlashCommandOptionType.Channel && Util.equals(argType, channelTypeMapKeys)) return {
         type,
         ...defaultData,
-        channelTypes: Util.filterNullishItems(channelTypeMap[argType]),
+        channelTypes: channelTypeMap[argType],
     };
 
-    if (type === SlashCommandOptionType.Channel && Array.isArray(rawType) && rawType.every(type => Util.equals(type, [
-        'category-channel', 'channel', 'text-channel', 'thread-channel', 'stage-channel', 'voice-channel',
-    ]))) return {
+    if (type === SlashCommandOptionType.Channel
+        && Array.isArray(rawType)
+        && rawType.every((type): type is ChannelTypeMapKey => Util.equals(type, channelTypeMapKeys))
+    ) return {
         type,
         ...defaultData,
-        channelTypes: Util.filterNullishItems(rawType.map(type => channelTypeMap[type as ChannelTypeMapKey]).flat()),
+        channelTypes: rawType.map(type => channelTypeMap[type]).flat(),
     };
 
     if (type === SlashCommandOptionType.String) return {
