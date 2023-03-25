@@ -27,7 +27,7 @@
 	"dependencies": {
 		"better-ms": "^1.1.7",
 		"common-tags": "^1.8.2",
-		"discord.js": "14.7.1",
+		"discord.js": "^14.8.0",
 		"emoji-regex": "^10.2.1",
 		"lodash": "^4.17.21",
 		"mongoose": "^6.10.4",

@@ -90,7 +90,7 @@ export default class CommandoRegistry {
         const { client, commands } = this;
         const { application, options, guilds } = client as CommandoClient<true>;
 
-        const testAppGuild = await guilds.fetch(options.testAppGuild ?? '').catch(() => null);
+        const testAppGuild = await guilds.fetch(options.testAppGuild ?? '0').catch(() => null);
         const registeredCommands = await Promise.all([
             testAppGuild?.commands.fetch(),
             application.commands.fetch(),
@@ -139,6 +139,7 @@ export default class CommandoRegistry {
                 return;
             }
             if (!registeredCommand.equals(rawCommand as APIApplicationCommand)) {
+                // @ts-expect-error: ChannelType.GuildDirectory is never used
                 await registeredCommand.edit(rawCommand);
                 return;
             }

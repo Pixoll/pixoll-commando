@@ -144,6 +144,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
             const apiName = name.replace(/[A-Z]/g, '-$&').toLowerCase();
             const value = isSubCommand
                 ? optionsManager[getOptionName]()
+                // @ts-expect-error: signatures are compatible
                 : optionsManager[getOptionName](apiName);
 
             if (args[argName] || (isSubCommand && name !== value)) continue;
