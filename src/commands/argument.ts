@@ -509,7 +509,7 @@ export default class Argument<T extends ArgumentTypeString = ArgumentTypeString>
         if (!this.type || (!this.type && this.validator)) {
             throw new Error('Argument must have both validate and parse since it doesn\'t have a type.');
         }
-        const validator = this.validator ?? this.type.validate;
+        const validator = this.validator?.bind(this) ?? this.type.validate.bind(this.type);
         const valid = validator(value, originalMessage, this, currentMessage);
 
         if (!valid || typeof valid === 'string') return this.error || valid;
