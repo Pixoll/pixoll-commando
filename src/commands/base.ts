@@ -933,6 +933,7 @@ export default abstract class Command<
             autogenerateSlashCommand,
             name,
             nameLocalizations = null,
+            nsfw,
             description,
             descriptionLocalizations = null,
             userPermissions,
@@ -951,7 +952,8 @@ export default abstract class Command<
             .setDescription(description)
             .setDescriptionLocalizations(descriptionLocalizations)
             .setDMPermission(!testAppCommand ? !guildOnly : null)
-            .setDefaultMemberPermissions(memberPermissions);
+            .setDefaultMemberPermissions(memberPermissions)
+            .setNSFW(!!nsfw);
 
         if (slashOptions || args) {
             const options = slashOptions ?? (autogenerateSlashCommand && args
