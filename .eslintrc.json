@@ -1,13 +1,22 @@
 {
     "env": {
         "commonjs": true,
-        "es2021": true,
+        "es2022": true,
         "node": true
     },
-    "extends": "eslint:recommended",
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended"
+    ],
+    "parser": "@typescript-eslint/parser",
     "parserOptions": {
-        "ecmaVersion": "latest"
+        "ecmaVersion": "latest",
+        "sourceType": "module",
+        "project": "./tsconfig.json"
     },
+    "plugins": [
+        "@typescript-eslint"
+    ],
     "rules": {
         "comma-dangle": [
             "error",
@@ -19,9 +28,7 @@
                 "functions": "never"
             }
         ],
-        "eol-last": [
-            "warn"
-        ],
+        "eol-last": "warn",
         "indent": [
             "warn",
             4,
@@ -35,47 +42,27 @@
                 "code": 125
             }
         ],
-        "multiline-ternary": [
-            "off"
-        ],
-        "new-cap": [
-            "error"
-        ],
-        "no-var": [
-            "error"
-        ],
+        "new-cap": "error",
+        "no-var": "error",
         "operator-linebreak": [
             "error",
             "before"
-        ],
-        "semi": [
-            "error"
-        ],
-        "space-before-function-paren": [
-            "off"
         ],
         "quotes": [
             "warn",
             "single"
         ],
-        "no-unused-vars": [
-            "error"
-        ],
+        "no-unused-vars": "off",
+        "@typescript-eslint/no-unused-vars": "error",
         "no-multiple-empty-lines": [
             "warn",
             {
                 "max": 1
             }
         ],
-        "eqeqeq": [
-            "error"
-        ],
-        "prefer-const": [
-            "error"
-        ],
-        "camelcase": [
-            "warn"
-        ],
+        "eqeqeq": "error",
+        "prefer-const": "error",
+        "camelcase": "warn",
         "object-property-newline": [
             "error",
             {
@@ -86,60 +73,35 @@
             "error",
             "consistent"
         ],
-        "no-duplicate-imports": [
-            "error"
+        "no-duplicate-imports": "error",
+        "max-depth": [
+            "error",
+            3
         ],
         "no-await-in-loop": [
             "error"
-        ]
-    },
-    "overrides": [
-        {
-            "files": [
-                "*.ts"
-            ],
-            "extends": [
-                "eslint:recommended",
-                "plugin:@typescript-eslint/recommended"
-            ],
-            "parser": "@typescript-eslint/parser",
-            "parserOptions": {
-                "ecmaVersion": "latest",
-                "sourceType": "module",
-                "project": [
-                    "./tsconfig.json",
-                    "./tsconfig.eslint.json"
-                ]
-            },
-            "plugins": [
-                "@typescript-eslint"
-            ],
-            "rules": {
-                "@typescript-eslint/array-type": [
-                    "error",
-                    {
-                        "default": "array-simple"
-                    }
-                ],
-                "@typescript-eslint/consistent-type-assertions": [
-                    "error",
-                    {
-                        "assertionStyle": "as",
-                        "objectLiteralTypeAssertions": "allow-as-parameter"
-                    }
-                ],
-                "@typescript-eslint/explicit-function-return-type": "error",
-                "@typescript-eslint/no-redundant-type-constituents": "error",
-                "@typescript-eslint/prefer-reduce-type-parameter": "error",
-                "@typescript-eslint/prefer-return-this-type": "error",
-                "@typescript-eslint/sort-type-union-intersection-members": "warn",
-                "@typescript-eslint/member-delimiter-style": "error",
-                "semi": [
-                    "off"
-                ],
-                "@typescript-eslint/semi": "error",
-                "@typescript-eslint/explicit-member-accessibility": "error"
+        ],
+        "@typescript-eslint/array-type": [
+            "error",
+            {
+                "default": "array-simple"
             }
-        }
-    ]
+        ],
+        "@typescript-eslint/consistent-type-assertions": [
+            "error",
+            {
+                "assertionStyle": "as",
+                "objectLiteralTypeAssertions": "allow-as-parameter"
+            }
+        ],
+        "@typescript-eslint/explicit-function-return-type": "error",
+        "@typescript-eslint/no-redundant-type-constituents": "error",
+        "@typescript-eslint/prefer-reduce-type-parameter": "error",
+        "@typescript-eslint/prefer-return-this-type": "error",
+        "@typescript-eslint/sort-type-union-intersection-members": "warn",
+        "@typescript-eslint/member-delimiter-style": "error",
+        "@typescript-eslint/semi": "error",
+        "@typescript-eslint/explicit-member-accessibility": "error",
+        "@typescript-eslint/no-explicit-any": "error"
+    }
 }
