@@ -161,7 +161,6 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
     /** Runs the command */
     public async run(): Promise<void> {
         const { command, channelId, channel: tempChannel, guild, author, guildId, client } = this;
-        const { groupId, memberName } = command;
         const clientUser = client.user;
         const channel = tempChannel ?? await client.channels.fetch(channelId) as CommandContextChannel<false>;
 
@@ -252,7 +251,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
         // Run the command
         try {
             const location = guildId ? `${guildId}:${channelId}` : `DM:${author.id}`;
-            client.emit('debug', `Running slash command "${groupId}:${memberName}" at "${location}".`);
+            client.emit('debug', `Running slash command "${command.toString()}" at "${location}".`);
             await this.deferReply({ ephemeral: command.slashCommand?.deferEphemeral });
             const promise = command.run(this, args);
 

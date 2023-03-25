@@ -798,7 +798,7 @@ export default abstract class Command<
     }
 
     public toString(): string {
-        return this.name;
+        return `${this.groupId}:${this.memberName}`;
     }
 
     /**

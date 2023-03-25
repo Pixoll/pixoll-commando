@@ -181,10 +181,8 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
     /** Runs the command */
     public async run(): Promise<CommandoMessageResponse> {
         const { guild, guildId, channel, channelId, author, client, command, patternMatches, argString } = this;
-        if (!command) return null;
-
-        const { groupId, memberName } = command;
         const { user: clientUser } = client;
+        if (!command) return null;
 
         if (guild && !channel.isDMBased()) {
             const { members } = guild;
@@ -290,7 +288,7 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
         if (throttle) throttle.usages++;
         try {
             const location = guildId ? `${guildId}:${channelId}` : `DM:${author.id}`;
-            client.emit('debug', `Running message command "${groupId}:${memberName}" at "${location}".`);
+            client.emit('debug', `Running message command "${command.toString()}" at "${location}".`);
             await channel.sendTyping().catch(() => null);
             const promise = command.run(this, args, fromPattern, collResult);
 

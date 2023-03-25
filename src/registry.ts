@@ -414,7 +414,7 @@ export default class CommandoRegistry {
         if (unknown) this.unknownCommand = command;
 
         client.emit('commandReregister', command, oldCommand);
-        client.emit('debug', `Reregistered command ${groupId}:${memberName}.`);
+        client.emit('debug', `Reregistered command ${command.toString()}.`);
     }
 
     /**
@@ -423,14 +423,14 @@ export default class CommandoRegistry {
      */
     public unregisterCommand(command: Command): void {
         const { commands, unknownCommand, client } = this;
-        const { name, groupId, memberName } = command;
+        const { name } = command;
 
         commands.delete(name);
         command.group.commands.delete(name);
         if (unknownCommand === command) this.unknownCommand = null;
 
         client.emit('commandUnregister', command);
-        client.emit('debug', `Unregistered command ${groupId}:${memberName}.`);
+        client.emit('debug', `Unregistered command ${command.toString()}.`);
     }
 
     /**
@@ -541,13 +541,13 @@ function commandFilterExact(search: string) {
     return (cmd: Command): boolean =>
         cmd.name === search
         || cmd.aliases?.some(ali => ali === search)
-        || `${cmd.groupId}:${cmd.memberName}` === search;
+        || cmd.toString() === search;
 }
 
 function commandFilterInexact(search: string) {
     return (cmd: Command): boolean =>
         cmd.name.includes(search)
-        || `${cmd.groupId}:${cmd.memberName}` === search
+        || cmd.toString() === search
         || cmd.aliases?.some(ali => ali.includes(search));
 }
 
