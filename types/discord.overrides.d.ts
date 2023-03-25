@@ -1,4 +1,4 @@
-import type { AddGuildMemberOptions, AddOrRemoveGuildMemberRoleOptions, AutocompleteInteraction, AutoModerationActionExecution, AutoModerationRule, BanOptions, BaseFetchOptions, ButtonInteraction, CachedManager, CacheType, CacheTypeReducer, CategoryChannel, ChannelPosition, ChannelSelectMenuInteraction, ChannelType, ChatInputCommandInteraction, ClientEvents, Collection, CommandInteraction, ContextMenuCommandInteraction, CreateRoleOptions, DMChannel, EditRoleOptions, FetchChannelOptions, FetchGuildOptions, FetchGuildsOptions, FetchMemberOptions, FetchMembersOptions, ForumChannel, Guild, GuildBan, GuildChannel, GuildChannelCreateOptions, GuildChannelEditOptions, GuildChannelTypes, GuildCreateOptions, GuildEmoji, GuildEmojiCreateOptions, GuildEmojiEditData, GuildListMembersOptions, GuildMember, GuildMemberEditData, GuildMemberResolvable, GuildPruneMembersOptions, GuildResolvable, GuildScheduledEvent, GuildScheduledEventStatus, GuildSearchMembersOptions, If, Invite, MentionableSelectMenuInteraction, Message, MessageComponentInteraction, MessageContextMenuCommandInteraction, MessageReaction, ModalMessageModalSubmitInteraction, ModalSubmitInteraction, NewsChannel, OAuth2Guild, PartialGroupDMChannel, Partialize, Presence, PrivateThreadChannel, PublicThreadChannel, ReactionEmoji, Role, RolePosition, RoleSelectMenuInteraction, SetChannelPositionOptions, SetRolePositionOptions, Snowflake, StageChannel, StageInstance, Sticker, StringSelectMenuInteraction, TextChannel, TextChannelType, ThreadChannel, ThreadMember, Typing, User, UserContextMenuCommandInteraction, UserResolvable, UserSelectMenuInteraction, VoiceChannel, VoiceState, Webhook, WebhookCreateOptions } from 'discord.js';
+import type { AddGuildMemberOptions, AddOrRemoveGuildMemberRoleOptions, AutocompleteInteraction, AutoModerationActionExecution, AutoModerationRule, BanOptions, BaseFetchOptions, ButtonInteraction, CachedManager, CacheType, CacheTypeReducer, CategoryChannel, ChannelPosition, ChannelSelectMenuInteraction, ChannelType, ChatInputCommandInteraction, ClientEvents, Collection, CommandInteraction, ContextMenuCommandInteraction, DMChannel, FetchChannelOptions, FetchGuildOptions, FetchGuildsOptions, FetchMemberOptions, FetchMembersOptions, ForumChannel, Guild, GuildBan, GuildChannel, GuildChannelCreateOptions, GuildChannelEditOptions, GuildChannelTypes, GuildCreateOptions, GuildEmoji, GuildEmojiCreateOptions, GuildEmojiEditOptions, GuildListMembersOptions, GuildMember, GuildMemberEditOptions, GuildMemberResolvable, GuildPruneMembersOptions, GuildResolvable, GuildScheduledEvent, GuildScheduledEventStatus, GuildSearchMembersOptions, If, Invite, MentionableSelectMenuInteraction, Message, MessageComponentInteraction, MessageContextMenuCommandInteraction, MessageReaction, ModalMessageModalSubmitInteraction, ModalSubmitInteraction, NewsChannel, OAuth2Guild, PartialGroupDMChannel, Partialize, Presence, PrivateThreadChannel, PublicThreadChannel, ReactionEmoji, Role, RoleCreateOptions, RoleEditOptions, RolePosition, RoleSelectMenuInteraction, SetChannelPositionOptions, SetRolePositionOptions, Snowflake, StageChannel, StageInstance, Sticker, StringSelectMenuInteraction, TextChannel, TextChannelType, ThreadChannel, ThreadMember, Typing, User, UserContextMenuCommandInteraction, UserResolvable, UserSelectMenuInteraction, VoiceChannel, VoiceState, Webhook, WebhookCreateOptions } from 'discord.js';
 import type CommandoClient from './client';
 import type CommandoGuild from './extensions/guild';
 import CommandoMessage from './extensions/message';
@@ -132,7 +132,7 @@ export declare class CommandoGuildEmojiManager extends BaseCommandoGuildEmojiMan
     fetch(id?: undefined, options?: BaseFetchOptions): Promise<Collection<Snowflake, CommandoGuildEmoji>>;
     fetchAuthor(emoji: CommandoEmojiResolvable): Promise<CommandoUser>;
     delete(emoji: CommandoEmojiResolvable, reason?: string): Promise<void>;
-    edit(emoji: CommandoEmojiResolvable, data: GuildEmojiEditData): Promise<CommandoGuildEmoji>;
+    edit(emoji: CommandoEmojiResolvable, options: GuildEmojiEditOptions): Promise<CommandoGuildEmoji>;
 }
 export type CommandoEmojiResolvable = CommandoGuildEmoji | ReactionEmoji | string;
 export declare class CommandoGuildMemberManager extends CachedManager<Snowflake, CommandoGuildMember, CommandoGuildMemberResolvable> {
@@ -143,7 +143,7 @@ export declare class CommandoGuildMemberManager extends CachedManager<Snowflake,
     }): Promise<CommandoGuildMember | null>;
     add(user: CommandoUserResolvable, options: AddGuildMemberOptions): Promise<CommandoGuildMember>;
     ban(user: CommandoUserResolvable, options?: BanOptions): Promise<CommandoGuildMember | CommandoUser | Snowflake>;
-    edit(user: CommandoUserResolvable, data: GuildMemberEditData): Promise<CommandoGuildMember>;
+    edit(user: CommandoUserResolvable, options: GuildMemberEditOptions): Promise<CommandoGuildMember>;
     fetch(options: CommandoUserResolvable | FetchCommandoMemberOptions | (FetchMembersOptions & {
         user: CommandoUserResolvable;
     })): Promise<CommandoGuildMember>;
@@ -177,8 +177,8 @@ export declare class CommandoRoleManager extends CachedManager<Snowflake, Comman
     botRoleFor(user: CommandoUserResolvable): CommandoRole | null;
     fetch(id: Snowflake, options?: BaseFetchOptions): Promise<CommandoRole | null>;
     fetch(id?: undefined, options?: BaseFetchOptions): Promise<Collection<Snowflake, CommandoRole>>;
-    create(options?: CreateRoleOptions): Promise<CommandoRole>;
-    edit(role: CommandoRoleResolvable, options: EditRoleOptions): Promise<CommandoRole>;
+    create(options?: RoleCreateOptions): Promise<CommandoRole>;
+    edit(role: CommandoRoleResolvable, options: RoleEditOptions): Promise<CommandoRole>;
     delete(role: CommandoRoleResolvable, reason?: string): Promise<void>;
     setPosition(role: CommandoRoleResolvable, position: number, options?: SetRolePositionOptions): Promise<CommandoRole>;
     setPositions(rolePositions: readonly RolePosition[]): Promise<CommandoGuild>;
@@ -496,4 +496,4 @@ export interface CommandoUserSelectMenuInteraction<Cached extends CacheType = Ca
 export type AnyCommandoSelectMenuInteraction<Cached extends CacheType = CacheType> = CommandoChannelSelectMenuInteraction<Cached> | CommandoMentionableSelectMenuInteraction<Cached> | CommandoRoleSelectMenuInteraction<Cached> | CommandoStringSelectMenuInteraction<Cached> | CommandoUserSelectMenuInteraction<Cached>;
 export type CommandoifiedInteraction<Cached extends CacheType = CacheType> = AnyCommandoSelectMenuInteraction<Cached> | CommandoAutocompleteInteraction<Cached> | CommandoButtonInteraction<Cached> | CommandoChatInputCommandInteraction<Cached> | CommandoMessageContextMenuCommandInteraction<Cached> | CommandoModalSubmitInteraction<Cached> | CommandoUserContextMenuCommandInteraction<Cached>;
 export type CommandoRepliableInteraction<Cached extends CacheType = CacheType> = Exclude<CommandoifiedInteraction<Cached>, CommandoAutocompleteInteraction<Cached>>;
-export type CommandContextChannel<CanBeNull extends boolean, InGuild extends boolean = boolean> = Exclude<If<InGuild, CommandoGuildTextBasedChannel, CommandoTextBasedChannel | If<CanBeNull, null, never>>, CommandoStageChannel>;
+export type CommandContextChannel<CanBeNull extends boolean, InGuild extends boolean = boolean> = If<InGuild, CommandoGuildTextBasedChannel, CommandoTextBasedChannel | If<CanBeNull, null, never>>;

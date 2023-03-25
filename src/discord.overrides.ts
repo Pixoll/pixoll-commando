@@ -19,9 +19,7 @@ import type {
     Collection,
     CommandInteraction,
     ContextMenuCommandInteraction,
-    CreateRoleOptions,
     DMChannel,
-    EditRoleOptions,
     FetchChannelOptions,
     FetchGuildOptions,
     FetchGuildsOptions,
@@ -37,10 +35,10 @@ import type {
     GuildCreateOptions,
     GuildEmoji,
     GuildEmojiCreateOptions,
-    GuildEmojiEditData,
+    GuildEmojiEditOptions,
     GuildListMembersOptions,
     GuildMember,
-    GuildMemberEditData,
+    GuildMemberEditOptions,
     GuildMemberResolvable,
     GuildPruneMembersOptions,
     GuildResolvable,
@@ -65,6 +63,8 @@ import type {
     PublicThreadChannel,
     ReactionEmoji,
     Role,
+    RoleCreateOptions,
+    RoleEditOptions,
     RolePosition,
     RoleSelectMenuInteraction,
     SetChannelPositionOptions,
@@ -245,7 +245,7 @@ export declare class CommandoGuildEmojiManager extends BaseCommandoGuildEmojiMan
     public fetch(id?: undefined, options?: BaseFetchOptions): Promise<Collection<Snowflake, CommandoGuildEmoji>>;
     public fetchAuthor(emoji: CommandoEmojiResolvable): Promise<CommandoUser>;
     public delete(emoji: CommandoEmojiResolvable, reason?: string): Promise<void>;
-    public edit(emoji: CommandoEmojiResolvable, data: GuildEmojiEditData): Promise<CommandoGuildEmoji>;
+    public edit(emoji: CommandoEmojiResolvable, options: GuildEmojiEditOptions): Promise<CommandoGuildEmoji>;
 }
 
 export type CommandoEmojiResolvable = CommandoGuildEmoji | ReactionEmoji | string;
@@ -261,7 +261,7 @@ export declare class CommandoGuildMemberManager extends CachedManager<
     ): Promise<CommandoGuildMember | null>;
     public add(user: CommandoUserResolvable, options: AddGuildMemberOptions): Promise<CommandoGuildMember>;
     public ban(user: CommandoUserResolvable, options?: BanOptions): Promise<CommandoGuildMember | CommandoUser | Snowflake>;
-    public edit(user: CommandoUserResolvable, data: GuildMemberEditData): Promise<CommandoGuildMember>;
+    public edit(user: CommandoUserResolvable, options: GuildMemberEditOptions): Promise<CommandoGuildMember>;
     public fetch(
         options: CommandoUserResolvable
             | FetchCommandoMemberOptions
@@ -306,8 +306,8 @@ export declare class CommandoRoleManager extends CachedManager<Snowflake, Comman
     public botRoleFor(user: CommandoUserResolvable): CommandoRole | null;
     public fetch(id: Snowflake, options?: BaseFetchOptions): Promise<CommandoRole | null>;
     public fetch(id?: undefined, options?: BaseFetchOptions): Promise<Collection<Snowflake, CommandoRole>>;
-    public create(options?: CreateRoleOptions): Promise<CommandoRole>;
-    public edit(role: CommandoRoleResolvable, options: EditRoleOptions): Promise<CommandoRole>;
+    public create(options?: RoleCreateOptions): Promise<CommandoRole>;
+    public edit(role: CommandoRoleResolvable, options: RoleEditOptions): Promise<CommandoRole>;
     public delete(role: CommandoRoleResolvable, reason?: string): Promise<void>;
     public setPosition(
         role: CommandoRoleResolvable, position: number, options?: SetRolePositionOptions
@@ -792,7 +792,8 @@ export type CommandoRepliableInteraction<Cached extends CacheType = CacheType> =
     CommandoAutocompleteInteraction<Cached>
 >;
 
-export type CommandContextChannel<CanBeNull extends boolean, InGuild extends boolean = boolean> = Exclude<
-    If<InGuild, CommandoGuildTextBasedChannel, CommandoTextBasedChannel | If<CanBeNull, null, never>>,
-    CommandoStageChannel
+export type CommandContextChannel<CanBeNull extends boolean, InGuild extends boolean = boolean> = If<
+    InGuild,
+    CommandoGuildTextBasedChannel,
+    CommandoTextBasedChannel | If<CanBeNull, null, never>
 >;
