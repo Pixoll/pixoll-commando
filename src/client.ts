@@ -1,6 +1,5 @@
 import {
     Awaitable,
-    ChannelType,
     Client,
     ClientOptions,
     Collection,
@@ -257,13 +256,12 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
             this.emit('error', err);
         };
         this.on('messageCreate', async message => {
-            if (message.channel.type === ChannelType.GuildStageVoice) return;
             const commando = new CommandoMessage(this as CommandoClient<true>, message);
             // @ts-expect-error: handleMessage is protected in CommandDispatcher
             await this.dispatcher.handleMessage(commando).catch(catchErr);
         });
         this.on('messageUpdate', async (oldMessage, newMessage) => {
-            if (newMessage.partial || newMessage.channel.type === ChannelType.GuildStageVoice) return;
+            if (newMessage.partial) return;
             const newCommando = new CommandoMessage(this as CommandoClient<true>, newMessage);
             // @ts-expect-error: handleMessage is protected in CommandDispatcher
             await this.dispatcher.handleMessage(newCommando, oldMessage).catch(catchErr);
@@ -282,7 +280,6 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
             this.registry.registerApplicationCommands()
         );
         this.on('interactionCreate', interaction => {
-            if (interaction.channel?.type === ChannelType.GuildStageVoice) return;
             const parsedInteraction = interaction.isChatInputCommand()
                 ? new CommandoInteraction(this as CommandoClient<true>, interaction)
                 : interaction;
