@@ -1,7 +1,6 @@
 /// <reference types="node" />
 import { Message, PermissionsString, User, ApplicationCommandOptionType as SlashCommandOptionType, ChatInputApplicationCommandData, RESTPostAPIContextMenuApplicationCommandsJSONBody as APIContextMenuCommand, RESTPostAPIChatInputApplicationCommandsJSONBody as RESTPostAPISlashCommand, Awaitable, ContextMenuCommandType, LocalizationMap } from 'discord.js';
 import ArgumentCollector, { ArgumentCollectorResult, ParseRawArguments } from './collector';
-import { Require } from '../util';
 import CommandoClient from '../client';
 import CommandGroup from './group';
 import { ArgumentInfo, ArgumentInfoResolvable } from './argument';
@@ -192,12 +191,13 @@ export interface CommandBlockData {
      */
     missing?: PermissionsString[];
 }
-type OmittedChatInputDataKeys = 'defaultMemberPermissions' | 'description' | 'descriptionLocalizations' | 'dmPermission' | 'name' | 'nameLocalizations' | 'type';
+type OmittedChatInputDataKeys = 'defaultMemberPermissions' | 'description' | 'descriptionLocalizations' | 'dmPermission' | 'name' | 'nameLocalizations' | 'nsfw' | 'type';
+type OmittedAPISlashCommandKeys = 'default_member_permissions' | 'description_localizations' | 'description' | 'dm_permission' | 'name_localizations' | 'name' | 'nsfw' | 'type';
 export interface SlashCommandInfo extends Omit<ChatInputApplicationCommandData, OmittedChatInputDataKeys> {
     /** Whether the deferred reply should be ephemeral or not */
     deferEphemeral?: boolean;
 }
-export type APISlashCommand = Require<RESTPostAPISlashCommand, 'type'> & Required<Pick<SlashCommandInfo, 'deferEphemeral'>>;
+export type APISlashCommand = Pick<RESTPostAPISlashCommand, OmittedAPISlashCommandKeys | 'options'> & Required<Pick<SlashCommandInfo, 'deferEphemeral'>>;
 declare const argumentTypeToSlashMap: {
     readonly boolean: SlashCommandOptionType.Boolean;
     readonly 'category-channel': SlashCommandOptionType.Channel;

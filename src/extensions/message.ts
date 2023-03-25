@@ -30,7 +30,7 @@ export type ResponseType =
     | 'reply';
 
 export type StringResolvable =
-    | MessageCreateOptions
+    | Omit<MessageCreateOptions, 'flags'>
     | string;
 
 export interface ResponseOptions {
@@ -39,7 +39,7 @@ export interface ResponseOptions {
     /** Content of the response */
     content?: StringResolvable | null;
     /** Options of the response */
-    options?: MessageCreateOptions;
+    options?: Omit<MessageCreateOptions, 'flags'>;
     /** Language of the response, if its type is `code` */
     lang?: string;
     /** If the response is from an edited message */
@@ -398,7 +398,7 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    public say(content: StringResolvable, options?: MessageCreateOptions): Promise<CommandoMessageResponse> {
+    public say(content: StringResolvable, options?: ResponseOptions['options']): Promise<CommandoMessageResponse> {
         let msgContent: StringResolvable | null = content;
         if (!options && typeof content === 'object' && !Array.isArray(content)) {
             options = content;
@@ -413,7 +413,7 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    public direct(content: StringResolvable, options?: MessageCreateOptions): Promise<CommandoMessageResponse> {
+    public direct(content: StringResolvable, options?: ResponseOptions['options']): Promise<CommandoMessageResponse> {
         let msgContent: StringResolvable | null = content;
         if (!options && typeof content === 'object' && !Array.isArray(content)) {
             options = content;
@@ -429,7 +429,9 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    public code(lang: string, content: StringResolvable, options?: MessageCreateOptions): Promise<CommandoMessageResponse> {
+    public code(
+        lang: string, content: StringResolvable, options?: ResponseOptions['options']
+    ): Promise<CommandoMessageResponse> {
         let msgContent: StringResolvable | null = content;
         if (!options && typeof content === 'object' && !Array.isArray(content)) {
             options = content;
@@ -446,7 +448,7 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
      * @param options - Options for the message
      */
     public embed(
-        embed: EmbedBuilder | EmbedBuilder[], content: StringResolvable = '', options?: MessageCreateOptions
+        embed: EmbedBuilder | EmbedBuilder[], content: StringResolvable = '', options?: ResponseOptions['options']
     ): Promise<CommandoMessageResponse> {
         let msgContent: StringResolvable | null = content;
         if (!options && typeof content === 'object' && !Array.isArray(content)) {

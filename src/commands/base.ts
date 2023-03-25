@@ -27,7 +27,7 @@ import {
 } from 'discord.js';
 import path from 'path';
 import ArgumentCollector, { ArgumentCollectorResult, ParseRawArguments } from './collector';
-import Util, { Require } from '../util';
+import Util from '../util';
 import CommandoClient from '../client';
 import CommandGroup from './group';
 import { ArgumentInfo, ArgumentInfoResolvable } from './argument';
@@ -254,6 +254,17 @@ type OmittedChatInputDataKeys =
     | 'dmPermission'
     | 'name'
     | 'nameLocalizations'
+    | 'nsfw'
+    | 'type';
+
+type OmittedAPISlashCommandKeys =
+    | 'default_member_permissions'
+    | 'description_localizations'
+    | 'description'
+    | 'dm_permission'
+    | 'name_localizations'
+    | 'name'
+    | 'nsfw'
     | 'type';
 
 export interface SlashCommandInfo extends Omit<ChatInputApplicationCommandData, OmittedChatInputDataKeys> {
@@ -262,7 +273,7 @@ export interface SlashCommandInfo extends Omit<ChatInputApplicationCommandData, 
 }
 
 export type APISlashCommand =
-    & Require<RESTPostAPISlashCommand, 'type'>
+    & Pick<RESTPostAPISlashCommand, OmittedAPISlashCommandKeys | 'options'>
     & Required<Pick<SlashCommandInfo, 'deferEphemeral'>>;
 
 type BasicSlashCommandOptionData = Exclude<SlashCommandOptionData, {

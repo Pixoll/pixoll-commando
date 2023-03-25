@@ -6,14 +6,14 @@ import { CommandoGuildMember, CommandoifiedMessage, CommandContextChannel } from
 import CommandoInteraction from './interaction';
 /** Type of the response */
 export type ResponseType = 'code' | 'direct' | 'plain' | 'reply';
-export type StringResolvable = MessageCreateOptions | string;
+export type StringResolvable = Omit<MessageCreateOptions, 'flags'> | string;
 export interface ResponseOptions {
     /** Type of the response */
     type?: ResponseType;
     /** Content of the response */
     content?: StringResolvable | null;
     /** Options of the response */
-    options?: MessageCreateOptions;
+    options?: Omit<MessageCreateOptions, 'flags'>;
     /** Language of the response, if its type is `code` */
     lang?: string;
     /** If the response is from an edited message */
@@ -102,27 +102,27 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    say(content: StringResolvable, options?: MessageCreateOptions): Promise<CommandoMessageResponse>;
+    say(content: StringResolvable, options?: ResponseOptions['options']): Promise<CommandoMessageResponse>;
     /**
      * Responds with a direct message
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    direct(content: StringResolvable, options?: MessageCreateOptions): Promise<CommandoMessageResponse>;
+    direct(content: StringResolvable, options?: ResponseOptions['options']): Promise<CommandoMessageResponse>;
     /**
      * Responds with a code message
      * @param lang - Language for the code block
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    code(lang: string, content: StringResolvable, options?: MessageCreateOptions): Promise<CommandoMessageResponse>;
+    code(lang: string, content: StringResolvable, options?: ResponseOptions['options']): Promise<CommandoMessageResponse>;
     /**
      * Responds with an embed
      * @param embed - Embed to send
      * @param content - Content for the message
      * @param options - Options for the message
      */
-    embed(embed: EmbedBuilder | EmbedBuilder[], content?: StringResolvable, options?: MessageCreateOptions): Promise<CommandoMessageResponse>;
+    embed(embed: EmbedBuilder | EmbedBuilder[], content?: StringResolvable, options?: ResponseOptions['options']): Promise<CommandoMessageResponse>;
     /**
      * Responds with a reply + embed
      * @param embed - Embed to send
