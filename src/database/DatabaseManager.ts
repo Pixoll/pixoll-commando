@@ -207,10 +207,9 @@ export default class DatabaseManager<T extends AnySchema, IncludeId extends bool
         return (doc: JSONIfySchema<T>): boolean => {
             const objKeys = Object.keys(filter).length;
             if (objKeys === 0) return true;
-            const found: boolean[] = [];
-            for (const p of Object.keys(filter) as Array<keyof typeof filter>) {
-                found.push(isEqual(doc[p as keyof JSONIfySchema<T>], filter[p]));
-            }
+            const found = (Object.keys(filter) as Array<keyof typeof filter>).map(p =>
+                isEqual(doc[p as keyof JSONIfySchema<T>], filter[p])
+            );
             const matchesAll = found.filter(b => b === true).length === objKeys;
             return matchesAll;
         };

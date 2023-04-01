@@ -349,8 +349,7 @@ export default class CommandoRegistry {
      */
     public registerTypesIn(options: RequireAllOptions | string): this {
         const obj = requireAll(options) as Record<string, ArgumentType>;
-        const types: ArgumentType[] = [];
-        for (const type of Object.values(obj)) types.push(type);
+        const types = Object.values(obj);
         return this.registerTypes(types, true);
     }
 
