@@ -13,6 +13,8 @@ export {
 export { default as CommandDispatcher, Inhibition } from './dispatcher';
 export { default as SettingProvider } from './providers/base';
 export { default as GuildSettingsHelper } from './providers/helper';
+export { default as SQLiteProvider } from './providers/sqlite';
+export { default as SyncSQLiteProvider } from './providers/sqlite-sync';
 export {
     default as CommandoInteraction,
     SlashCommandBasicOptionsParser,
