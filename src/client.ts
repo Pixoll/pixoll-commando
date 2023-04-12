@@ -247,7 +247,7 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
      * Sets the setting provider to use, and initializes it once the client is ready
      * @param provider Provider to use
      */
-    public async setProvider(provider: Awaitable<SettingProvider>): Promise<void> {
+    public async setProvider(this: CommandoClient<true>, provider: Awaitable<SettingProvider>): Promise<void> {
         const newProvider = await provider;
         this.provider = newProvider;
 

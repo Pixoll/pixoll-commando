@@ -1,5 +1,7 @@
 import CommandoClient from '../client';
 import CommandoGuild from '../extensions/guild';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import type SettingProvider from './base';
 
 /** Helper class to use {@link SettingProvider} methods for a specific Guild */
 export default class GuildSettingsHelper {
@@ -21,11 +23,11 @@ export default class GuildSettingsHelper {
      * Gets a setting in the guild
      * @param key - Name of the setting
      * @param defaultValue - Value to default to if the setting isn't set
-     * @see {@link SettingProvider#get}
+     * @see {@link SettingProvider.get SettingProvider#get}
      */
     public get<T>(key: string, defaultValue?: T): T {
         if (!this.client.provider) throw new Error('No settings provider is available.');
-        return this.client.provider.get(this.guild, key, defaultValue);
+        return this.client.provider.get(this.guild, key, defaultValue) as T;
     }
 
     /**
@@ -33,30 +35,31 @@ export default class GuildSettingsHelper {
      * @param key - Name of the setting
      * @param value - Value of the setting
      * @returns New value of the setting
-     * @see {@link SettingProvider#set}
+     * @see {@link SettingProvider.set SettingProvider#set}
      */
     public set<T>(key: string, value: T): Promise<T> {
         if (!this.client.provider) throw new Error('No settings provider is available.');
-        return this.client.provider.set(this.guild, key, value);
+        return this.client.provider.set(this.guild, key, value) as Promise<T>;
     }
 
     /**
      * Removes a setting from the guild
      * @param key - Name of the setting
      * @returns Old value of the setting
-     * @see {@link SettingProvider#remove}
+     * @see {@link SettingProvider.remove SettingProvider#remove}
      */
     public remove<T>(key: string): Promise<T> {
         if (!this.client.provider) throw new Error('No settings provider is available.');
-        return this.client.provider.remove(this.guild, key);
+        return this.client.provider.remove(this.guild, key) as Promise<T>;
     }
 
     /**
      * Removes all settings in the guild
-     * @see {@link SettingProvider#clear}
+     * @see {@link SettingProvider.clear SettingProvider#clear}
      */
-    public clear(): Promise<void> {
+    public async clear(): Promise<void> {
         if (!this.client.provider) throw new Error('No settings provider is available.');
-        return this.client.provider.clear(this.guild);
+        await this.client.provider.clear(this.guild);
+        return;
     }
 }

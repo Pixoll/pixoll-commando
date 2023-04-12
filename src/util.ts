@@ -6,6 +6,8 @@ import { JSONIfySchema, SchemaResolvable } from './database/Schemas';
 import CommandoGuild from './extensions/guild';
 import CommandoMessage from './extensions/message';
 
+export type Nullable<T> = T | null | undefined;
+
 export type Tuple<T, N extends number, R extends T[] = []> = R['length'] extends N ? R : Tuple<T, N, [T, ...R]>;
 
 export type Require<T extends object, K extends keyof T = keyof T, Expand extends boolean = true> = Expand extends true

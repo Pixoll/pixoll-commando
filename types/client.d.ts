@@ -141,7 +141,7 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
      * Sets the setting provider to use, and initializes it once the client is ready
      * @param provider Provider to use
      */
-    setProvider(provider: Awaitable<SettingProvider>): Promise<void>;
+    setProvider(this: CommandoClient<true>, provider: Awaitable<SettingProvider>): Promise<void>;
     awaitEvent<K extends keyof CommandoClientEvents>(event: K, listener: (this: CommandoClient, ...args: CommandoClientEvents[K]) => unknown): Promise<this>;
     /** Initializes all default listeners that make the client work. */
     protected initDefaultListeners(): void;

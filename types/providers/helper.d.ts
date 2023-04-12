@@ -15,7 +15,7 @@ export default class GuildSettingsHelper {
      * Gets a setting in the guild
      * @param key - Name of the setting
      * @param defaultValue - Value to default to if the setting isn't set
-     * @see {@link SettingProvider#get}
+     * @see {@link SettingProvider.get SettingProvider#get}
      */
     get<T>(key: string, defaultValue?: T): T;
     /**
@@ -23,19 +23,19 @@ export default class GuildSettingsHelper {
      * @param key - Name of the setting
      * @param value - Value of the setting
      * @returns New value of the setting
-     * @see {@link SettingProvider#set}
+     * @see {@link SettingProvider.set SettingProvider#set}
      */
     set<T>(key: string, value: T): Promise<T>;
     /**
      * Removes a setting from the guild
      * @param key - Name of the setting
      * @returns Old value of the setting
-     * @see {@link SettingProvider#remove}
+     * @see {@link SettingProvider.remove SettingProvider#remove}
      */
     remove<T>(key: string): Promise<T>;
     /**
      * Removes all settings in the guild
-     * @see {@link SettingProvider#clear}
+     * @see {@link SettingProvider.clear SettingProvider#clear}
      */
     clear(): Promise<void>;
 }
