@@ -11,6 +11,8 @@ export {
     RequireAllOptions,
 } from './registry';
 export { default as CommandDispatcher, Inhibition } from './dispatcher';
+export { default as SettingProvider } from './providers/base';
+export { default as GuildSettingsHelper } from './providers/helper';
 export {
     default as CommandoInteraction,
     SlashCommandBasicOptionsParser,
