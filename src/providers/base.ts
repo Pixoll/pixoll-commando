@@ -5,7 +5,7 @@ import { CommandoGuildResolvable } from '../discord.overrides';
 /** Loads and stores settings associated with guilds */
 export default abstract class SettingProvider<Settings extends Record<string, unknown> = Record<string, unknown>> {
     /** Settings cached in memory, mapped by guild ID (or 'global') */
-    public settings: Map<string, Readonly<Settings>>;
+    protected settings: Map<string, Settings>;
 
     public constructor() {
         this.settings = new Map();

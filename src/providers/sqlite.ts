@@ -154,7 +154,6 @@ export default class SQLiteProvider<
             this.settings.set(guild, settings);
         }
 
-        // @ts-expect-error: only write inside the package
         settings[key] = value;
         await this.insertOrReplaceStatement?.run(guild !== 'global' ? guild : 0, JSON.stringify(settings));
         if (guild === 'global') this.updateOtherShards(key, value);
@@ -169,7 +168,7 @@ export default class SQLiteProvider<
         if (!settings || typeof settings[key] === 'undefined') return;
 
         const value = settings[key];
-        // @ts-expect-error: only write inside the package
+        // @ts-expect-error: setting the value to undefined is intended behaviour
         settings[key] = undefined;
         await this.insertOrReplaceStatement?.run(guild !== 'global' ? guild : 0, JSON.stringify(settings));
         if (guild === 'global') this.updateOtherShards(key, undefined);
@@ -244,21 +243,21 @@ export default class SQLiteProvider<
         const { shard } = this.client;
         if (!shard) return;
 
+        const { ids } = shard;
         const stringKey = JSON.stringify(key);
         const stringValue = typeof value !== 'undefined' ? JSON.stringify(value) : 'undefined';
 
         // @ts-expect-error: client type override
         shard.broadcastEval((client: CommandoClient) => {
-            const { ids } = shard;
-            if (!client.shard?.ids.some(id => ids.includes(id)) && client.provider && client.provider.settings) {
-                let global = client.provider.settings.get('global');
-                if (!global) {
-                    global = {};
-                    client.provider.settings.set('global', global);
-                }
-                // @ts-expect-error: only write inside the package
-                global[stringKey] = stringValue;
+            // @ts-expect-error: settings is protected in SettingProvider
+            const settings = client.provider?.settings;
+            if (client.shard?.ids.some(id => ids.includes(id)) || !settings) return;
+            let global = settings.get('global');
+            if (!global) {
+                global = {};
+                settings.set('global', global);
             }
+            global[stringKey] = stringValue;
         });
     }
 }
