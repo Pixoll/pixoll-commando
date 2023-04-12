@@ -33,6 +33,8 @@ import Command, { CommandBlockData, CommandBlockReason, CommandContext } from '.
 import { ArgumentCollectorResult } from './commands/collector';
 import ArgumentType from './types/base';
 import CommandGroup from './commands/group';
+import SettingProvider from './providers/base';
+import GuildSettingsHelper from './providers/helper';
 
 export interface CommandoClientOptions extends ClientOptions {
     /**
@@ -99,6 +101,7 @@ export interface CommandoClientEvents extends OverwrittenClientEvents {
     groupStatusChange: [guild: CommandoGuild | null, group: CommandGroup, enabled: boolean];
     guildsReady: [client: CommandoClient<true>];
     modulesReady: [client: CommandoClient<true>];
+    providerReady: [provider: SettingProvider];
     typeRegister: [type: ArgumentType, registry: CommandoRegistry];
     unknownCommand: [message: CommandoMessage];
 }
@@ -126,6 +129,10 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
     declare public options: Omit<CommandoClientOptions, 'intents'> & { intents: IntentsBitField };
     /** The client's command registry */
     public registry: CommandoRegistry;
+    /** The client's setting provider */
+    public provider: SettingProvider | null;
+    /** Shortcut to use setting provider methods for the global settings */
+    public settings: GuildSettingsHelper;
 
     /**
      * @param options - Options for the client
@@ -153,6 +160,9 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
 
         this.registry = new CommandoRegistry(this);
         this.dispatcher = new CommandDispatcher(this, this.registry);
+        this.provider = null;
+        // @ts-expect-error: constructor is protected in GuildSettingsHelper
+        this.settings = new GuildSettingsHelper(this, null);
         this.database = new ClientDatabaseManager(this);
         this.databases = new Collection();
         this.databaseSchemas = Schemas;
@@ -226,6 +236,49 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
 
     public isReady(): this is CommandoClient<true> {
         return super.isReady();
+    }
+
+    public async destroy(): Promise<void> {
+        super.destroy();
+        await this.provider?.destroy();
+    }
+
+    /**
+     * Sets the setting provider to use, and initializes it once the client is ready
+     * @param provider Provider to use
+     */
+    public async setProvider(provider: Awaitable<SettingProvider>): Promise<void> {
+        const newProvider = await provider;
+        this.provider = newProvider;
+
+        if (this.readyTimestamp) {
+            this.emit('debug', `Provider set to ${newProvider.constructor.name} - initializing...`);
+            await newProvider.init(this);
+            this.emit('debug', 'Provider finished initialization.');
+            return;
+        }
+
+        this.emit('debug', `Provider set to ${newProvider.constructor.name} - will initialize once ready.`);
+        await this.awaitEvent('ready', async () => {
+            this.emit('debug', 'Initializing provider...');
+            await newProvider.init(this);
+        });
+
+        this.emit('providerReady', newProvider);
+        this.emit('debug', 'Provider finished initialization.');
+        return;
+    }
+
+    public async awaitEvent<K extends keyof CommandoClientEvents>(
+        event: K, listener: (this: CommandoClient, ...args: CommandoClientEvents[K]) => unknown
+    ): Promise<this> {
+        const boundListener = listener.bind(this);
+        return await new Promise<this>(resolve => {
+            this.once(event, async (...args) => {
+                await boundListener(...args);
+                resolve(this);
+            });
+        });
     }
 
     /** Initializes all default listeners that make the client work. */

@@ -11,6 +11,8 @@ import Command, { CommandBlockData, CommandBlockReason, CommandContext } from '.
 import { ArgumentCollectorResult } from './commands/collector';
 import ArgumentType from './types/base';
 import CommandGroup from './commands/group';
+import SettingProvider from './providers/base';
+import GuildSettingsHelper from './providers/helper';
 export interface CommandoClientOptions extends ClientOptions {
     /**
      * Default command prefix
@@ -75,6 +77,7 @@ export interface CommandoClientEvents extends OverwrittenClientEvents {
     groupStatusChange: [guild: CommandoGuild | null, group: CommandGroup, enabled: boolean];
     guildsReady: [client: CommandoClient<true>];
     modulesReady: [client: CommandoClient<true>];
+    providerReady: [provider: SettingProvider];
     typeRegister: [type: ArgumentType, registry: CommandoRegistry];
     unknownCommand: [message: CommandoMessage];
 }
@@ -102,6 +105,10 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
     };
     /** The client's command registry */
     registry: CommandoRegistry;
+    /** The client's setting provider */
+    provider: SettingProvider | null;
+    /** Shortcut to use setting provider methods for the global settings */
+    settings: GuildSettingsHelper;
     /**
      * @param options - Options for the client
      */
@@ -129,6 +136,13 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
      */
     isOwner(user: UserResolvable): boolean;
     isReady(): this is CommandoClient<true>;
+    destroy(): Promise<void>;
+    /**
+     * Sets the setting provider to use, and initializes it once the client is ready
+     * @param provider Provider to use
+     */
+    setProvider(provider: Awaitable<SettingProvider>): Promise<void>;
+    awaitEvent<K extends keyof CommandoClientEvents>(event: K, listener: (this: CommandoClient, ...args: CommandoClientEvents[K]) => unknown): Promise<this>;
     /** Initializes all default listeners that make the client work. */
     protected initDefaultListeners(): void;
     /** Parses all {@link Guild} instances into {@link CommandoGuild}s. */

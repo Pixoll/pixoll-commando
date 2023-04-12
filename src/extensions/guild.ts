@@ -10,6 +10,7 @@ import {
     CommandoGuildMemberManager,
     CommandoRoleManager,
 } from '../discord.overrides';
+import GuildSettingsHelper from '../providers/helper';
 import { CommandGroupResolvable, CommandResolvable } from '../registry';
 
 /** A fancier Guild for fancier people. */
@@ -24,6 +25,8 @@ export default class CommandoGuild extends Guild {
     declare public roles: CommandoRoleManager;
     /** The database manager for the guild */
     public database: GuildDatabaseManager;
+    /** Shortcut to use setting provider methods for this guild */
+    public settings: GuildSettingsHelper;
     /** The queued logs for this guild */
     public queuedLogs: EmbedBuilder[];
     /**
@@ -47,6 +50,8 @@ export default class CommandoGuild extends Guild {
         client.emit('debug', `Created new ${this.constructor.name} with ID ${this.id}`);
 
         this.database = new GuildDatabaseManager(this);
+        // @ts-expect-error: constructor is protected in GuildSettingsHelper
+        this.settings = new GuildSettingsHelper(this.client, this);
         this.queuedLogs = [];
         this._prefix = null;
         this._commandsEnabled = new Map();

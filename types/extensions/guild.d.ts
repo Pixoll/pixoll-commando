@@ -2,6 +2,7 @@ import { Guild, User, EmbedBuilder } from 'discord.js';
 import CommandoClient from '../client';
 import GuildDatabaseManager from '../database/GuildDatabaseManager';
 import { CommandoGuildChannelManager, CommandoGuildEmojiManager, CommandoGuildMemberManager, CommandoRoleManager } from '../discord.overrides';
+import GuildSettingsHelper from '../providers/helper';
 import { CommandGroupResolvable, CommandResolvable } from '../registry';
 /** A fancier Guild for fancier people. */
 export default class CommandoGuild extends Guild {
@@ -14,6 +15,8 @@ export default class CommandoGuild extends Guild {
     roles: CommandoRoleManager;
     /** The database manager for the guild */
     database: GuildDatabaseManager;
+    /** Shortcut to use setting provider methods for this guild */
+    settings: GuildSettingsHelper;
     /** The queued logs for this guild */
     queuedLogs: EmbedBuilder[];
     /**
