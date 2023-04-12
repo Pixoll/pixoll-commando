@@ -14,6 +14,39 @@ export interface RequireAllOptions {
     resolve?: ((module: unknown) => unknown);
     recursive?: boolean;
 }
+export interface DefaultCommandsOptions {
+    /**
+     * Whether to register the built-in help command (requires "util" group and "string" type)
+     * @default true
+     */
+    help?: boolean;
+    /**
+     * Whether to register the built-in prefix command (requires "util" group and "string" type)
+     * @default true
+     */
+    prefix?: boolean;
+    /**
+     * Whether to register the built-in eval command (requires "util" group and "string" type)
+     * @default true
+     */
+    eval?: boolean;
+    /**
+     * Whether to register the built-in ping command (requires "util" group)
+     * @default true
+     */
+    ping?: boolean;
+    /**
+     * Whether to register the built-in unknown command (requires "util" group)
+     * @default true
+     */
+    unknownCommand?: boolean;
+    /**
+     * Whether to register the built-in command state commands
+     * (enable, disable, load, unload, reload, list groups - requires "commands" group, "command" type, and "group" type)
+     * @default true
+     */
+    commandState?: boolean;
+}
 /** Object specifying which types to register. All default to `true` */
 export type DefaultTypesOptions = {
     [T in ArgumentTypeString]?: boolean;
@@ -122,6 +155,22 @@ export default class CommandoRegistry {
      * @param options - The path to the directory, or a require-all options object
      */
     registerTypesIn(options: RequireAllOptions | string): this;
+    /**
+     * Registers the default argument types, groups, and commands. This is equivalent to:
+     * ```js
+     * registry.registerDefaultTypes()
+     *     .registerDefaultGroups()
+     *     .registerDefaultCommands();
+     * ```
+     */
+    registerDefaults(): this;
+    /** Registers the default groups ("util" and "commands") */
+    registerDefaultGroups(): this;
+    /**
+     * Registers the default commands to the registry
+     * @param commands - Object specifying which commands to register
+     */
+    registerDefaultCommands(commands?: DefaultCommandsOptions): this;
     /**
      * Registers the default argument types to the registry
      * @param types - Object specifying which types to register

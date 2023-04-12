@@ -27,6 +27,40 @@ export interface RequireAllOptions {
     recursive?: boolean;
 }
 
+export interface DefaultCommandsOptions {
+    /**
+     * Whether to register the built-in help command (requires "util" group and "string" type)
+     * @default true
+     */
+    help?: boolean;
+    /**
+     * Whether to register the built-in prefix command (requires "util" group and "string" type)
+     * @default true
+     */
+    prefix?: boolean;
+    /**
+     * Whether to register the built-in eval command (requires "util" group and "string" type)
+     * @default true
+     */
+    eval?: boolean;
+    /**
+     * Whether to register the built-in ping command (requires "util" group)
+     * @default true
+     */
+    ping?: boolean;
+    /**
+     * Whether to register the built-in unknown command (requires "util" group)
+     * @default true
+     */
+    unknownCommand?: boolean;
+    /**
+     * Whether to register the built-in command state commands
+     * (enable, disable, load, unload, reload, list groups - requires "commands" group, "command" type, and "group" type)
+     * @default true
+     */
+    commandState?: boolean;
+}
+
 /** Object specifying which types to register. All default to `true` */
 export type DefaultTypesOptions = {
     [T in ArgumentTypeString]?: boolean;
@@ -351,6 +385,51 @@ export default class CommandoRegistry {
         const obj = requireAll(options) as Record<string, ArgumentType>;
         const types = Object.values(obj);
         return this.registerTypes(types, true);
+    }
+
+    /**
+     * Registers the default argument types, groups, and commands. This is equivalent to:
+     * ```js
+     * registry.registerDefaultTypes()
+     *     .registerDefaultGroups()
+     *     .registerDefaultCommands();
+     * ```
+     */
+    public registerDefaults(): this {
+        return this.registerDefaultTypes()
+            .registerDefaultGroups()
+            .registerDefaultCommands();
+    }
+
+    /** Registers the default groups ("util" and "commands") */
+    public registerDefaultGroups(): this {
+        return this.registerGroups([
+            { id: 'commands', name: 'Commands', guarded: true },
+            { id: 'util', name: 'Utility' },
+        ]);
+    }
+
+    /**
+     * Registers the default commands to the registry
+     * @param commands - Object specifying which commands to register
+     */
+    public registerDefaultCommands(commands: DefaultCommandsOptions = {}): this {
+        if (commands.help !== false) this.registerCommand(require('./commands/util/help'));
+        if (commands.prefix !== false) this.registerCommand(require('./commands/util/prefix'));
+        if (commands.ping !== false) this.registerCommand(require('./commands/util/ping'));
+        if (commands.eval !== false) this.registerCommand(require('./commands/util/eval'));
+        if (commands.unknownCommand !== false) this.registerCommand(require('./commands/util/unknown-command'));
+        if (commands.commandState !== false) {
+            this.registerCommands([
+                require('./commands/commands/groups'),
+                require('./commands/commands/enable'),
+                require('./commands/commands/disable'),
+                require('./commands/commands/reload'),
+                require('./commands/commands/load'),
+                require('./commands/commands/unload'),
+            ]);
+        }
+        return this;
     }
 
     /**
