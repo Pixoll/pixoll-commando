@@ -228,7 +228,7 @@ export default class SyncSQLiteProvider<
         shard.broadcastEval((client: CommandoClient) => {
             // @ts-expect-error: settings is protected in SettingProvider
             const settings = client.provider?.settings;
-            if (client.shard?.ids.some(id => ids.includes(id)) || !settings) return;
+            if (!settings || client.shard?.ids.some(id => ids.includes(id))) return;
             let global = settings.get('global');
             if (!global) {
                 global = {};
