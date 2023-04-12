@@ -27,8 +27,9 @@ export default class CommandGroup {
      * Enables or disables the group in a guild
      * @param guild - Guild to enable/disable the group in
      * @param enabled - Whether the group should be enabled or disabled
+     * @param silent - If `true`, it won't emit a `groupStatusChange` event
      */
-    setEnabledIn(guild: CommandoGuildResolvable | null, enabled: boolean): void;
+    setEnabledIn(guild: CommandoGuildResolvable | null, enabled: boolean, silent?: boolean): void;
     /**
      * Checks if the group is enabled in a guild
      * @param guild - Guild to check in

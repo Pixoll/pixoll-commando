@@ -42,20 +42,21 @@ export default class CommandGroup {
      * Enables or disables the group in a guild
      * @param guild - Guild to enable/disable the group in
      * @param enabled - Whether the group should be enabled or disabled
+     * @param silent - If `true`, it won't emit a `groupStatusChange` event
      */
-    public setEnabledIn(guild: CommandoGuildResolvable | null, enabled: boolean): void {
+    public setEnabledIn(guild: CommandoGuildResolvable | null, enabled: boolean, silent = false): void {
         const { client, guarded } = this;
         if (typeof guild === 'undefined') throw new TypeError('Guild must not be undefined.');
         if (typeof enabled === 'undefined') throw new TypeError('Enabled must not be undefined.');
         if (guarded) throw new Error('The group is guarded.');
         if (!guild) {
             this._globalEnabled = enabled;
-            client.emit('groupStatusChange', null, this, enabled);
+            if (!silent) client.emit('groupStatusChange', null, this, enabled);
             return;
         }
         const commandoGuild = client.guilds.resolve(guild);
         if (!commandoGuild) throw new Error(`Couldn't resolve guild ${guild}`);
-        commandoGuild.setGroupEnabled(this, enabled);
+        commandoGuild.setGroupEnabled(this, enabled, silent);
     }
 
     /**

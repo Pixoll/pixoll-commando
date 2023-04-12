@@ -44,8 +44,9 @@ export default class CommandoGuild extends Guild {
      * Sets whether a command is enabled in the guild
      * @param command - Command to set status of
      * @param enabled - Whether the command should be enabled
+     * @param silent - If `true`, it won't emit a `commandStatusChange` event
      */
-    setCommandEnabled(command: CommandResolvable, enabled: boolean): void;
+    setCommandEnabled(command: CommandResolvable, enabled: boolean, silent?: boolean): void;
     /**
      * Checks whether a command is enabled in the guild (does not take the command's group status into account)
      * @param command - Command to check status of
@@ -55,8 +56,9 @@ export default class CommandoGuild extends Guild {
      * Sets whether a command group is enabled in the guild
      * @param group - Group to set status of
      * @param enabled - Whether the group should be enabled
+     * @param silent - If `true`, it won't emit a `groupStatusChange` event
      */
-    setGroupEnabled(group: CommandGroupResolvable, enabled: boolean): void;
+    setGroupEnabled(group: CommandGroupResolvable, enabled: boolean, silent?: boolean): void;
     /**
      * Checks whether a command group is enabled in the guild
      * @param group - Group to check status of

@@ -417,8 +417,9 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
      * Enables or disables the command in a guild
      * @param guild - Guild to enable/disable the command in
      * @param enabled - Whether the command should be enabled or disabled
+     * @param silent - If `true`, it won't emit a `commandStatusChange` event
      */
-    setEnabledIn(guild: CommandoGuildResolvable | null, enabled: boolean): void;
+    setEnabledIn(guild: CommandoGuildResolvable | null, enabled: boolean, silent?: boolean): void;
     /**
      * Checks if the command is enabled in a guild
      * @param guild - Guild to check in

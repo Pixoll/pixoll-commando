@@ -711,19 +711,20 @@ export default abstract class Command<
      * Enables or disables the command in a guild
      * @param guild - Guild to enable/disable the command in
      * @param enabled - Whether the command should be enabled or disabled
+     * @param silent - If `true`, it won't emit a `commandStatusChange` event
      */
-    public setEnabledIn(guild: CommandoGuildResolvable | null, enabled: boolean): void {
+    public setEnabledIn(guild: CommandoGuildResolvable | null, enabled: boolean, silent = false): void {
         const { client, guarded } = this;
         if (typeof guild === 'undefined') throw new TypeError('Guild must not be undefined.');
         if (typeof enabled === 'undefined') throw new TypeError('Enabled must not be undefined.');
         if (guarded) throw new Error('The command is guarded.');
         if (!guild) {
             this._globalEnabled = enabled;
-            client.emit('commandStatusChange', null, this as unknown as Command, enabled);
+            if (!silent) client.emit('commandStatusChange', null, this as unknown as Command, enabled);
             return;
         }
         const commandoGuild = client.guilds.resolve(guild) as CommandoGuild;
-        commandoGuild.setCommandEnabled(this as unknown as Command, enabled);
+        commandoGuild.setCommandEnabled(this as unknown as Command, enabled, silent);
     }
 
     /**

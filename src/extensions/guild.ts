@@ -77,8 +77,9 @@ export default class CommandoGuild extends Guild {
      * Sets whether a command is enabled in the guild
      * @param command - Command to set status of
      * @param enabled - Whether the command should be enabled
+     * @param silent - If `true`, it won't emit a `commandStatusChange` event
      */
-    public setCommandEnabled(command: CommandResolvable, enabled: boolean): void {
+    public setCommandEnabled(command: CommandResolvable, enabled: boolean, silent = false): void {
         const { client } = this;
         command = client.registry.resolveCommand(command);
         const { name, guarded } = command;
@@ -86,7 +87,7 @@ export default class CommandoGuild extends Guild {
         if (typeof enabled === 'undefined') throw new TypeError('Enabled must not be undefined.');
         enabled = !!enabled;
         this._commandsEnabled.set(name, enabled);
-        client.emit('commandStatusChange', this, command, enabled);
+        if (!silent) client.emit('commandStatusChange', this, command, enabled);
     }
 
     /**
@@ -109,8 +110,9 @@ export default class CommandoGuild extends Guild {
      * Sets whether a command group is enabled in the guild
      * @param group - Group to set status of
      * @param enabled - Whether the group should be enabled
+     * @param silent - If `true`, it won't emit a `groupStatusChange` event
      */
-    public setGroupEnabled(group: CommandGroupResolvable, enabled: boolean): void {
+    public setGroupEnabled(group: CommandGroupResolvable, enabled: boolean, silent = false): void {
         const { client } = this;
         group = client.registry.resolveGroup(group);
         const { id, guarded } = group;
@@ -118,7 +120,7 @@ export default class CommandoGuild extends Guild {
         if (typeof enabled === 'undefined') throw new TypeError('Enabled must not be undefined.');
         enabled = !!enabled;
         this._groupsEnabled.set(id, enabled);
-        client.emit('groupStatusChange', this, group, enabled);
+        if (!silent) client.emit('groupStatusChange', this, group, enabled);
     }
 
     /**
