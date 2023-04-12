@@ -7,6 +7,7 @@ export {
     default as CommandoRegistry,
     CommandGroupResolvable,
     CommandResolvable,
+    DefaultCommandsOptions,
     DefaultTypesOptions,
     RequireAllOptions,
 } from './registry';

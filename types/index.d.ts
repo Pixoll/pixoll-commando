@@ -1,5 +1,5 @@
 export { default as CommandoClient, CommandoClientEvents, CommandoClientOptions, } from './client';
-export { default as CommandoRegistry, CommandGroupResolvable, CommandResolvable, DefaultTypesOptions, RequireAllOptions, } from './registry';
+export { default as CommandoRegistry, CommandGroupResolvable, CommandResolvable, DefaultCommandsOptions, DefaultTypesOptions, RequireAllOptions, } from './registry';
 export { default as CommandDispatcher, Inhibition } from './dispatcher';
 export { default as SettingProvider } from './providers/base';
 export { default as GuildSettingsHelper } from './providers/helper';
