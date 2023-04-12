@@ -165,9 +165,14 @@ export default class Util extends null {
      * @param property - The property to read from the objects (only usable if `items` is an array of objects).
      * @returns A string with the disambiguated items.
      */
-    public static disambiguation(items: Array<Record<string, string> | string>, label: string, property = 'name'): string {
+    public static disambiguation<T extends object | string>(
+        items: T[], label: string, property?: T extends string ? never : keyof T
+    ): string {
         const itemList = items.map(item =>
-            `"${(typeof item !== 'string' ? item[property] : item).replace(/ /g, '\xa0')}"`
+            `"${(typeof item !== 'string'
+                ? `${item[property ?? 'name' as keyof T]}`
+                : item
+            ).replace(/ /g, '\xa0')}"`
         ).join(',   ');
         return `Multiple ${label} found, please be more specific: ${itemList}`;
     }

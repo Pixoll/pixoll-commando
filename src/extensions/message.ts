@@ -225,7 +225,7 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
                 client.emit('commandBlock', this, hasPermission);
                 return await command.onBlock(this, hasPermission);
             }
-            const data = { missing: hasPermission };
+            const data = { missing: hasPermission || undefined };
             client.emit('commandBlock', this, 'userPermissions', data);
             return await command.onBlock(this, 'userPermissions', data);
         }

@@ -6,6 +6,7 @@ import CommandoGuild from './extensions/guild';
 import ClientDatabaseManager from './database/ClientDatabaseManager';
 import Schemas from './database/Schemas';
 import GuildDatabaseManager from './database/GuildDatabaseManager';
+import { Nullable } from './util';
 import { BaseCommandoGuildEmojiManager, CommandoChannelManager, CommandoGuildManager, CommandoInvite, OverwrittenClientEvents } from './discord.overrides';
 import Command, { CommandBlockData, CommandBlockReason, CommandContext } from './commands/base';
 import { ArgumentCollectorResult } from './commands/collector';
@@ -122,7 +123,7 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
      * @emits {@link CommandoClientEvents.commandPrefixChange commandPrefixChange}
      */
     get prefix(): string | undefined;
-    set prefix(prefix: string | undefined);
+    set prefix(prefix: Nullable<string>);
     /**
      * Owners of the bot, set by the {@link CommandoClientOptions.owners CommandoClientOptions#owners} option
      * <info>If you simply need to check if a user is an owner of the bot, please instead use

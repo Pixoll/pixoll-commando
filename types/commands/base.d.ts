@@ -386,7 +386,7 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
      * @param ownerOverride - Whether the bot owner(s) will always have permission
      * @return Whether the user has permission, or an error message to respond with if they don't
      */
-    hasPermission(context: CommandContext<InGuild>, ownerOverride?: boolean): CommandBlockReason | PermissionsString[] | true;
+    hasPermission(context: CommandContext<InGuild>, ownerOverride?: boolean): CommandBlockReason | PermissionsString[] | boolean;
     /**
      * Called when the command is prevented from running
      * @param context - The context og the command

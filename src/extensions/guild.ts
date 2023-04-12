@@ -12,6 +12,7 @@ import {
 } from '../discord.overrides';
 import GuildSettingsHelper from '../providers/helper';
 import { CommandGroupResolvable, CommandResolvable } from '../registry';
+import { Nullable } from '../util';
 
 /** A fancier Guild for fancier people. */
 // @ts-expect-error: Guild's constructor is private
@@ -68,7 +69,7 @@ export default class CommandoGuild extends Guild {
         return this._prefix;
     }
 
-    public set prefix(prefix) {
+    public set prefix(prefix: Nullable<string>) {
         this._prefix = prefix;
         this.client.emit('commandPrefixChange', this, this._prefix);
     }

@@ -40,7 +40,11 @@ export type ParseRawArguments<Args extends CommandArgumentsResolvable = Argument
         : (
             A['type'] extends ArgumentTypeString[] | readonly ArgumentTypeString[]
             ? ArgumentTypeStringMap[A['type'][number]]
-            : unknown
+            : (
+                A['parse'] extends NonNullable<ArgumentInfo['parse']>
+                ? (ReturnType<A['parse']> extends PromiseLike<infer P> ? P : ReturnType<A['parse']>)
+                : unknown
+            )
         )
     );
 };

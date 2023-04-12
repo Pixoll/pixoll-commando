@@ -83,7 +83,7 @@ export default class Util extends null {
      * @param property - The property to read from the objects (only usable if `items` is an array of objects).
      * @returns A string with the disambiguated items.
      */
-    static disambiguation(items: Array<Record<string, string> | string>, label: string, property?: string): string;
+    static disambiguation<T extends object | string>(items: T[], label: string, property?: T extends string ? never : keyof T): string;
     /**
      * Removes the dashes from a string and capitalizes the characters in front of them.
      * @param str - The string to parse.

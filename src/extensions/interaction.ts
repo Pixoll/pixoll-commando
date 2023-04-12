@@ -217,7 +217,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
                 await command.onBlock(this, hasPermission);
                 return;
             }
-            const data = { missing: hasPermission };
+            const data = { missing: hasPermission || undefined };
             client.emit('commandBlock', this, 'userPermissions', data);
             await command.onBlock(this, 'userPermissions', data);
             return;

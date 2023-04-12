@@ -574,7 +574,7 @@ export default abstract class Command<
      */
     public hasPermission(
         context: CommandContext<InGuild>, ownerOverride = true
-    ): CommandBlockReason | PermissionsString[] | true {
+    ): CommandBlockReason | PermissionsString[] | boolean {
         const { guildOwnerOnly, ownerOnly, userPermissions, modPermissions, client } = this;
         const { channel, guild, member, author } = context;
 

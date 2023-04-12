@@ -19,7 +19,7 @@ export interface ArgumentCollectorResult<T = Record<string, unknown>> {
     answers: ArgumentResponse[];
 }
 export type ParseRawArguments<Args extends CommandArgumentsResolvable = ArgumentInfo[]> = {
-    [A in Args[number] as A['key']]: (A['default'] extends unknown ? (A['required'] extends false ? null : never) : A['default']) | (A['oneOf'] extends Array<infer U> | ReadonlyArray<infer U> ? U : A['type'] extends ArgumentTypeString ? ArgumentTypeStringMap[A['type']] : (A['type'] extends ArgumentTypeString[] | readonly ArgumentTypeString[] ? ArgumentTypeStringMap[A['type'][number]] : unknown));
+    [A in Args[number] as A['key']]: (A['default'] extends unknown ? (A['required'] extends false ? null : never) : A['default']) | (A['oneOf'] extends Array<infer U> | ReadonlyArray<infer U> ? U : A['type'] extends ArgumentTypeString ? ArgumentTypeStringMap[A['type']] : (A['type'] extends ArgumentTypeString[] | readonly ArgumentTypeString[] ? ArgumentTypeStringMap[A['type'][number]] : (A['parse'] extends NonNullable<ArgumentInfo['parse']> ? (ReturnType<A['parse']> extends PromiseLike<infer P> ? P : ReturnType<A['parse']>) : unknown)));
 };
 export type ArgumentCollectorArgs<Args extends CommandArgumentsResolvable> = Array<Argument<keyof {
     [Type in Args[number]['type'] as Type extends undefined ? ArgumentTypeString : Type extends Array<infer U> | ReadonlyArray<infer U> ? U : Type]: null;

@@ -19,7 +19,7 @@ import CommandoGuild from './extensions/guild';
 import ClientDatabaseManager from './database/ClientDatabaseManager';
 import Schemas from './database/Schemas';
 import GuildDatabaseManager from './database/GuildDatabaseManager';
-import Util from './util';
+import Util, { Nullable } from './util';
 import initializeDB from './database/initializeDB';
 import CommandoInteraction from './extensions/interaction';
 import {
@@ -197,7 +197,7 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
         return _prefix;
     }
 
-    public set prefix(prefix) {
+    public set prefix(prefix: Nullable<string>) {
         this._prefix = prefix;
         this.emit('commandPrefixChange', null, prefix);
     }

@@ -4,6 +4,7 @@ import GuildDatabaseManager from '../database/GuildDatabaseManager';
 import { CommandoGuildChannelManager, CommandoGuildEmojiManager, CommandoGuildMemberManager, CommandoRoleManager } from '../discord.overrides';
 import GuildSettingsHelper from '../providers/helper';
 import { CommandGroupResolvable, CommandResolvable } from '../registry';
+import { Nullable } from '../util';
 /** A fancier Guild for fancier people. */
 export default class CommandoGuild extends Guild {
     /** The client the guild is for */
@@ -39,7 +40,7 @@ export default class CommandoGuild extends Guild {
      * @emits {@link CommandoClientEvents.commandPrefixChange commandPrefixChange}
      */
     get prefix(): string | undefined;
-    set prefix(prefix: string | undefined);
+    set prefix(prefix: Nullable<string>);
     /**
      * Sets whether a command is enabled in the guild
      * @param command - Command to set status of
