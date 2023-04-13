@@ -1,4 +1,4 @@
-import { Awaitable, Client, ClientOptions, Collection, Guild, InviteGenerationOptions, IntentsBitField, Message, UserResolvable, ClientFetchInviteOptions, User } from 'discord.js';
+import { Awaitable, Client, ClientOptions, Collection, Guild, InviteGenerationOptions, IntentsBitField, Message, ClientFetchInviteOptions, User } from 'discord.js';
 import CommandoRegistry from './registry';
 import CommandDispatcher from './dispatcher';
 import CommandoMessage from './extensions/message';
@@ -7,7 +7,7 @@ import ClientDatabaseManager from './database/ClientDatabaseManager';
 import Schemas from './database/Schemas';
 import GuildDatabaseManager from './database/GuildDatabaseManager';
 import { Nullable } from './util';
-import { BaseCommandoGuildEmojiManager, CommandoChannelManager, CommandoGuildManager, CommandoInvite, OverwrittenClientEvents } from './discord.overrides';
+import { BaseCommandoGuildEmojiManager, CommandoChannelManager, CommandoGuildManager, CommandoInvite, CommandoUserResolvable, OverwrittenClientEvents } from './discord.overrides';
 import Command, { CommandBlockData, CommandBlockReason, CommandContext } from './commands/base';
 import { ArgumentCollectorResult } from './commands/collector';
 import ArgumentType from './types/base';
@@ -135,7 +135,7 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
      * Checks whether a user is an owner of the bot (in {@link CommandoClientOptions.owners CommandoClientOptions#owners})
      * @param user - User to check for ownership
      */
-    isOwner(user: UserResolvable): boolean;
+    isOwner(user: CommandoUserResolvable): boolean;
     isReady(): this is CommandoClient<true>;
     destroy(): Promise<void>;
     /**

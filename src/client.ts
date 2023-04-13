@@ -8,7 +8,6 @@ import {
     IntentsBitField,
     Message,
     PermissionsBitField,
-    UserResolvable,
     ClientFetchInviteOptions,
     User,
 } from 'discord.js';
@@ -27,6 +26,7 @@ import {
     CommandoChannelManager,
     CommandoGuildManager,
     CommandoInvite,
+    CommandoUserResolvable,
     OverwrittenClientEvents,
 } from './discord.overrides';
 import Command, { CommandBlockData, CommandBlockReason, CommandContext } from './commands/base';
@@ -224,11 +224,12 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
      * Checks whether a user is an owner of the bot (in {@link CommandoClientOptions.owners CommandoClientOptions#owners})
      * @param user - User to check for ownership
      */
-    public isOwner(user: UserResolvable): boolean {
+    public isOwner(user: CommandoUserResolvable): boolean {
         const { users, options } = this;
         const { owners: owner } = options;
 
         if (!owner) return false;
+        // @ts-expect-error: CommandoClient extends Client
         const resolved = users.resolve(user);
         if (!resolved) throw new RangeError('Unable to resolve user.');
         const { id } = resolved;
