@@ -111,7 +111,7 @@ export interface CommandoClientEvents extends OverwrittenClientEvents {
 export default class CommandoClient<
     ClientReady extends boolean = boolean,
     ProviderReady extends boolean = boolean,
-    ProviderSettings extends object = Record<string, unknown>
+    Provider extends SettingProvider = SettingProvider
 > extends Client<ClientReady> {
     /**
      * Internal global command prefix, controlled by the {@link CommandoClient.prefix CommandoClient#prefix} getter/setter
@@ -137,7 +137,7 @@ export default class CommandoClient<
     /** The client's command registry */
     public registry: CommandoRegistry;
     /** The client's setting provider */
-    public provider: If<ProviderReady, SettingProvider<ProviderSettings>>;
+    public provider: If<ProviderReady, Provider>;
     /** Shortcut to use setting provider methods for the global settings */
     public settings: GuildSettingsHelper;
 
@@ -167,7 +167,7 @@ export default class CommandoClient<
 
         this.registry = new CommandoRegistry(this as CommandoClient);
         this.dispatcher = new CommandDispatcher(this as CommandoClient, this.registry);
-        this.provider = null as If<ProviderReady, SettingProvider<ProviderSettings>>;
+        this.provider = null as If<ProviderReady, Provider>;
         // @ts-expect-error: constructor is protected in GuildSettingsHelper
         this.settings = new GuildSettingsHelper(this, null);
         this.database = new ClientDatabaseManager(this as CommandoClient);
@@ -259,9 +259,9 @@ export default class CommandoClient<
      * Sets the setting provider to use, and initializes it once the client is ready
      * @param provider Provider to use
      */
-    public async setProvider(provider: Awaitable<SettingProvider<ProviderSettings>>): Promise<void> {
+    public async setProvider(provider: Awaitable<Provider>): Promise<void> {
         const newProvider = await provider;
-        this.provider = newProvider as If<ProviderReady, SettingProvider<ProviderSettings>>;
+        this.provider = newProvider as If<ProviderReady, Provider>;
 
         if (this.isReady()) {
             this.emit('debug', `Provider set to ${newProvider.constructor.name} - initializing...`);
@@ -281,7 +281,7 @@ export default class CommandoClient<
         return;
     }
 
-    public isProviderReady(): this is CommandoClient<true, true, ProviderSettings> {
+    public isProviderReady(): this is CommandoClient<true, true, Provider> {
         return this.isReady() && !!this.provider;
     }
 

@@ -83,7 +83,7 @@ export interface CommandoClientEvents extends OverwrittenClientEvents {
     unknownCommand: [message: CommandoMessage];
 }
 /** Discord.js Client with a command framework */
-export default class CommandoClient<ClientReady extends boolean = boolean, ProviderReady extends boolean = boolean, ProviderSettings extends object = Record<string, unknown>> extends Client<ClientReady> {
+export default class CommandoClient<ClientReady extends boolean = boolean, ProviderReady extends boolean = boolean, Provider extends SettingProvider = SettingProvider> extends Client<ClientReady> {
     /**
      * Internal global command prefix, controlled by the {@link CommandoClient.prefix CommandoClient#prefix} getter/setter
      */
@@ -107,7 +107,7 @@ export default class CommandoClient<ClientReady extends boolean = boolean, Provi
     /** The client's command registry */
     registry: CommandoRegistry;
     /** The client's setting provider */
-    provider: If<ProviderReady, SettingProvider<ProviderSettings>>;
+    provider: If<ProviderReady, Provider>;
     /** Shortcut to use setting provider methods for the global settings */
     settings: GuildSettingsHelper;
     /**
@@ -142,8 +142,8 @@ export default class CommandoClient<ClientReady extends boolean = boolean, Provi
      * Sets the setting provider to use, and initializes it once the client is ready
      * @param provider Provider to use
      */
-    setProvider(provider: Awaitable<SettingProvider<ProviderSettings>>): Promise<void>;
-    isProviderReady(): this is CommandoClient<true, true, ProviderSettings>;
+    setProvider(provider: Awaitable<Provider>): Promise<void>;
+    isProviderReady(): this is CommandoClient<true, true, Provider>;
     awaitEvent<K extends keyof CommandoClientEvents>(event: K, listener: (this: CommandoClient, ...args: CommandoClientEvents[K]) => unknown): Promise<this>;
     /** Initializes all default listeners that make the client work. */
     protected initDefaultListeners(): void;
