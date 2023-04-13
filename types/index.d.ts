@@ -1,9 +1,9 @@
 export { default as CommandoClient, CommandoClientEvents, CommandoClientOptions, } from './client';
 export { default as CommandoRegistry, CommandGroupResolvable, CommandResolvable, DefaultCommandsOptions, DefaultTypesOptions, RequireAllOptions, } from './registry';
 export { default as CommandDispatcher, Inhibition } from './dispatcher';
-export { default as SettingProvider } from './providers/base';
+export { default as SettingProvider, SettingProviderGet } from './providers/base';
 export { default as GuildSettingsHelper } from './providers/helper';
-export { default as SQLiteProvider } from './providers/sqlite';
+export { default as SQLiteProvider, DefaultSQLiteSettings } from './providers/sqlite';
 export { default as SyncSQLiteProvider } from './providers/sqlite-sync';
 export { default as CommandoInteraction, SlashCommandBasicOptionsParser, SlashCommandOptionTypeMap, } from './extensions/interaction';
 export { default as CommandoGuild } from './extensions/guild';
