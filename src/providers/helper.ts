@@ -60,6 +60,5 @@ export default class GuildSettingsHelper {
     public async clear(): Promise<void> {
         if (!this.client.provider) throw new Error('No settings provider is available.');
         await this.client.provider.clear(this.guild);
-        return;
     }
 }

@@ -1,6 +1,6 @@
 import { Database as SQLiteDatabase, Statement as SQLiteStatement } from 'sqlite';
 import { If } from 'discord.js';
-import SettingProvider from './base';
+import SettingProvider, { SettingProviderGet } from './base';
 import CommandoClient, { CommandoClientEvents } from '../client';
 import { CommandoGuildResolvable } from '../discord.overrides';
 import Command from '../commands/base';
@@ -15,7 +15,6 @@ export interface DefaultSQLiteSettings {
     prefix?: string | null | undefined;
     [k: `cmd-${string}`]: boolean | undefined;
     [k: `grp-${string}`]: boolean | undefined;
-    [k: string]: unknown;
 }
 export interface SQLiteRow {
     guild: string;
@@ -43,7 +42,7 @@ export default class SQLiteProvider<Ready extends boolean = boolean, Settings ex
     isReady(): this is SQLiteProvider<true, Settings>;
     init(client: CommandoClient<true>): Promise<void>;
     destroy(): Promise<void>;
-    get<K extends keyof Settings>(guild: Nullable<CommandoGuildResolvable>, key: K, defaultValue?: Settings[K]): Settings[K] | undefined;
+    get<K extends keyof Settings, Default extends Settings[K]>(guild: Nullable<CommandoGuildResolvable>, key: K, defaultValue?: Default): SettingProviderGet<Settings[K], Default>;
     set<K extends keyof Settings>(guild: Nullable<CommandoGuildResolvable>, key: K, value: Settings[K]): Promise<Settings[K]>;
     remove<K extends keyof Settings>(guild: Nullable<CommandoGuildResolvable>, key: K): Promise<Settings[K] | undefined>;
     clear(guild: Nullable<CommandoGuildResolvable>): Promise<void>;

@@ -1,6 +1,6 @@
 import { Database as SyncSQLiteDatabase, Statement as SyncSQLiteStatement } from 'better-sqlite3';
 import { If } from 'discord.js';
-import SettingProvider from './base';
+import SettingProvider, { SettingProviderGet } from './base';
 import { ListenersMap, DefaultSQLiteSettings } from './sqlite';
 import CommandoClient from '../client';
 import { CommandoGuildResolvable } from '../discord.overrides';
@@ -29,7 +29,7 @@ export default class SyncSQLiteProvider<Ready extends boolean = boolean, Setting
     isReady(): this is SyncSQLiteProvider<true, Settings>;
     init(client: CommandoClient<true>): void;
     destroy(): void;
-    get<K extends keyof Settings>(guild: Nullable<CommandoGuildResolvable>, key: K, defaultValue?: Settings[K]): Settings[K] | undefined;
+    get<K extends keyof Settings, Default extends Settings[K]>(guild: Nullable<CommandoGuildResolvable>, key: K, defaultValue?: Default): SettingProviderGet<Settings[K], Default>;
     set<K extends keyof Settings>(guild: Nullable<CommandoGuildResolvable>, key: K, value: Settings[K]): Settings[K];
     remove<K extends keyof Settings>(guild: Nullable<CommandoGuildResolvable>, key: K): Settings[K] | undefined;
     clear(guild: Nullable<CommandoGuildResolvable>): void;

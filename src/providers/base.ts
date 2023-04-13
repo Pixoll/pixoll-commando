@@ -2,8 +2,12 @@ import { Awaitable, Guild } from 'discord.js';
 import CommandoClient from '../client';
 import { CommandoGuildResolvable } from '../discord.overrides';
 
+export type SettingProviderGet<Value, Default> = Default extends NonNullable<Default>
+    ? NonNullable<Default | Value>
+    : Default | Value;
+
 /** Loads and stores settings associated with guilds */
-export default abstract class SettingProvider<Settings extends Record<string, unknown> = Record<string, unknown>> {
+export default abstract class SettingProvider<Settings extends object = Record<string, unknown>> {
     /** Settings cached in memory, mapped by guild ID (or 'global') */
     protected settings: Map<string, Settings>;
 
@@ -27,9 +31,9 @@ export default abstract class SettingProvider<Settings extends Record<string, un
      * @param key - Name of the setting
      * @param defaultValue - Value to default to if the setting isn't set on the guild
      */
-    public abstract get<K extends keyof Settings>(
-        guild: CommandoGuildResolvable | null, key: K, defaultValue?: Settings[K]
-    ): Settings[K] | undefined;
+    public abstract get<K extends keyof Settings, Default extends Settings[K] | undefined>(
+        guild: CommandoGuildResolvable | null, key: K, defaultValue?: Default
+    ): Default | Settings[K];
 
     /**
      * Sets a setting for a guild

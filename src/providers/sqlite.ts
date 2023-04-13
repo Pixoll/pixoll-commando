@@ -1,6 +1,6 @@
 import { Database as SQLiteDatabase, Statement as SQLiteStatement } from 'sqlite';
 import { If } from 'discord.js';
-import SettingProvider from './base';
+import SettingProvider, { SettingProviderGet } from './base';
 import CommandoClient, { CommandoClientEvents } from '../client';
 import { CommandoGuildResolvable } from '../discord.overrides';
 import Command from '../commands/base';
@@ -18,7 +18,7 @@ export interface DefaultSQLiteSettings {
     prefix?: string | null | undefined;
     [k: `cmd-${string}`]: boolean | undefined;
     [k: `grp-${string}`]: boolean | undefined;
-    [k: string]: unknown;
+    // [k: string]: unknown;
 }
 
 export interface SQLiteRow {
@@ -136,11 +136,11 @@ export default class SQLiteProvider<
         this.listeners.clear();
     }
 
-    public get<K extends keyof Settings>(
-        guild: Nullable<CommandoGuildResolvable>, key: K, defaultValue?: Settings[K]
-    ): Settings[K] | undefined {
+    public get<K extends keyof Settings, Default extends Settings[K]>(
+        guild: Nullable<CommandoGuildResolvable>, key: K, defaultValue?: Default
+    ): SettingProviderGet<Settings[K], Default> {
         const settings = this.settings.get(SettingProvider.getGuildID(guild ?? null));
-        return settings ? typeof settings[key] !== 'undefined' ? settings[key] : defaultValue : defaultValue;
+        return (settings?.[key] ?? defaultValue) as SettingProviderGet<Settings[K], Default>;
     }
 
     public async set<K extends keyof Settings>(
