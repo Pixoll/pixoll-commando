@@ -18,11 +18,15 @@ import { Nullable } from '../util';
 // @ts-expect-error: Guild's constructor is private
 export default class CommandoGuild extends Guild {
     /** The client the guild is for */
+    // @ts-expect-error: CommandoClient extends Client
     declare public readonly client: CommandoClient<true>;
-    /** The client the guild is for */
+    // @ts-expect-error: CommandoGuildChannelManager extends GuildChannelManager
     declare public channels: CommandoGuildChannelManager;
+    // @ts-expect-error: CommandoGuildEmojiManager extends GuildEmojiManager
     declare public emojis: CommandoGuildEmojiManager;
+    // @ts-expect-error: CommandoGuildMemberManager extends GuildMemberManager
     declare public members: CommandoGuildMemberManager;
+    // @ts-expect-error: CommandoRoleManager extends RoleManager
     declare public roles: CommandoRoleManager;
     /** The database manager for the guild */
     public database: GuildDatabaseManager;
@@ -45,6 +49,7 @@ export default class CommandoGuild extends Guild {
      * @param data - The guild data
      */
     public constructor(client: CommandoClient<true>, data: Guild) {
+        // @ts-expect-error: CommandoClient extends Client
         super(client, guildToJSON(data));
         Object.assign(this, data);
 

@@ -123,7 +123,9 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
     public databaseSchemas: typeof Schemas;
     /** The client's command dispatcher */
     public dispatcher: CommandDispatcher;
+    // @ts-expect-error: CommandoGuildManager extends GuildManager
     declare public guilds: CommandoGuildManager;
+    // @ts-expect-error: CommandoChannelManager extends ChannelManager
     declare public channels: CommandoChannelManager;
     /** Options for the client */
     declare public options: Omit<CommandoClientOptions, 'intents'> & { intents: IntentsBitField };
@@ -177,10 +179,13 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
         })));
     }
 
+    // @ts-expect-error: This is meant to override guild's emojis getter.
     public get emojis(): BaseCommandoGuildEmojiManager {
+        // @ts-expect-error: BaseCommandoGuildEmojiManager extends BaseGuildEmojiManager
         return super.emojis as BaseCommandoGuildEmojiManager;
     }
 
+    // @ts-expect-error: This is meant to override the fetchInvite method type.
     public async fetchInvite(invite: string, options?: ClientFetchInviteOptions): Promise<CommandoInvite> {
         return await super.fetchInvite(invite, options) as CommandoInvite;
     }
@@ -234,6 +239,7 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
         throw new RangeError('The client\'s "owner" option is an unknown value.');
     }
 
+    // @ts-expect-error: This is meant to override the isReady method type.
     public isReady(): this is CommandoClient<true> {
         return super.isReady();
     }

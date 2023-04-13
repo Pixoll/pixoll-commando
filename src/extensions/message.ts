@@ -18,7 +18,12 @@ import CommandFormatError from '../errors/command-format';
 import Util from '../util';
 import CommandoClient from '../client';
 import CommandoGuild from './guild';
-import { CommandoGuildMember, CommandoifiedMessage, CommandContextChannel } from '../discord.overrides';
+import { 
+    CommandoGuildMember,
+    CommandoifiedMessage,
+    CommandContextChannel,
+    CommandoTextBasedChannel,
+} from '../discord.overrides';
 import CommandoInteraction from './interaction';
 import { ArgumentCollectorResult } from '../commands/collector';
 
@@ -59,6 +64,7 @@ const doubleSmartQuote = /[“”]/g;
 // @ts-expect-error: Message's constructor is private
 export default class CommandoMessage<InGuild extends boolean = boolean> extends Message<InGuild> {
     /** The client the message is for */
+    // @ts-expect-error: CommandoClient extends Client
     declare public readonly client: CommandoClient<true>;
     /** Whether the message contains a command (even an unknown one) */
     public isCommand: boolean;
@@ -78,6 +84,7 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
      * @param data - The message data
      */
     public constructor(client: CommandoClient<true>, data: CommandoifiedMessage) {
+        // @ts-expect-error: CommandoClient extends Client
         super(client, messageToJSON(data));
         Object.assign(this, data);
 
@@ -89,20 +96,26 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
         this.responsePositions = new Map();
     }
 
+    // @ts-expect-error: This is meant to override Message's member getter.
     public get member(): CommandoGuildMember | null {
         return super.member as CommandoGuildMember | null;
     }
 
     /** The guild this message was sent in */
+    // @ts-expect-error: This is meant to override guild's member getter.
     public get guild(): If<InGuild, CommandoGuild> {
+        // @ts-expect-error: CommandoGuild extends Guild
         return super.guild as If<InGuild, CommandoGuild>;
     }
 
     /** The channel this message was sent in */
+    // @ts-expect-error: This is meant to override channel's member getter.
     public get channel(): CommandContextChannel<false, InGuild> {
+        // @ts-expect-error: CommandContextChannel extends ContextChannel
         return super.channel as CommandContextChannel<false, InGuild>;
     }
 
+    // @ts-expect-error: This is meant to override the inGuild method type.
     public inGuild(): this is CommandoMessage<true> {
         return super.inGuild();
     }
@@ -191,7 +204,7 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
             const me = members.me ?? await members.fetch(clientUser.id);
 
             // Checks if the client has permission to send messages
-            const clientPerms = me.permissionsIn(channel).serialize();
+            const clientPerms = me.permissionsIn(channel.id).serialize();
             if (clientPerms && clientPerms.ViewChannel && !clientPerms.SendMessages) {
                 return await this.direct(stripIndent`
                     It seems like I cannot **Send Messages** in this channel: ${channel.toString()}
@@ -566,7 +579,7 @@ function removeSmartQuotes(argString: string, allowSingleQuote = true): string {
     return replacementArgString.replace(doubleSmartQuote, '"');
 }
 
-function channelIdOrDM(channel: TextBasedChannel): string {
+function channelIdOrDM(channel: CommandoTextBasedChannel | TextBasedChannel): string {
     if (channel.isDMBased()) return channel.id;
     return 'DM';
 }

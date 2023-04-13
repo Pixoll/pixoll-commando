@@ -9,7 +9,6 @@ import { Nullable } from '../util';
 export default class CommandoGuild extends Guild {
     /** The client the guild is for */
     readonly client: CommandoClient<true>;
-    /** The client the guild is for */
     channels: CommandoGuildChannelManager;
     emojis: CommandoGuildEmojiManager;
     members: CommandoGuildMemberManager;
