@@ -10,6 +10,7 @@ import {
     PermissionsBitField,
     ClientFetchInviteOptions,
     User,
+    If,
 } from 'discord.js';
 import CommandoRegistry from './registry';
 import CommandDispatcher from './dispatcher';
@@ -107,7 +108,11 @@ export interface CommandoClientEvents extends OverwrittenClientEvents {
 }
 
 /** Discord.js Client with a command framework */
-export default class CommandoClient<Ready extends boolean = boolean> extends Client<Ready> {
+export default class CommandoClient<
+    ClientReady extends boolean = boolean,
+    ProviderReady extends boolean = boolean,
+    ProviderSettings extends object = Record<string, unknown>
+> extends Client<ClientReady> {
     /**
      * Internal global command prefix, controlled by the {@link CommandoClient.prefix CommandoClient#prefix} getter/setter
      */
@@ -132,7 +137,7 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
     /** The client's command registry */
     public registry: CommandoRegistry;
     /** The client's setting provider */
-    public provider: SettingProvider | null;
+    public provider: If<ProviderReady, SettingProvider<ProviderSettings>>;
     /** Shortcut to use setting provider methods for the global settings */
     public settings: GuildSettingsHelper;
 
@@ -160,12 +165,12 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
             });
         }
 
-        this.registry = new CommandoRegistry(this);
-        this.dispatcher = new CommandDispatcher(this, this.registry);
-        this.provider = null;
+        this.registry = new CommandoRegistry(this as CommandoClient);
+        this.dispatcher = new CommandDispatcher(this as CommandoClient, this.registry);
+        this.provider = null as If<ProviderReady, SettingProvider<ProviderSettings>>;
         // @ts-expect-error: constructor is protected in GuildSettingsHelper
         this.settings = new GuildSettingsHelper(this, null);
-        this.database = new ClientDatabaseManager(this);
+        this.database = new ClientDatabaseManager(this as CommandoClient);
         this.databases = new Collection();
         this.databaseSchemas = Schemas;
         this._prefix = null;
@@ -254,11 +259,11 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
      * Sets the setting provider to use, and initializes it once the client is ready
      * @param provider Provider to use
      */
-    public async setProvider(this: CommandoClient<true>, provider: Awaitable<SettingProvider>): Promise<void> {
+    public async setProvider(provider: Awaitable<SettingProvider<ProviderSettings>>): Promise<void> {
         const newProvider = await provider;
-        this.provider = newProvider;
+        this.provider = newProvider as If<ProviderReady, SettingProvider<ProviderSettings>>;
 
-        if (this.readyTimestamp) {
+        if (this.isReady()) {
             this.emit('debug', `Provider set to ${newProvider.constructor.name} - initializing...`);
             await newProvider.init(this);
             this.emit('debug', 'Provider finished initialization.');
@@ -266,20 +271,24 @@ export default class CommandoClient<Ready extends boolean = boolean> extends Cli
         }
 
         this.emit('debug', `Provider set to ${newProvider.constructor.name} - will initialize once ready.`);
-        await this.awaitEvent('ready', async () => {
+        await this.awaitEvent('ready', async (client) => {
             this.emit('debug', 'Initializing provider...');
-            await newProvider.init(this);
+            await newProvider.init(client);
         });
 
-        this.emit('providerReady', newProvider);
+        this.emit('providerReady', newProvider as SettingProvider);
         this.emit('debug', 'Provider finished initialization.');
         return;
+    }
+
+    public isProviderReady(): this is CommandoClient<true, true, ProviderSettings> {
+        return this.isReady() && !!this.provider;
     }
 
     public async awaitEvent<K extends keyof CommandoClientEvents>(
         event: K, listener: (this: CommandoClient, ...args: CommandoClientEvents[K]) => unknown
     ): Promise<this> {
-        const boundListener = listener.bind(this);
+        const boundListener = listener.bind(this as CommandoClient);
         return await new Promise<this>(resolve => {
             this.once(event, async (...args) => {
                 await boundListener(...args);
