@@ -31,7 +31,7 @@ import ArgumentCollector, { ArgumentCollectorResult, ParseRawArguments } from '.
 import Util from '../util';
 import CommandoClient from '../client';
 import CommandGroup from './group';
-import { ArgumentInfo, ArgumentInfoResolvable } from './argument';
+import { ArgumentInfoResolvable, ArgumentTypeString } from './argument';
 import CommandoMessage from '../extensions/message';
 import CommandoGuild from '../extensions/guild';
 import CommandoInteraction from '../extensions/interaction';
@@ -56,7 +56,7 @@ export type CommandArgumentsResolvable = ArgumentInfoResolvable[] | readonly Arg
 /** The command information */
 export interface CommandInfo<
     InGuild extends boolean = boolean,
-    Args extends CommandArgumentsResolvable = ArgumentInfo[]
+    Args extends CommandArgumentsResolvable = CommandArgumentsResolvable
 > {
     /** The name of the command (must be lowercase). */
     name: string;
@@ -1020,7 +1020,7 @@ function removeEmptyOptions(options?: APIApplicationCommandOption[]): void {
     }
 }
 
-function parseMessageArgToSlashOption(arg: ArgumentInfo): BasicSlashCommandOptionData | null {
+function parseMessageArgToSlashOption(arg: ArgumentInfoResolvable): BasicSlashCommandOptionData | null {
     const { key: name, prompt: description, type: rawType, min, max, oneOf, autocomplete } = arg;
     if (!rawType) return null;
 
@@ -1031,7 +1031,7 @@ function parseMessageArgToSlashOption(arg: ArgumentInfo): BasicSlashCommandOptio
         description,
         required,
     };
-    const argType = Array.isArray(rawType) ? rawType[0] : rawType;
+    const argType = Array.isArray(rawType) ? rawType[0] : rawType as ArgumentTypeString;
     const type = argumentTypeToSlashMap[argType];
 
     if (Util.equals(type, [
@@ -1061,8 +1061,8 @@ function parseMessageArgToSlashOption(arg: ArgumentInfo): BasicSlashCommandOptio
         ...autocomplete && { autocomplete },
         ...!autocomplete && oneOf && {
             choices: oneOf.filter((c): c is string => typeof c === 'string').map(choice => ({
-                name: choice,
-                value: choice,
+                name: choice.toString(),
+                value: choice.toString(),
             })),
         },
     };
@@ -1076,7 +1076,7 @@ function parseMessageArgToSlashOption(arg: ArgumentInfo): BasicSlashCommandOptio
         ...!autocomplete && oneOf && {
             choices: oneOf.filter((c): c is number => typeof c === 'number').map(choice => ({
                 name: choice.toString(),
-                value: choice,
+                value: +choice,
             })),
         },
     };

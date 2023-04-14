@@ -9,7 +9,7 @@ declare const args: readonly [{
 }];
 type RawArgs = typeof args;
 type ParsedArgs = ParseRawArguments<RawArgs>;
-export default class ReloadCommand extends Command<boolean, RawArgs> {
+export default class ReloadCommand extends Command {
     constructor(client: CommandoClient);
     run(context: CommandContext, { cmdOrGrp }: ParsedArgs): Promise<void>;
 }

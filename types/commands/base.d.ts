@@ -3,7 +3,7 @@ import { Message, PermissionsString, User, ApplicationCommandOptionType as Slash
 import ArgumentCollector, { ArgumentCollectorResult, ParseRawArguments } from './collector';
 import CommandoClient from '../client';
 import CommandGroup from './group';
-import { ArgumentInfo, ArgumentInfoResolvable } from './argument';
+import { ArgumentInfoResolvable } from './argument';
 import CommandoMessage from '../extensions/message';
 import CommandoInteraction from '../extensions/interaction';
 import { CommandoAutocompleteInteraction, CommandoGuildResolvable, CommandoMessageContextMenuCommandInteraction, CommandoUserContextMenuCommandInteraction } from '../discord.overrides';
@@ -16,7 +16,7 @@ export interface ThrottlingOptions {
 }
 export type CommandArgumentsResolvable = ArgumentInfoResolvable[] | readonly ArgumentInfoResolvable[];
 /** The command information */
-export interface CommandInfo<InGuild extends boolean = boolean, Args extends CommandArgumentsResolvable = ArgumentInfo[]> {
+export interface CommandInfo<InGuild extends boolean = boolean, Args extends CommandArgumentsResolvable = CommandArgumentsResolvable> {
     /** The name of the command (must be lowercase). */
     name: string;
     /** Localizations map for the command's name - only used in application commands */
