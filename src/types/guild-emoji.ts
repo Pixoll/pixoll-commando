@@ -35,7 +35,7 @@ export default class CustomEmojiArgumentType extends ArgumentType<'guild-emoji'>
         if (!message.inGuild()) return null;
 
         const matches = value.match(/^(?:<a?:(\w+):)?(\d+)>?$/);
-        if (matches) return message.client.emojis.resolve(matches[2]);
+        if (matches) return message.client.emojis.resolve(matches[2]) as CommandoGuildEmoji | null;
 
         const search = value.toLowerCase();
         const emojis = message.guild.emojis.cache.filter(nameFilterInexact(search));

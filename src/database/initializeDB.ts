@@ -4,6 +4,7 @@ import requireAll from 'require-all';
 import CommandoClient from '../client';
 import Schemas, { BaseSchema, JSONIfySchema, ModelFrom } from './Schemas';
 import Util from '../util';
+import { CommandoGuildManager } from '../discord.overrides';
 // import { toJSONOptions } from './DatabaseManager';
 
 type ModuleLoader = (client: CommandoClient<true>) => Promise<unknown>;
@@ -71,7 +72,7 @@ async function cacheDB(client: CommandoClient<true>): Promise<void> {
     // @ts-expect-error: init is protected in ClientDatabaseManager
     database.init(clientData);
 
-    for (const guild of guilds.cache.values()) {
+    for (const guild of (guilds as unknown as CommandoGuildManager).cache.values()) {
         const guildData = data.mapValues(coll => coll.filter(doc => doc.guild === guild.id));
         // @ts-expect-error: init is protected in GuildDatabaseManager
         guild.database.init(guildData);

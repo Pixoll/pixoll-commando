@@ -18,7 +18,6 @@ import { Nullable } from '../util';
 // @ts-expect-error: Guild's constructor is private
 export default class CommandoGuild extends Guild {
     /** The client the guild is for */
-    // @ts-expect-error: CommandoClient extends Client
     declare public readonly client: CommandoClient<true>;
     // @ts-expect-error: CommandoGuildChannelManager extends GuildChannelManager
     declare public channels: CommandoGuildChannelManager;
@@ -49,7 +48,6 @@ export default class CommandoGuild extends Guild {
      * @param data - The guild data
      */
     public constructor(client: CommandoClient<true>, data: Guild) {
-        // @ts-expect-error: CommandoClient extends Client
         super(client, guildToJSON(data));
         Object.assign(this, data);
 

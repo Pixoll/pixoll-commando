@@ -64,7 +64,6 @@ const doubleSmartQuote = /[“”]/g;
 // @ts-expect-error: Message's constructor is private
 export default class CommandoMessage<InGuild extends boolean = boolean> extends Message<InGuild> {
     /** The client the message is for */
-    // @ts-expect-error: CommandoClient extends Client
     declare public readonly client: CommandoClient<true>;
     /** Whether the message contains a command (even an unknown one) */
     public isCommand: boolean;
@@ -84,7 +83,6 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
      * @param data - The message data
      */
     public constructor(client: CommandoClient<true>, data: CommandoifiedMessage) {
-        // @ts-expect-error: CommandoClient extends Client
         super(client, messageToJSON(data));
         Object.assign(this, data);
 

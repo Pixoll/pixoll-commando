@@ -1,6 +1,7 @@
-import { Collection } from 'discord.js';
+import { Collection, GuildResolvable } from 'discord.js';
 import CommandoClient from '../client';
 import { CommandoGuildResolvable } from '../discord.overrides';
+import CommandoGuild from '../extensions/guild';
 import Command from './base';
 
 /** A group for commands. Whodathunkit? */
@@ -54,7 +55,7 @@ export default class CommandGroup {
             if (!silent) client.emit('groupStatusChange', null, this, enabled);
             return;
         }
-        const commandoGuild = client.guilds.resolve(guild);
+        const commandoGuild = client.guilds.resolve(guild as GuildResolvable) as unknown as CommandoGuild | null;
         if (!commandoGuild) throw new Error(`Couldn't resolve guild ${guild}`);
         commandoGuild.setGroupEnabled(this, enabled, silent);
     }
@@ -68,7 +69,7 @@ export default class CommandGroup {
         const { client, _globalEnabled, guarded } = this;
         if (guarded) return true;
         if (!guild) return _globalEnabled;
-        const commandoGuild = client.guilds.resolve(guild);
+        const commandoGuild = client.guilds.resolve(guild as GuildResolvable) as unknown as CommandoGuild | null;
         if (!commandoGuild) throw new Error(`Couldn't resolve guild ${guild}`);
         return commandoGuild.isGroupEnabled(this);
     }

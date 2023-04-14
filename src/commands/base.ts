@@ -24,6 +24,7 @@ import {
     ContextMenuCommandBuilder,
     ApplicationCommandType,
     ApplicationCommandOptionAllowedChannelTypes,
+    GuildResolvable,
 } from 'discord.js';
 import path from 'path';
 import ArgumentCollector, { ArgumentCollectorResult, ParseRawArguments } from './collector';
@@ -723,7 +724,8 @@ export default abstract class Command<
             if (!silent) client.emit('commandStatusChange', null, this as unknown as Command, enabled);
             return;
         }
-        const commandoGuild = client.guilds.resolve(guild) as CommandoGuild;
+        const commandoGuild = client.guilds.resolve(guild as GuildResolvable) as unknown as CommandoGuild | null;
+        if (!commandoGuild) throw new Error(`Couldn't resolve guild ${guild}`);
         commandoGuild.setCommandEnabled(this as unknown as Command, enabled, silent);
     }
 
@@ -736,7 +738,8 @@ export default abstract class Command<
         const { client, group } = this;
         if (this.guarded) return true;
         if (!guild) return group.isEnabledIn(null) && this._globalEnabled;
-        const commandoGuild = client.guilds.resolve(guild) as CommandoGuild;
+        const commandoGuild = client.guilds.resolve(guild as GuildResolvable) as unknown as CommandoGuild | null;
+        if (!commandoGuild) throw new Error(`Couldn't resolve guild ${guild}`);
         return (
             bypassGroup || commandoGuild.isGroupEnabled(group)
         ) && commandoGuild.isCommandEnabled(this as unknown as Command);

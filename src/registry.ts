@@ -124,7 +124,7 @@ export default class CommandoRegistry {
         const { client, commands } = this;
         const { application, options, guilds } = client as CommandoClient<true>;
 
-        const testAppGuild = await guilds.fetch(options.testAppGuild ?? '0').catch(() => null);
+        const testAppGuild = await guilds.fetch(options.testAppGuild ?? '0').catch(() => null) as CommandoGuild | null;
         const registeredCommands = await Promise.all([
             testAppGuild?.commands.fetch(),
             application.commands.fetch(),

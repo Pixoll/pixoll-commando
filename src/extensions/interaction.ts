@@ -59,7 +59,6 @@ const APISlashCommandOptionTypeMap = Object.fromEntries(Util.getEnumEntries(Slas
 /** An extension of the base Discord.js ChatInputCommandInteraction class to add command-related functionality. */
 export default class CommandoInteraction<InGuild extends boolean = boolean> extends ChatInputCommandInteraction {
     /** The client the interaction is for */
-    // @ts-expect-error: CommandoClient extends Client
     declare public readonly client: CommandoClient<true>;
     // @ts-expect-error: member is CommandoGuildMember
     declare public member: If<InGuild, CommandoGuildMember>;
@@ -72,7 +71,6 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
      * @param data - The interaction data
      */
     public constructor(client: CommandoClient<true>, data: CommandoChatInputCommandInteraction) {
-        // @ts-expect-error: CommandoClient extends Client
         super(client, interactionToJSON(data));
         Object.assign(this, data);
 
@@ -167,7 +165,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
     public async run(): Promise<void> {
         const { command, channelId, channel: tempChannel, guild, author, guildId, client } = this;
         const clientUser = client.user;
-        const channel = tempChannel ?? await client.channels.fetch(channelId) as CommandContextChannel<false>;
+        const channel = tempChannel ?? await client.channels.fetch(channelId) as unknown as CommandContextChannel<false>;
 
         if (guild && !channel.isDMBased()) {
             const { members } = guild;

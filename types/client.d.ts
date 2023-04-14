@@ -1,4 +1,4 @@
-import { Awaitable, Client, ClientOptions, Collection, Guild, InviteGenerationOptions, IntentsBitField, Message, ClientFetchInviteOptions, User, If } from 'discord.js';
+import { Awaitable, Client, ClientOptions, Collection, Guild, InviteGenerationOptions, IntentsBitField, Message, User, If } from 'discord.js';
 import CommandoRegistry from './registry';
 import CommandDispatcher from './dispatcher';
 import CommandoMessage from './extensions/message';
@@ -7,7 +7,7 @@ import ClientDatabaseManager from './database/ClientDatabaseManager';
 import Schemas from './database/Schemas';
 import GuildDatabaseManager from './database/GuildDatabaseManager';
 import { Nullable } from './util';
-import { BaseCommandoGuildEmojiManager, CommandoChannelManager, CommandoGuildManager, CommandoInvite, CommandoUserResolvable, OverwrittenClientEvents } from './discord.overrides';
+import { CommandoUserResolvable, OverwrittenClientEvents } from './discord.overrides';
 import Command, { CommandBlockData, CommandBlockReason, CommandContext } from './commands/base';
 import { ArgumentCollectorResult } from './commands/collector';
 import ArgumentType from './types/base';
@@ -98,8 +98,6 @@ export default class CommandoClient<ClientReady extends boolean = boolean, Provi
     databaseSchemas: typeof Schemas;
     /** The client's command dispatcher */
     dispatcher: CommandDispatcher;
-    guilds: CommandoGuildManager;
-    channels: CommandoChannelManager;
     /** Options for the client */
     options: Omit<CommandoClientOptions, 'intents'> & {
         intents: IntentsBitField;
@@ -114,8 +112,6 @@ export default class CommandoClient<ClientReady extends boolean = boolean, Provi
      * @param options - Options for the client
      */
     constructor(options: CommandoClientOptions);
-    get emojis(): BaseCommandoGuildEmojiManager;
-    fetchInvite(invite: string, options?: ClientFetchInviteOptions): Promise<CommandoInvite>;
     /**
      * Global command prefix. An empty string indicates that there is no default prefix, and only mentions will be used.
      * Setting to `null` means that the default prefix from {@link CommandoClient.options CommandoClient#options} will
