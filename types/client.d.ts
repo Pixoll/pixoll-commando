@@ -1,7 +1,7 @@
-import { Awaitable, Client, ClientOptions, Collection, Guild, InviteGenerationOptions, IntentsBitField, Message, User, If } from 'discord.js';
+import { Awaitable, Client, ClientOptions, Collection, Guild, InviteGenerationOptions, IntentsBitField, User, If } from 'discord.js';
 import CommandoRegistry from './registry';
 import CommandDispatcher from './dispatcher';
-import CommandoMessage from './extensions/message';
+import CommandoMessage, { CommandoMessageResponse } from './extensions/message';
 import CommandoGuild from './extensions/guild';
 import ClientDatabaseManager from './database/ClientDatabaseManager';
 import Schemas from './database/Schemas';
@@ -65,7 +65,7 @@ export interface CommandoClientEvents extends OverwrittenClientEvents {
     commandReregister: [newCommand: Command, oldCommand: Command];
     commandRun: [
         command: Command,
-        promise: Awaitable<Message | Message[] | null | void>,
+        promise: Awaitable<Nullable<CommandoMessageResponse> | void>,
         context: CommandContext,
         args: Record<string, unknown> | string[] | string,
         fromPattern?: boolean,

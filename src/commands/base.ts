@@ -28,11 +28,11 @@ import {
 } from 'discord.js';
 import path from 'path';
 import ArgumentCollector, { ArgumentCollectorResult, ParseRawArguments } from './collector';
-import Util from '../util';
+import Util, { Nullable } from '../util';
 import CommandoClient from '../client';
 import CommandGroup from './group';
 import { ArgumentInfoResolvable, ArgumentTypeString } from './argument';
-import CommandoMessage from '../extensions/message';
+import CommandoMessage, { CommandoMessageResponse } from '../extensions/message';
 import CommandoGuild from '../extensions/guild';
 import CommandoInteraction from '../extensions/interaction';
 import {
@@ -547,7 +547,7 @@ export default abstract class Command<
         args: ParseRawArguments<Args> | string[] | string,
         fromPattern?: boolean,
         result?: ArgumentCollectorResult | null
-    ): Awaitable<Message | Message[] | null | void>;
+    ): Awaitable<Nullable<CommandoMessageResponse> | void>;
 
     /**
      * Run the slash command auto-complete interaction logic.

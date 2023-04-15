@@ -1,10 +1,11 @@
 /// <reference types="node" />
 import { Message, PermissionsString, User, ApplicationCommandOptionType as SlashCommandOptionType, ChatInputApplicationCommandData, RESTPostAPIContextMenuApplicationCommandsJSONBody as APIContextMenuCommand, RESTPostAPIChatInputApplicationCommandsJSONBody as RESTPostAPISlashCommand, Awaitable, ContextMenuCommandType, LocalizationMap } from 'discord.js';
 import ArgumentCollector, { ArgumentCollectorResult, ParseRawArguments } from './collector';
+import { Nullable } from '../util';
 import CommandoClient from '../client';
 import CommandGroup from './group';
 import { ArgumentInfoResolvable } from './argument';
-import CommandoMessage from '../extensions/message';
+import CommandoMessage, { CommandoMessageResponse } from '../extensions/message';
 import CommandoInteraction from '../extensions/interaction';
 import { CommandoAutocompleteInteraction, CommandoGuildResolvable, CommandoMessageContextMenuCommandInteraction, CommandoUserContextMenuCommandInteraction } from '../discord.overrides';
 /** Options for throttling usages of the command. */
@@ -364,7 +365,7 @@ export default abstract class Command<InGuild extends boolean = boolean, Args ex
      * @param fromPattern - Whether or not the command is being run from a pattern match
      * @param result - Result from obtaining the arguments from the collector (if applicable)
      */
-    abstract run(context: CommandContext<InGuild>, args: ParseRawArguments<Args> | string[] | string, fromPattern?: boolean, result?: ArgumentCollectorResult | null): Awaitable<Message | Message[] | null | void>;
+    abstract run(context: CommandContext<InGuild>, args: ParseRawArguments<Args> | string[] | string, fromPattern?: boolean, result?: ArgumentCollectorResult | null): Awaitable<Nullable<CommandoMessageResponse> | void>;
     /**
      * Run the slash command auto-complete interaction logic.
      * @param interaction - The auto-complete interaction
