@@ -4,12 +4,6 @@ import { RawGuildData } from 'discord.js/typings/rawDataTypes';
 import CommandoClient, { CommandoClientEvents } from '../client';
 import Command from '../commands/base';
 import GuildDatabaseManager from '../database/GuildDatabaseManager';
-import {
-    CommandoGuildChannelManager,
-    CommandoGuildEmojiManager,
-    CommandoGuildMemberManager,
-    CommandoRoleManager,
-} from '../discord.overrides';
 import GuildSettingsHelper from '../providers/helper';
 import { CommandGroupResolvable, CommandResolvable } from '../registry';
 import { Nullable } from '../util';
@@ -19,14 +13,6 @@ import { Nullable } from '../util';
 export default class CommandoGuild extends Guild {
     /** The client the guild is for */
     declare public readonly client: CommandoClient<true>;
-    // @ts-expect-error: CommandoGuildChannelManager extends GuildChannelManager
-    declare public channels: CommandoGuildChannelManager;
-    // @ts-expect-error: CommandoGuildEmojiManager extends GuildEmojiManager
-    declare public emojis: CommandoGuildEmojiManager;
-    // @ts-expect-error: CommandoGuildMemberManager extends GuildMemberManager
-    declare public members: CommandoGuildMemberManager;
-    // @ts-expect-error: CommandoRoleManager extends RoleManager
-    declare public roles: CommandoRoleManager;
     /** The database manager for the guild */
     public database: GuildDatabaseManager;
     /** Shortcut to use setting provider methods for this guild */

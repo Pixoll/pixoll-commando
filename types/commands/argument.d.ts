@@ -1,6 +1,5 @@
-import { Message, Awaitable } from 'discord.js';
+import { Message, Awaitable, CategoryChannel, ForumChannel, GuildEmoji, Invite, GuildMember, NewsChannel, Role, StageChannel, TextChannel, User, VoiceChannel, GuildBasedChannel, AnyThreadChannel } from 'discord.js';
 import CommandoClient from '../client';
-import { CommandoCategoryChannel, CommandoChannel, CommandoForumChannel, CommandoGuildEmoji, CommandoGuildMember, CommandoifiedMessage, CommandoInvite, CommandoNewsChannel, CommandoRole, CommandoStageChannel, CommandoTextChannel, CommandoThreadChannel, CommandoUser, CommandoVoiceChannel } from '../discord.overrides';
 import CommandoMessage from '../extensions/message';
 import ArgumentType from '../types/base';
 import Command from './base';
@@ -12,29 +11,29 @@ type ArgumentCheckerParams<T extends ArgumentTypeString = ArgumentTypeString> = 
 ];
 export interface ArgumentTypeStringMap {
     boolean: boolean;
-    'category-channel': CommandoCategoryChannel;
-    channel: CommandoChannel;
+    'category-channel': CategoryChannel;
+    channel: GuildBasedChannel;
     command: Command;
     date: Date;
     'default-emoji': string;
     duration: number;
     float: number;
-    'forum-channel': CommandoForumChannel;
+    'forum-channel': ForumChannel;
     group: CommandGroup;
-    'guild-emoji': CommandoGuildEmoji;
+    'guild-emoji': GuildEmoji;
     integer: number;
-    invite: CommandoInvite;
-    member: CommandoGuildMember;
-    message: CommandoifiedMessage;
-    'news-channel': CommandoNewsChannel;
-    role: CommandoRole;
-    'stage-channel': CommandoStageChannel;
+    invite: Invite;
+    member: GuildMember;
+    message: Message;
+    'news-channel': NewsChannel;
+    role: Role;
+    'stage-channel': StageChannel;
     string: string;
-    'text-channel': CommandoTextChannel;
-    'thread-channel': CommandoThreadChannel;
+    'text-channel': TextChannel;
+    'thread-channel': AnyThreadChannel;
     time: Date;
-    user: CommandoUser;
-    'voice-channel': CommandoVoiceChannel;
+    user: User;
+    'voice-channel': VoiceChannel;
 }
 export type ArgumentTypeString = keyof ArgumentTypeStringMap;
 /** Either a value or a function that returns a value. The function is passed the CommandoMessage and the Argument. */

@@ -290,12 +290,10 @@ export type CommandoUserResolvable =
 
 export type CommandoGuildMemberResolvable = CommandoGuildMember | CommandoUserResolvable | GuildMemberResolvable;
 
-// @ts-expect-error: CommandoGuild extends Guild
 export interface FetchCommandoMemberOptions extends FetchMemberOptions {
     user: CommandoUserResolvable;
 }
 
-// @ts-expect-error: CommandoGuildMember extends GuildMember
 export interface FetchCommandoMembersOptions extends FetchMembersOptions {
     user?: CommandoUserResolvable | CommandoUserResolvable[];
 }
@@ -322,40 +320,33 @@ export type CommandoRoleResolvable = CommandoRole | Role | Snowflake;
 
 // @ts-expect-error: private constructor
 export declare class CommandoAutoModerationActionExecution extends AutoModerationActionExecution {
-    // @ts-expect-error: CommandoGuild extends Guild
     public guild: CommandoGuild;
-    // @ts-expect-error: CommandoGuild extends Guild
     public get autoModerationRule(): CommandoAutoModerationRule | null;
 }
 
 // @ts-expect-error: private constructor
 export declare class CommandoAutoModerationRule extends AutoModerationRule {
     public readonly client: CommandoClient<true>;
-    // @ts-expect-error: CommandoGuild extends Guild
     public guild: CommandoGuild;
 }
 
 // @ts-expect-error: private constructor
 export declare class CommandoGuildEmoji extends GuildEmoji {
     public readonly client: CommandoClient<true>;
-    // @ts-expect-error: CommandoGuild extends Guild
     public guild: CommandoGuild;
 }
 
 // @ts-expect-error: private constructor
 export declare class CommandoGuildBan extends GuildBan {
     public readonly client: CommandoClient<true>;
-    // @ts-expect-error: CommandoGuild extends Guild
     public guild: CommandoGuild;
 }
 
 // @ts-expect-error: private constructor
 export declare class CommandoGuildMember extends GuildMember {
     public readonly client: CommandoClient<true>;
-    // @ts-expect-error: CommandoGuild extends Guild
     public guild: CommandoGuild;
     public user: CommandoUser;
-    // @ts-expect-error: CommandoClient extends Client
     public isCommunicationDisabled(): this is CommandoGuildMember & {
         communicationDisabledUntilTimestamp: number;
         readonly communicationDisabledUntil: Date;
@@ -364,35 +355,29 @@ export declare class CommandoGuildMember extends GuildMember {
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface PartialCommandoGuildMember extends Partialize<
-    // @ts-expect-error: CommandoGuildMember extends GuildMember
     CommandoGuildMember, 'joinedAt' | 'joinedTimestamp' | 'pending'
 > { }
 
 // @ts-expect-error: private constructor
 export declare class CommandoInvite extends Invite {
-    // @ts-expect-error: CommandoGuild extends Guild
     public guild: CommandoGuild | Exclude<Invite['guild'], Guild>;
 }
 
 export declare class CommandoPresence extends Presence {
     public readonly client: CommandoClient<true>;
-    // @ts-expect-error: CommandoGuild extends Guild
     public guild: CommandoGuild | null;
 }
 
 // @ts-expect-error: private constructor
 export declare class CommandoRole extends Role {
     public readonly client: CommandoClient<true>;
-    // @ts-expect-error: CommandoGuild extends Guild
     public guild: CommandoGuild;
 }
 
 // @ts-expect-error: private constructor
 export declare class CommandoTyping extends Typing {
     public readonly client: CommandoClient<true>;
-    // @ts-expect-error: CommandoGuild extends Guild
     public get guild(): CommandoGuild | null;
-    // @ts-expect-error: CommandoGuild extends Guild
     public inGuild(): this is this & {
         channel: CommandoNewsChannel | CommandoTextChannel | CommandoThreadChannel;
         get guild(): CommandoGuild;
@@ -402,21 +387,18 @@ export declare class CommandoTyping extends Typing {
 // @ts-expect-error: private constructor
 export declare class CommandoVoiceState extends VoiceState {
     public readonly client: CommandoClient<true>;
-    // @ts-expect-error: CommandoGuild extends Guild
     public guild: CommandoGuild;
 }
 
 // @ts-expect-error: private constructor
 export declare class CommandoStageInstance extends StageInstance {
     public readonly client: CommandoClient<true>;
-    // @ts-expect-error: CommandoGuild extends Guild
     public get guild(): CommandoGuild | null;
 }
 
 // @ts-expect-error: private constructor
 export declare class CommandoSticker extends Sticker {
     public readonly client: CommandoClient<true>;
-    // @ts-expect-error: CommandoGuild extends Guild
     public get guild(): CommandoGuild | null;
 }
 
@@ -425,160 +407,108 @@ export declare class CommandoGuildScheduledEvent<
 // @ts-expect-error: private constructor
 > extends GuildScheduledEvent<S> {
     public readonly client: CommandoClient<true>;
-    // @ts-expect-error: CommandoGuild extends Guild
     public get guild(): CommandoGuild | null;
-    // @ts-expect-error: CommandoGuild extends Guild
     public isActive(): this is CommandoGuildScheduledEvent<GuildScheduledEventStatus.Active>;
-    // @ts-expect-error: CommandoGuild extends Guild
     public isCanceled(): this is CommandoGuildScheduledEvent<GuildScheduledEventStatus.Canceled>;
-    // @ts-expect-error: CommandoGuild extends Guild
     public isCompleted(): this is CommandoGuildScheduledEvent<GuildScheduledEventStatus.Completed>;
-    // @ts-expect-error: CommandoGuild extends Guild
     public isScheduled(): this is CommandoGuildScheduledEvent<GuildScheduledEventStatus.Scheduled>;
 }
 
 // @ts-expect-error: private constructor
 export declare class CommandoifiedMessage<InGuild extends boolean = boolean> extends Message<InGuild> {
     public readonly client: CommandoClient<true>;
-    // @ts-expect-error: CommandoGuild extends Guild
     public get guild(): If<InGuild, CommandoGuild>;
-    // @ts-expect-error: CommandoGuild extends Guild
     public inGuild(): this is CommandoifiedMessage<true>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface PartialCommandoifiedMessage extends Partialize<
-    // @ts-expect-error: CommandoGuild extends Guild
     CommandoifiedMessage, 'pinned' | 'system' | 'tts' | 'type', 'author' | 'cleanContent' | 'content'
 > { }
 
 export declare class CommandoCategoryChannel extends CategoryChannel {
     public readonly client: CommandoClient<true>;
-    // @ts-expect-error: CommandoGuild extends Guild
     public guild: CommandoGuild;
-    // @ts-expect-error: CommandoPrivateThreadChannel extends PrivateThreadChannel
     public isThread(): this is AnyCommandoThreadChannel;
-    // @ts-expect-error: CommandoPrivateThreadChannel extends PrivateThreadChannel
     public isTextBased(): this is CommandoGuildBasedChannel & CommandoTextBasedChannel;
-    // @ts-expect-error: AnyCommandoThreadChannel extends AnyThreadChannel
     public isDMBased(): this is CommandoDMChannel | PartialCommandoDMChannel | PartialCommandoGroupDMChannel;
-    // @ts-expect-error: CommandoGuild extends Guild
     public isVoiceBased(): this is CommandoVoiceBasedChannel;
 }
 
 // @ts-expect-error: private constructor
 export declare class CommandoDMChannel extends DMChannel {
     public readonly client: CommandoClient<true>;
-    // @ts-expect-error: CommandoPrivateThreadChannel extends PrivateThreadChannel
     public isThread(): this is AnyCommandoThreadChannel;
-    // @ts-expect-error: CommandoPrivateThreadChannel extends PrivateThreadChannel
     public isTextBased(): this is CommandoTextBasedChannel;
-    // @ts-expect-error: AnyCommandoThreadChannel extends AnyThreadChannel
     public isDMBased(): this is CommandoDMChannel | PartialCommandoDMChannel | PartialCommandoGroupDMChannel;
-    // @ts-expect-error: CommandoGuild extends Guild
     public isVoiceBased(): this is CommandoVoiceBasedChannel;
 }
 
-// @ts-expect-error: CommandoDMChannel extends DMChannel
 export interface PartialCommandoDMChannel extends Partialize<CommandoDMChannel, null, null, 'lastMessageId'> {
     lastMessageId: undefined;
 }
 
 export declare class CommandoForumChannel extends ForumChannel {
     public readonly client: CommandoClient<true>;
-    // @ts-expect-error: CommandoGuild extends Guild
     public guild: CommandoGuild;
-    // @ts-expect-error: CommandoPrivateThreadChannel extends PrivateThreadChannel
     public isThread(): this is AnyCommandoThreadChannel;
-    // @ts-expect-error: CommandoPrivateThreadChannel extends PrivateThreadChannel
     public isTextBased(): this is CommandoGuildBasedChannel & CommandoTextBasedChannel;
-    // @ts-expect-error: AnyCommandoThreadChannel extends AnyThreadChannel
     public isDMBased(): this is CommandoDMChannel | PartialCommandoDMChannel | PartialCommandoGroupDMChannel;
-    // @ts-expect-error: CommandoGuild extends Guild
     public isVoiceBased(): this is CommandoVoiceBasedChannel;
 }
 
 // @ts-expect-error: private constructor
 export declare class PartialCommandoGroupDMChannel extends PartialGroupDMChannel {
     public readonly client: CommandoClient<true>;
-    // @ts-expect-error: CommandoPrivateThreadChannel extends PrivateThreadChannel
     public isThread(): this is AnyCommandoThreadChannel;
-    // @ts-expect-error: CommandoPrivateThreadChannel extends PrivateThreadChannel
     public isTextBased(): this is CommandoTextBasedChannel;
-    // @ts-expect-error: AnyCommandoThreadChannel extends AnyThreadChannel
     public isDMBased(): this is CommandoDMChannel | PartialCommandoDMChannel | PartialCommandoGroupDMChannel;
-    // @ts-expect-error: CommandoGuild extends Guild
     public isVoiceBased(): this is CommandoVoiceBasedChannel;
 }
 
 export declare class CommandoNewsChannel extends NewsChannel {
     public readonly client: CommandoClient<true>;
-    // @ts-expect-error: CommandoGuild extends Guild
     public guild: CommandoGuild;
-    // @ts-expect-error: CommandoPrivateThreadChannel extends PrivateThreadChannel
     public isThread(): this is AnyCommandoThreadChannel;
-    // @ts-expect-error: CommandoPrivateThreadChannel extends PrivateThreadChannel
     public isTextBased(): this is CommandoGuildBasedChannel & CommandoTextBasedChannel;
-    // @ts-expect-error: AnyCommandoThreadChannel extends AnyThreadChannel
     public isDMBased(): this is CommandoDMChannel | PartialCommandoDMChannel | PartialCommandoGroupDMChannel;
-    // @ts-expect-error: CommandoGuild extends Guild
     public isVoiceBased(): this is CommandoVoiceBasedChannel;
 }
 
 export declare class CommandoStageChannel extends StageChannel {
     public readonly client: CommandoClient<true>;
-    // @ts-expect-error: CommandoGuild extends Guild
     public guild: CommandoGuild;
-    // @ts-expect-error: CommandoPrivateThreadChannel extends PrivateThreadChannel
     public isThread(): this is AnyCommandoThreadChannel;
-    // @ts-expect-error: CommandoPrivateThreadChannel extends PrivateThreadChannel
     public isTextBased(): this is CommandoGuildBasedChannel & CommandoTextBasedChannel;
-    // @ts-expect-error: AnyCommandoThreadChannel extends AnyThreadChannel
     public isDMBased(): this is CommandoDMChannel | PartialCommandoDMChannel | PartialCommandoGroupDMChannel;
-    // @ts-expect-error: CommandoGuild extends Guild
     public isVoiceBased(): this is CommandoVoiceBasedChannel;
 }
 
 export declare class CommandoTextChannel extends TextChannel {
     public readonly client: CommandoClient<true>;
-    // @ts-expect-error: CommandoGuild extends Guild
     public guild: CommandoGuild;
-    // @ts-expect-error: CommandoPrivateThreadChannel extends PrivateThreadChannel
     public isThread(): this is AnyCommandoThreadChannel;
-    // @ts-expect-error: CommandoPrivateThreadChannel extends PrivateThreadChannel
     public isTextBased(): this is CommandoGuildBasedChannel & CommandoTextBasedChannel;
-    // @ts-expect-error: AnyCommandoThreadChannel extends AnyThreadChannel
     public isDMBased(): this is CommandoDMChannel | PartialCommandoDMChannel | PartialCommandoGroupDMChannel;
-    // @ts-expect-error: CommandoGuild extends Guild
     public isVoiceBased(): this is CommandoVoiceBasedChannel;
 }
 
 // @ts-expect-error: private constructor
 export declare class CommandoThreadChannel extends ThreadChannel {
     public readonly client: CommandoClient<true>;
-    // @ts-expect-error: CommandoGuild extends Guild
     public guild: CommandoGuild;
-    // @ts-expect-error: CommandoPrivateThreadChannel extends PrivateThreadChannel
     public isThread(): this is AnyCommandoThreadChannel;
-    // @ts-expect-error: CommandoPrivateThreadChannel extends PrivateThreadChannel
     public isTextBased(): this is CommandoTextBasedChannel;
-    // @ts-expect-error: AnyCommandoThreadChannel extends AnyThreadChannel
     public isDMBased(): this is CommandoDMChannel | PartialCommandoDMChannel | PartialCommandoGroupDMChannel;
-    // @ts-expect-error: CommandoGuild extends Guild
     public isVoiceBased(): this is CommandoVoiceBasedChannel;
 }
 
 export declare class CommandoVoiceChannel extends VoiceChannel {
     public readonly client: CommandoClient<true>;
-    // @ts-expect-error: CommandoGuild extends Guild
     public guild: CommandoGuild;
-    // @ts-expect-error: CommandoPrivateThreadChannel extends PrivateThreadChannel
     public isThread(): this is AnyCommandoThreadChannel;
-    // @ts-expect-error: CommandoPrivateThreadChannel extends PrivateThreadChannel
     public isTextBased(): this is CommandoGuildBasedChannel & CommandoTextBasedChannel;
-    // @ts-expect-error: AnyCommandoThreadChannel extends AnyThreadChannel
     public isDMBased(): this is CommandoDMChannel | PartialCommandoDMChannel | PartialCommandoGroupDMChannel;
-    // @ts-expect-error: CommandoGuild extends Guild
     public isVoiceBased(): this is CommandoVoiceBasedChannel;
 }
 
@@ -586,7 +516,6 @@ export type AnyCommandoThreadChannel<Forum extends boolean = boolean> =
     | CommandoPrivateThreadChannel
     | CommandoPublicThreadChannel<Forum>;
 
-// @ts-expect-error: CommandoGuild extends Guild
 export interface CommandoPublicThreadChannel<Forum extends boolean = boolean> extends PublicThreadChannel<Forum> {
     readonly client: CommandoClient<true>;
     guild: CommandoGuild;
@@ -596,7 +525,6 @@ export interface CommandoPublicThreadChannel<Forum extends boolean = boolean> ex
     isVoiceBased(): this is CommandoVoiceBasedChannel;
 }
 
-// @ts-expect-error: CommandoGuild extends Guild
 export interface CommandoPrivateThreadChannel extends PrivateThreadChannel {
     readonly client: CommandoClient<true>;
     guild: CommandoGuild;
@@ -608,15 +536,10 @@ export interface CommandoPrivateThreadChannel extends PrivateThreadChannel {
 
 export declare class CommandoGuildChannel extends GuildChannel {
     public readonly client: CommandoClient<true>;
-    // @ts-expect-error: CommandoGuild extends Guild
     public guild: CommandoGuild;
-    // @ts-expect-error: CommandoPrivateThreadChannel extends PrivateThreadChannel
     public isThread(): this is AnyCommandoThreadChannel;
-    // @ts-expect-error: CommandoPrivateThreadChannel extends PrivateThreadChannel
     public isTextBased(): this is CommandoGuildBasedChannel & CommandoTextBasedChannel;
-    // @ts-expect-error: AnyCommandoThreadChannel extends AnyThreadChannel
     public isDMBased(): this is CommandoDMChannel | PartialCommandoDMChannel | PartialCommandoGroupDMChannel;
-    // @ts-expect-error: CommandoGuild extends Guild
     public isVoiceBased(): this is CommandoVoiceBasedChannel;
 }
 

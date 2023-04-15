@@ -1,10 +1,9 @@
 import ArgumentType from './base';
 import Util from '../util';
-import { ChannelType, escapeMarkdown } from 'discord.js';
+import { ChannelType, escapeMarkdown, GuildBasedChannel, StageChannel } from 'discord.js';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 import Argument from '../commands/argument';
-import { CommandoGuildBasedChannel, CommandoStageChannel } from '../discord.overrides';
 
 export default class StageChannelArgumentType extends ArgumentType<'stage-channel'> {
     public constructor(client: CommandoClient) {
@@ -51,9 +50,9 @@ export default class StageChannelArgumentType extends ArgumentType<'stage-channe
             : 'Multiple stage channels found. Please be more specific.';
     }
 
-    public parse(value: string, message: CommandoMessage): CommandoStageChannel | null {
+    public parse(value: string, message: CommandoMessage): StageChannel | null {
         const matches = value.match(/^(?:<#)?(\d+)>?$/);
-        if (matches) return message.client.channels.resolve(matches[1]) as CommandoStageChannel | null;
+        if (matches) return message.client.channels.resolve(matches[1]) as StageChannel | null;
 
         if (!message.inGuild()) return null;
 
@@ -70,11 +69,11 @@ export default class StageChannelArgumentType extends ArgumentType<'stage-channe
 }
 
 function channelFilterExact(search: string) {
-    return (channel: CommandoGuildBasedChannel): channel is CommandoStageChannel =>
+    return (channel: GuildBasedChannel): channel is StageChannel =>
         channel.type === ChannelType.GuildStageVoice && channel.name.toLowerCase() === search;
 }
 
 function channelFilterInexact(search: string) {
-    return (chan: CommandoGuildBasedChannel): chan is CommandoStageChannel =>
+    return (chan: GuildBasedChannel): chan is StageChannel =>
         chan.type === ChannelType.GuildStageVoice && chan.name.toLowerCase().includes(search);
 }

@@ -1,7 +1,6 @@
 import { Guild, User, EmbedBuilder } from 'discord.js';
 import CommandoClient from '../client';
 import GuildDatabaseManager from '../database/GuildDatabaseManager';
-import { CommandoGuildChannelManager, CommandoGuildEmojiManager, CommandoGuildMemberManager, CommandoRoleManager } from '../discord.overrides';
 import GuildSettingsHelper from '../providers/helper';
 import { CommandGroupResolvable, CommandResolvable } from '../registry';
 import { Nullable } from '../util';
@@ -9,10 +8,6 @@ import { Nullable } from '../util';
 export default class CommandoGuild extends Guild {
     /** The client the guild is for */
     readonly client: CommandoClient<true>;
-    channels: CommandoGuildChannelManager;
-    emojis: CommandoGuildEmojiManager;
-    members: CommandoGuildMemberManager;
-    roles: CommandoRoleManager;
     /** The database manager for the guild */
     database: GuildDatabaseManager;
     /** Shortcut to use setting provider methods for this guild */

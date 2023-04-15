@@ -1,10 +1,9 @@
 import ArgumentType from './base';
 import Util from '../util';
-import { escapeMarkdown } from 'discord.js';
+import { AnyThreadChannel, escapeMarkdown, GuildBasedChannel } from 'discord.js';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 import Argument from '../commands/argument';
-import { AnyCommandoThreadChannel, CommandoGuildBasedChannel } from '../discord.overrides';
 
 export default class ThreadChannelArgumentType extends ArgumentType<'thread-channel'> {
     public constructor(client: CommandoClient) {
@@ -51,9 +50,9 @@ export default class ThreadChannelArgumentType extends ArgumentType<'thread-chan
             : 'Multiple thread channels found. Please be more specific.';
     }
 
-    public parse(value: string, message: CommandoMessage): AnyCommandoThreadChannel | null {
+    public parse(value: string, message: CommandoMessage): AnyThreadChannel | null {
         const matches = value.match(/^(?:<#)?(\d+)>?$/);
-        if (matches) return message.client.channels.resolve(matches[1]) as AnyCommandoThreadChannel | null;
+        if (matches) return message.client.channels.resolve(matches[1]) as AnyThreadChannel | null;
 
         if (!message.inGuild()) return null;
 
@@ -70,11 +69,11 @@ export default class ThreadChannelArgumentType extends ArgumentType<'thread-chan
 }
 
 function channelFilterExact(search: string) {
-    return (chan: CommandoGuildBasedChannel): chan is AnyCommandoThreadChannel =>
+    return (chan: GuildBasedChannel): chan is AnyThreadChannel =>
         chan.isThread() && chan.name.toLowerCase() === search;
 }
 
 function channelFilterInexact(search: string) {
-    return (chan: CommandoGuildBasedChannel): chan is AnyCommandoThreadChannel =>
+    return (chan: GuildBasedChannel): chan is AnyThreadChannel =>
         chan.isThread() && chan.name.toLowerCase().includes(search);
 }

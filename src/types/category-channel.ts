@@ -1,10 +1,9 @@
 import ArgumentType from './base';
 import Util from '../util';
-import { ChannelType, escapeMarkdown } from 'discord.js';
+import { ChannelType, CategoryChannel, escapeMarkdown, GuildBasedChannel } from 'discord.js';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 import Argument from '../commands/argument';
-import { CommandoCategoryChannel, CommandoGuildBasedChannel } from '../discord.overrides';
 
 export default class CategoryChannelArgumentType extends ArgumentType<'category-channel'> {
     public constructor(client: CommandoClient) {
@@ -54,9 +53,9 @@ export default class CategoryChannelArgumentType extends ArgumentType<'category-
             : 'Multiple categories found. Please be more specific.';
     }
 
-    public parse(value: string, message: CommandoMessage): CommandoCategoryChannel | null {
+    public parse(value: string, message: CommandoMessage): CategoryChannel | null {
         const matches = value.match(/^(?:<#)?(\d+)>?$/);
-        if (matches) return message.client.channels.resolve(matches[1]) as CommandoCategoryChannel | null;
+        if (matches) return message.client.channels.resolve(matches[1]) as CategoryChannel | null;
 
         if (!message.guild) return null;
 
@@ -73,11 +72,11 @@ export default class CategoryChannelArgumentType extends ArgumentType<'category-
 }
 
 function channelFilterExact(search: string) {
-    return (channel: CommandoGuildBasedChannel): channel is CommandoCategoryChannel =>
+    return (channel: GuildBasedChannel): channel is CategoryChannel =>
         channel.type === ChannelType.GuildCategory && channel.name.toLowerCase() === search;
 }
 
 function channelFilterInexact(search: string) {
-    return (channel: CommandoGuildBasedChannel): channel is CommandoCategoryChannel =>
+    return (channel: GuildBasedChannel): channel is CategoryChannel =>
         channel.type === ChannelType.GuildCategory && channel.name.toLowerCase().includes(search);
 }

@@ -1,9 +1,8 @@
 import ArgumentType from './base';
 import Util from '../util';
-import { escapeMarkdown } from 'discord.js';
+import { escapeMarkdown, GuildEmoji } from 'discord.js';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
-import { CommandoGuildEmoji } from '../discord.overrides';
 
 export default class CustomEmojiArgumentType extends ArgumentType<'guild-emoji'> {
     public constructor(client: CommandoClient) {
@@ -31,11 +30,11 @@ export default class CustomEmojiArgumentType extends ArgumentType<'guild-emoji'>
             : 'Multiple emojis found. Please be more specific.';
     }
 
-    public parse(value: string, message: CommandoMessage): CommandoGuildEmoji | null {
+    public parse(value: string, message: CommandoMessage): GuildEmoji | null {
         if (!message.inGuild()) return null;
 
         const matches = value.match(/^(?:<a?:(\w+):)?(\d+)>?$/);
-        if (matches) return message.client.emojis.resolve(matches[2]) as CommandoGuildEmoji | null;
+        if (matches) return message.client.emojis.resolve(matches[2]) as GuildEmoji | null;
 
         const search = value.toLowerCase();
         const emojis = message.guild.emojis.cache.filter(nameFilterInexact(search));
@@ -50,9 +49,9 @@ export default class CustomEmojiArgumentType extends ArgumentType<'guild-emoji'>
 }
 
 function nameFilterExact(search: string) {
-    return (emoji: CommandoGuildEmoji): boolean => emoji.name?.toLowerCase() === search;
+    return (emoji: GuildEmoji): boolean => emoji.name?.toLowerCase() === search;
 }
 
 function nameFilterInexact(search: string) {
-    return (emoji: CommandoGuildEmoji): boolean => !!emoji.name?.toLowerCase().includes(search);
+    return (emoji: GuildEmoji): boolean => !!emoji.name?.toLowerCase().includes(search);
 }

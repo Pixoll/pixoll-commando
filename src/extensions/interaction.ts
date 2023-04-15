@@ -60,7 +60,6 @@ const APISlashCommandOptionTypeMap = Object.fromEntries(Util.getEnumEntries(Slas
 export default class CommandoInteraction<InGuild extends boolean = boolean> extends ChatInputCommandInteraction {
     /** The client the interaction is for */
     declare public readonly client: CommandoClient<true>;
-    // @ts-expect-error: member is CommandoGuildMember
     declare public member: If<InGuild, CommandoGuildMember>;
     declare public guildId: If<InGuild, Snowflake>;
     /** Command that the interaction triggers */
@@ -82,7 +81,6 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
     }
 
     /** The channel this interaction was used in */
-    // @ts-expect-error: This is meant to override CommandInteraction's channel getter.
     public get channel(): CommandContextChannel<true, InGuild> {
         return super.channel as CommandContextChannel<true, InGuild>;
     }
@@ -94,7 +92,6 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
     }
 
     /** The guild this interaction was used in */
-    // @ts-expect-error: This is meant to override CommandInteraction's guild getter.
     public get guild(): If<InGuild, CommandoGuild> {
         return super.guild as If<InGuild, CommandoGuild>;
     }

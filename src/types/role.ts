@@ -1,10 +1,9 @@
 import ArgumentType from './base';
 import Util from '../util';
-import { escapeMarkdown } from 'discord.js';
+import { escapeMarkdown, Role } from 'discord.js';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 import Argument from '../commands/argument';
-import { CommandoRole } from '../discord.overrides';
 
 export default class RoleArgumentType extends ArgumentType<'role'> {
     public constructor(client: CommandoClient) {
@@ -39,7 +38,7 @@ export default class RoleArgumentType extends ArgumentType<'role'> {
             : 'Multiple roles found. Please be more specific.';
     }
 
-    public parse(value: string, message: CommandoMessage): CommandoRole | null {
+    public parse(value: string, message: CommandoMessage): Role | null {
         if (!message.guild) return null;
 
         const matches = value.match(/^(?:<@&)?(\d+)>?$/);
@@ -58,9 +57,9 @@ export default class RoleArgumentType extends ArgumentType<'role'> {
 }
 
 function nameFilterExact(search: string) {
-    return (role: CommandoRole): boolean => role.name.toLowerCase() === search;
+    return (role: Role): boolean => role.name.toLowerCase() === search;
 }
 
 function nameFilterInexact(search: string) {
-    return (role: CommandoRole): boolean => role.name.toLowerCase().includes(search);
+    return (role: Role): boolean => role.name.toLowerCase().includes(search);
 }

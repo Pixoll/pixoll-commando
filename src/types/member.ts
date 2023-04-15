@@ -1,10 +1,9 @@
 import ArgumentType from './base';
 import Util from '../util';
-import { escapeMarkdown } from 'discord.js';
+import { escapeMarkdown, GuildMember } from 'discord.js';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 import Argument from '../commands/argument';
-import { CommandoGuildMember } from '../discord.overrides';
 
 export default class MemberArgumentType extends ArgumentType<'member'> {
     public constructor(client: CommandoClient) {
@@ -50,7 +49,7 @@ export default class MemberArgumentType extends ArgumentType<'member'> {
             : 'Multiple members found. Please be more specific.';
     }
 
-    public parse(value: string, message: CommandoMessage): CommandoGuildMember | null {
+    public parse(value: string, message: CommandoMessage): GuildMember | null {
         if (!message.inGuild()) return null;
 
         const matches = value.match(/^(?:<@!?)?(\d+)>?$/);
@@ -69,14 +68,14 @@ export default class MemberArgumentType extends ArgumentType<'member'> {
 }
 
 function memberFilterExact(search: string) {
-    return (member: CommandoGuildMember): boolean =>
+    return (member: GuildMember): boolean =>
         member.user.username.toLowerCase() === search
         || member.nickname?.toLowerCase() === search
         || member.user.tag.toLowerCase() === search;
 }
 
 function memberFilterInexact(search: string) {
-    return (member: CommandoGuildMember): boolean =>
+    return (member: GuildMember): boolean =>
         member.user.username.toLowerCase().includes(search)
         || member.nickname?.toLowerCase().includes(search)
         || member.user.tag.toLowerCase().includes(search);

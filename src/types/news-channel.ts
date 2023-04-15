@@ -1,10 +1,9 @@
 import ArgumentType from './base';
 import Util from '../util';
-import { ChannelType, escapeMarkdown } from 'discord.js';
+import { ChannelType, escapeMarkdown, GuildBasedChannel, NewsChannel } from 'discord.js';
 import CommandoClient from '../client';
 import CommandoMessage from '../extensions/message';
 import Argument from '../commands/argument';
-import { CommandoGuildBasedChannel, CommandoNewsChannel } from '../discord.overrides';
 
 export default class NewsChannelArgumentType extends ArgumentType<'news-channel'> {
     public constructor(client: CommandoClient) {
@@ -51,9 +50,9 @@ export default class NewsChannelArgumentType extends ArgumentType<'news-channel'
             : 'Multiple text channels found. Please be more specific.';
     }
 
-    public parse(value: string, message: CommandoMessage): CommandoNewsChannel | null {
+    public parse(value: string, message: CommandoMessage): NewsChannel | null {
         const matches = value.match(/^(?:<#)?(\d+)>?$/);
-        if (matches) return message.client.channels.resolve(matches[1]) as CommandoNewsChannel | null;
+        if (matches) return message.client.channels.resolve(matches[1]) as NewsChannel | null;
 
         if (!message.guild) return null;
 
@@ -70,11 +69,11 @@ export default class NewsChannelArgumentType extends ArgumentType<'news-channel'
 }
 
 function channelFilterExact(search: string) {
-    return (channel: CommandoGuildBasedChannel): channel is CommandoNewsChannel =>
+    return (channel: GuildBasedChannel): channel is NewsChannel =>
         channel.type === ChannelType.GuildAnnouncement && channel.name.toLowerCase() === search;
 }
 
 function channelFilterInexact(search: string) {
-    return (chan: CommandoGuildBasedChannel): chan is CommandoNewsChannel =>
+    return (chan: GuildBasedChannel): chan is NewsChannel =>
         chan.type === ChannelType.GuildAnnouncement && chan.name.toLowerCase().includes(search);
 }

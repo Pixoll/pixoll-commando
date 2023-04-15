@@ -94,26 +94,20 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
         this.responsePositions = new Map();
     }
 
-    // @ts-expect-error: This is meant to override Message's member getter.
     public get member(): CommandoGuildMember | null {
         return super.member as CommandoGuildMember | null;
     }
 
     /** The guild this message was sent in */
-    // @ts-expect-error: This is meant to override guild's member getter.
     public get guild(): If<InGuild, CommandoGuild> {
-        // @ts-expect-error: CommandoGuild extends Guild
         return super.guild as If<InGuild, CommandoGuild>;
     }
 
     /** The channel this message was sent in */
-    // @ts-expect-error: This is meant to override channel's member getter.
     public get channel(): CommandContextChannel<false, InGuild> {
-        // @ts-expect-error: CommandContextChannel extends ContextChannel
         return super.channel as CommandContextChannel<false, InGuild>;
     }
 
-    // @ts-expect-error: This is meant to override the inGuild method type.
     public inGuild(): this is CommandoMessage<true> {
         return super.inGuild();
     }
