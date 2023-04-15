@@ -31,9 +31,9 @@ export default abstract class SettingProvider<Settings extends object = object> 
      * @param key - Name of the setting
      * @param defaultValue - Value to default to if the setting isn't set on the guild
      */
-    public abstract get<K extends keyof Settings, Default extends Settings[K] | undefined>(
+    public abstract get<K extends keyof Settings, Default extends Settings[K]>(
         guild: CommandoGuildResolvable | null, key: K, defaultValue?: Default
-    ): Default | Settings[K];
+    ): SettingProviderGet<Settings[K], Default>;
 
     /**
      * Sets a setting for a guild
