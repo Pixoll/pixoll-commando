@@ -3,6 +3,8 @@ import CommandoGuild from '../extensions/guild';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type SettingProvider from './base';
 
+type DefaultSettingProvider = SettingProvider<Record<string, unknown>>;
+
 /** Helper class to use {@link SettingProvider} methods for a specific Guild */
 export default class GuildSettingsHelper {
     /** Client to use the provider of */
@@ -26,8 +28,9 @@ export default class GuildSettingsHelper {
      * @see {@link SettingProvider.get SettingProvider#get}
      */
     public get<T>(key: string, defaultValue?: T): T {
-        if (!this.client.provider) throw new Error('No settings provider is available.');
-        return this.client.provider.get(this.guild, key, defaultValue) as T;
+        const provider = this.client.provider as DefaultSettingProvider | null;
+        if (!provider) throw new Error('No settings provider is available.');
+        return provider.get(this.guild, key, defaultValue) as T;
     }
 
     /**
@@ -38,8 +41,9 @@ export default class GuildSettingsHelper {
      * @see {@link SettingProvider.set SettingProvider#set}
      */
     public set<T>(key: string, value: T): Promise<T> {
-        if (!this.client.provider) throw new Error('No settings provider is available.');
-        return this.client.provider.set(this.guild, key, value) as Promise<T>;
+        const provider = this.client.provider as DefaultSettingProvider | null;
+        if (!provider) throw new Error('No settings provider is available.');
+        return provider.set(this.guild, key, value) as Promise<T>;
     }
 
     /**
@@ -49,8 +53,9 @@ export default class GuildSettingsHelper {
      * @see {@link SettingProvider.remove SettingProvider#remove}
      */
     public remove<T>(key: string): Promise<T> {
-        if (!this.client.provider) throw new Error('No settings provider is available.');
-        return this.client.provider.remove(this.guild, key) as Promise<T>;
+        const provider = this.client.provider as DefaultSettingProvider | null;
+        if (!provider) throw new Error('No settings provider is available.');
+        return provider.remove(this.guild, key) as Promise<T>;
     }
 
     /**

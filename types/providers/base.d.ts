@@ -3,12 +3,12 @@ import CommandoClient from '../client';
 import { CommandoGuildResolvable } from '../discord.overrides';
 export type SettingProviderGet<Value, Default> = Default extends NonNullable<Default> ? NonNullable<Default | Value> : Default | Value;
 /** Loads and stores settings associated with guilds */
-export default abstract class SettingProvider<Settings extends object = Record<string, unknown>> {
+export default abstract class SettingProvider<Settings extends object = object> {
     /** Settings cached in memory, mapped by guild ID (or 'global') */
     protected settings: Map<string, Settings>;
     constructor();
     /**
-     * Initialises the provider by connecting to databases and/or caching all data in memory.
+     * Initializes the provider by connecting to databases and/or caching all data in memory.
      * {@link CommandoClient.setProvider CommandoClient#setProvider} will automatically call this once the client is ready.
      * @param client - Client that will be using the provider
      */

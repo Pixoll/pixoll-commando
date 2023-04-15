@@ -252,7 +252,7 @@ export default class SQLiteProvider<
             // @ts-expect-error: settings is protected in SettingProvider
             const settings = client.provider?.settings;
             if (!settings || client.shard?.ids.some(id => ids.includes(id))) return;
-            let global = settings.get('global');
+            let global = settings.get('global') as Record<string, unknown> | undefined;
             if (!global) {
                 global = {};
                 settings.set('global', global);
