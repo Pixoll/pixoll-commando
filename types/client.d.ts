@@ -19,7 +19,7 @@ export interface CommandoClientOptions extends ClientOptions {
      * Default command prefix
      * @default '!'
      */
-    prefix?: string;
+    prefix?: string | null;
     /**
      * Time in seconds that command messages should be editable
      * @default 30
@@ -36,7 +36,7 @@ export interface CommandoClientOptions extends ClientOptions {
     serverInvite?: string;
     /** Invite options for the bot */
     inviteOptions?: InviteGenerationOptions | string;
-    /** The test guild ID or the slash commands */
+    /** The guild ID where to register test application commands */
     testAppGuild?: string;
     /** The URI which will establish your connection with MongoDB */
     mongoDbURI?: string;

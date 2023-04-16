@@ -37,7 +37,7 @@ export interface CommandoClientOptions extends ClientOptions {
      * Default command prefix
      * @default '!'
      */
-    prefix?: string;
+    prefix?: string | null;
     /**
      * Time in seconds that command messages should be editable
      * @default 30
@@ -54,7 +54,7 @@ export interface CommandoClientOptions extends ClientOptions {
     serverInvite?: string;
     /** Invite options for the bot */
     inviteOptions?: InviteGenerationOptions | string;
-    /** The test guild ID or the slash commands */
+    /** The guild ID where to register test application commands */
     testAppGuild?: string;
     /** The URI which will establish your connection with MongoDB */
     mongoDbURI?: string;
@@ -136,12 +136,11 @@ export default class CommandoClient<
      * @param options - Options for the client
      */
     public constructor(options: CommandoClientOptions) {
-        const { prefix, commandEditableDuration, nonCommandEditable, inviteOptions, owners } = options;
+        const { prefix, inviteOptions, owners } = options;
 
-        if (typeof prefix === 'undefined') options.prefix = '!';
-        if (prefix === null) options.prefix = '';
-        if (typeof commandEditableDuration === 'undefined') options.commandEditableDuration = 30;
-        if (typeof nonCommandEditable === 'undefined') options.nonCommandEditable = true;
+        options.prefix ??= prefix === null ? '' : '!';
+        options.commandEditableDuration ??= 30;
+        options.nonCommandEditable ??= true;
         super(options);
 
         if (typeof inviteOptions === 'object') {
@@ -168,7 +167,7 @@ export default class CommandoClient<
 
         this.initDefaultListeners();
 
-        // Fetch the owner(s)
+        // Fetch the owners
         this.once('ready', () => owners?.forEach(owner => this.users.fetch(owner).catch(err => {
             this.emit('warn', `Unable to fetch owner ${owner}.`);
             this.emit('error', err);
@@ -183,7 +182,7 @@ export default class CommandoClient<
      */
     public get prefix(): string | undefined {
         const { _prefix, options } = this;
-        if (Util.isNullish(_prefix)) return options.prefix;
+        if (Util.isNullish(_prefix)) return options.prefix ?? undefined;
         return _prefix;
     }
 
