@@ -248,7 +248,7 @@ export default class CommandoClient<
         }
 
         this.emit('debug', `Provider set to ${newProvider.constructor.name} - will initialize once ready.`);
-        await this.awaitEvent('ready', async (client) => {
+        await this.awaitEvent('guildsReady', async (client) => {
             this.emit('debug', 'Initializing provider...');
             await newProvider.init(client);
         });
