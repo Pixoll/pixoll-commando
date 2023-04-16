@@ -14,7 +14,7 @@ import CommandGroup from './commands/group';
 import CommandoGuild from './extensions/guild';
 import CommandoMessage from './extensions/message';
 import ArgumentType from './types/base';
-import Util, { Constructable, NonAbstractConstructable } from './util';
+import Util, { Constructable, NonAbstractConstructable, Tuple } from './util';
 
 declare function require<T>(id: string): T;
 
@@ -140,15 +140,14 @@ export default class CommandoRegistry {
             this.registerApplicationCommandEntry(entry, testAppGuild, registeredCommands)
         ));
 
-        const guildOnlyAmount = appCommandsToRegister
-            .filter(command => !command.global)
-            .reduce((amount, entry) => amount + entry.commands.length, 0);
-        const globalAmount = appCommandsToRegister
-            .filter(command => command.global)
-            .reduce((amount, entry) => amount + entry.commands.length, 0);
+        const [globalCounts, guildOnlyCounts] = appCommandsToRegister
+            .partition(command => command.global)
+            .map(entries =>
+                commandsCountByType(entries.toJSON().flatMap(entry => entry.commands))
+            );
 
-        if (guildOnlyAmount) client.emit('debug', `Loaded ${guildOnlyAmount} guild application commands`);
-        if (globalAmount) client.emit('debug', `Loaded ${globalAmount} global application commands`);
+        logCommandsCounts(client, guildOnlyCounts, 'Loaded', 'guild');
+        logCommandsCounts(client, globalCounts, 'Loaded', 'global');
     }
 
     /** Registers an application command. */
@@ -193,8 +192,8 @@ export default class CommandoRegistry {
             return !currentCommand.commands.some(cmd => cmd.type === command.type);
         });
         await Promise.all(removedCommands.map(command => command.delete()));
-        const removedAmount = removedCommands.size;
-        if (removedAmount) client.emit('debug', `Deleted ${removedAmount} unused application commands`);
+        const commandCounts = commandsCountByType(removedCommands.toJSON());
+        logCommandsCounts(client, commandCounts, 'Deleted', 'unused');
     }
 
     /**
@@ -636,4 +635,25 @@ function isConstructor<T, U>(
     } catch (err) {
         return false;
     }
+}
+
+/**
+ * `0`: Chat input  
+ * `1`: User context  
+ * `2`: Message context
+ */
+function commandsCountByType(
+    commands: Array<APIContextMenuCommand | APISlashCommand | ApplicationCommand>
+): Tuple<number, 3> {
+    return commands.reduce<Tuple<number, 3>>((grouped, command) => {
+        const index = (command.type?.valueOf() ?? 1) - 1 as 0 | 1 | 2;
+        grouped[index]++;
+        return grouped;
+    }, [0, 0, 0]);
+}
+
+function logCommandsCounts(client: CommandoClient, counts: Tuple<number, 3>, prefix: string, suffix: string): void {
+    if (counts[0]) client.emit('debug', `${prefix} ${counts[0]} ${suffix} chat input commands`);
+    if (counts[1]) client.emit('debug', `${prefix} ${counts[1]} ${suffix} user context commands`);
+    if (counts[2]) client.emit('debug', `${prefix} ${counts[2]} ${suffix} message context commands`);
 }
