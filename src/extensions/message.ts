@@ -12,7 +12,8 @@ import {
     APIUser,
 } from 'discord.js';
 import { oneLine, stripIndent } from 'common-tags';
-import Command from '../commands/base';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import Command, { CommandContext } from '../commands/base';
 import FriendlyError from '../errors/friendly';
 import CommandFormatError from '../errors/command-format';
 import Util from '../util';
@@ -112,10 +113,12 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
         return super.inGuild();
     }
 
+    /** Checks if the {@link CommandContext} is an interaction. */
     public isInteraction(): this is CommandoInteraction<InGuild> {
         return false;
     }
 
+    /** Checks if the {@link CommandContext} is a message. */
     public isMessage(): this is CommandoMessage<InGuild> {
         return true;
     }

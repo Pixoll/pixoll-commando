@@ -47,7 +47,9 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
     /** The channel this message was sent in */
     get channel(): CommandContextChannel<false, InGuild>;
     inGuild(): this is CommandoMessage<true>;
+    /** Checks if the {@link CommandContext} is an interaction. */
     isInteraction(): this is CommandoInteraction<InGuild>;
+    /** Checks if the {@link CommandContext} is a message. */
     isMessage(): this is CommandoMessage<InGuild>;
     /**
      * Initializes the message for a command

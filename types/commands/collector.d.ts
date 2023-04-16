@@ -18,6 +18,18 @@ export interface ArgumentCollectorResult<T = Record<string, unknown>> {
     /** All of the user's messages that answered a prompt */
     answers: ArgumentResponse[];
 }
+/**
+ * Parses a raw argument info array into an `ArgumentInfo.key`-indexed object. The result from this type would ideally
+ * be used as the `Command.run` `args` parameter type (see usage examples see the `commands` or `util` folders
+ * in `pixoll-commando/src/commands`).
+ *
+ * Parsing order:
+ * 1. Add `default` value if available, otherwise add `null` to result type if `required` is `false`.
+ * 2. Use items from `oneOf` if defined.
+ * 3. Otherwise, if defined, use result types from `type`.
+ * 4. Otherwise, if defined, use the return type from `parse`.
+ * 5. Otherwise, set result type to `unknown` (resolving failed).
+ */
 export type ParseRawArguments<Args extends CommandArgumentsResolvable = ArgumentInfo[]> = {
     [A in Args[number] as A['key']]: (A['default'] extends unknown ? (A['required'] extends false ? null : never) : A['default']) | (A['oneOf'] extends Array<infer U> | ReadonlyArray<infer U> ? U : A['type'] extends ArgumentTypeString ? ArgumentTypeStringMap[A['type']] : (A['type'] extends ArgumentTypeString[] | readonly ArgumentTypeString[] ? ArgumentTypeStringMap[A['type'][number]] : (A['parse'] extends NonNullable<ArgumentInfo['parse']> ? (ReturnType<A['parse']> extends PromiseLike<infer P> ? P : ReturnType<A['parse']>) : unknown)));
 };

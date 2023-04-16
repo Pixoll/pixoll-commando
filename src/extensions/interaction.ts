@@ -14,7 +14,8 @@ import {
     User,
 } from 'discord.js';
 import CommandoClient from '../client';
-import Command from '../commands/base';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import Command, { CommandContext } from '../commands/base';
 import FriendlyError from '../errors/friendly';
 import {
     CommandoChannel,
@@ -29,13 +30,19 @@ import CommandoGuild from './guild';
 import CommandoMessage from './message';
 import { capitalize } from 'lodash';
 
+/**
+ * Parses a raw slash command option array into an `APISlashCommandOption.name`-indexed object.
+ * 
+ * Parsing order:
+ * 1. If the `type` is invalid, use `never` and stop.
+ * 2. Otherwise, use the result type from `type` and,
+ * 3. Add `null` if `required` is not `true`.
+ */
 export type SlashCommandBasicOptionsParser<O extends APISlashCommandOption[]> = {
-    [A in O[number]as A['name']]: A['required'] extends true
-    ? SlashCommandOptionTypeMap[A['type']]
-    : (
-        SlashCommandOptionTypeMap[A['type']] extends never
-        ? never
-        : SlashCommandOptionTypeMap[A['type']] | null
+    [A in O[number]as A['name']]: SlashCommandOptionTypeMap[A['type']] extends never
+    ? never
+    : SlashCommandOptionTypeMap[A['type']] | (
+        A['required'] extends true ? never : null
     );
 };
 
@@ -76,6 +83,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
         this._command = client.registry.resolveCommand(data.commandName) as Command<InGuild>;
     }
 
+    /** Used for compatibility with {@link CommandoMessage} in {@link CommandContext}. */
     public get author(): User {
         return this.user;
     }
@@ -111,10 +119,12 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
         return this.deferred || this.replied;
     }
 
+    /** Checks if the {@link CommandContext} is an interaction. */
     public isInteraction(): this is CommandoInteraction<InGuild> {
         return true;
     }
 
+    /** Checks if the {@link CommandContext} is a message. */
     public isMessage(): this is CommandoMessage<InGuild> {
         return false;
     }

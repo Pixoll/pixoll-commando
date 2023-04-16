@@ -25,6 +25,7 @@ import {
     ApplicationCommandType,
     ApplicationCommandOptionAllowedChannelTypes,
     GuildResolvable,
+    escapeMarkdown,
 } from 'discord.js';
 import path from 'path';
 import ArgumentCollector, { ArgumentCollectorResult, ParseRawArguments } from './collector';
@@ -42,6 +43,7 @@ import {
     CommandoMessageContextMenuCommandInteraction,
     CommandoUserContextMenuCommandInteraction,
 } from '../discord.overrides';
+import { stripIndents } from 'common-tags';
 
 /** Options for throttling usages of the command. */
 export interface ThrottlingOptions {
@@ -200,6 +202,11 @@ export interface CommandInfo<
     autogenerateSlashCommand?: boolean;
     /** Types of context menu commands to register. */
     contextMenuCommandTypes?: ContextMenuCommandType[];
+    /**
+     * Whether to call the default {@link Command.onError Command#onError} when a command fails.
+     * @default false
+     */
+    defaultErrorHandling?: boolean;
 }
 
 /** Throttling object of the command. */
@@ -344,55 +351,8 @@ const channelTypeMap: Record<ChannelTypeMapKey, ApplicationCommandOptionAllowedC
 const channelTypeMapKeys = Object.keys(channelTypeMap) as ChannelTypeMapKey[];
 
 /**
- * A command that can be run in a client
- * @example
- * import { ApplicationCommandOptionType } from 'discord.js';
- * import { CommandoClient, Command, CommandContext, ParseRawArguments } from 'pixoll-commando';
- * 
- * const args = [{
- *     key: 'first',
- *     prompt: 'First argument.',
- *     type: 'user',
- * }, {
- *     key: 'optional',
- *     prompt: 'Optional argument.',
- *     type: 'string',
- *     required: false,
- * }] as const;
- * 
- * type RawArgs = typeof args;
- * type ParsedArgs = ParseRawArguments<RawArgs>;
- * 
- * export default class TestCommand extends Command<boolean, RawArgs> {
- *     public constructor(client: CommandoClient) {
- *         super(client, {
- *             name: 'test',
- *             description: 'Test command.',
- *             group: 'commands',
- *             args,
- *         }, {
- *             options: [{
- *                 name: 'first',
- *                 description: 'First argument.',
- *                 type: ApplicationCommandOptionType.User,
- *                 required: true,
- *             }, {
- *                 name: 'optional',
- *                 description: 'Optional argument.',
- *                 type: ApplicationCommandOptionType.String,
- *             }],
- *         });
- *     }
- * 
- *     public async run(context: CommandContext, args: ParsedArgs): Promise<void> {
- *         const content = `\`${context.toString()}\`: ${args.first}, ${args.optional}`;
- *         if ('isEditable' in context && context.isEditable()) {
- *             await context.editReply(content);
- *             return;
- *         }
- *         await context.reply(content);
- *     }
- * }
+ * A command that can be run in a client. For examples see the `commands` or `util` folders
+ * (both in `pixoll-commando/src/commands`).
  */
 export default abstract class Command<
     InGuild extends boolean = boolean,
@@ -464,6 +424,8 @@ export default abstract class Command<
     public slashCommand: APISlashCommand | null;
     /** Data for the context menu commands */
     public contextMenuCommands: APIContextMenuCommand[];
+    /** Whether to call the default {@link Command.onError Command#onError} when a command fails. */
+    public defaultErrorHandling: boolean;
     /** Whether the command is enabled globally */
     protected _globalEnabled: boolean;
     /** Current throttle objects for the command, mapped by user ID */
@@ -527,6 +489,7 @@ export default abstract class Command<
         this.testAppCommand = !!info.testAppCommand;
         this.slashCommand = Command.validateAndParseSlashInfo(info as CommandInfo, slashInfo);
         this.contextMenuCommands = Command.validateAndParseContextMenuInfo(info as CommandInfo);
+        this.defaultErrorHandling = !!info.defaultErrorHandling;
         this._globalEnabled = true;
         this._throttles = new Map();
     }
@@ -668,8 +631,9 @@ export default abstract class Command<
     }
 
     /**
-     * Called when the command produces an error while running
-     * @param err - Error that was thrown
+     * Called when the command produces an error while running. Default behaviour will be applied if
+     * {@link CommandInfo.defaultErrorHandling CommandInfo#defaultErrorHandling} is set to `true`.
+     * @param error - Error that was thrown
      * @param context - The context the command is being run for
      * @param args - Arguments for the command (see {@link Command.run Command#run})
      * @param fromPattern - Whether the args are pattern matches (see {@link Command.run Command#run})
@@ -677,12 +641,29 @@ export default abstract class Command<
      * (if applicable - see {@link Command.run Command#run})
      */
     public async onError(
+        error: Error,
+        context: CommandContext,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        err: Error, context: CommandContext, args: Record<string, unknown> | string[] | string,
+        args: Record<string, unknown> | string[] | string,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        fromPattern?: boolean, result?: ArgumentCollectorResult | null
-    ): Promise<Message | Message[] | null> {
-        return null;
+        fromPattern?: boolean,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        result?: ArgumentCollectorResult | null
+    ): Promise<Message | null> {
+        if (!this.defaultErrorHandling) return null;
+        const { options, owners } = this.client;
+        const ownerList = owners?.map((user, i) => {
+            const or = i === owners.length - 1 && owners.length > 1 ? 'or ' : '';
+            return `${or}${escapeMarkdown(user.tag)}`;
+        }).join(owners.length > 2 ? ', ' : ' ');
+
+        const { serverInvite } = options;
+        const returnValue = await context.reply(stripIndents`
+			An error occurred while running the command: \`${error.name}: ${error.message}\`
+			You shouldn't ever receive an error like this.
+			Please contact ${ownerList ?? 'the bot owner'}${serverInvite ? ` in this server: ${serverInvite}` : '.'}
+		`);
+        return returnValue instanceof Message ? returnValue : null;
     }
 
     /**
@@ -812,6 +793,10 @@ export default abstract class Command<
         registry.unregisterCommand(this as unknown as Command);
     }
 
+    /**
+     * String representation of this command.
+     * @returns `groupId:memberName`
+     */
     public toString(): string {
         return `${this.groupId}:${this.memberName}`;
     }

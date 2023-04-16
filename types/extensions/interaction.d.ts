@@ -4,8 +4,16 @@ import Command from '../commands/base';
 import { CommandoChannel, CommandoChatInputCommandInteraction, CommandoGuildMember, CommandContextChannel, CommandoRole, CommandoUser } from '../discord.overrides';
 import CommandoGuild from './guild';
 import CommandoMessage from './message';
+/**
+ * Parses a raw slash command option array into an `APISlashCommandOption.name`-indexed object.
+ *
+ * Parsing order:
+ * 1. If the `type` is invalid, use `never` and stop.
+ * 2. Otherwise, use the result type from `type` and,
+ * 3. Add `null` if `required` is not `true`.
+ */
 export type SlashCommandBasicOptionsParser<O extends APISlashCommandOption[]> = {
-    [A in O[number] as A['name']]: A['required'] extends true ? SlashCommandOptionTypeMap[A['type']] : (SlashCommandOptionTypeMap[A['type']] extends never ? never : SlashCommandOptionTypeMap[A['type']] | null);
+    [A in O[number] as A['name']]: SlashCommandOptionTypeMap[A['type']] extends never ? never : SlashCommandOptionTypeMap[A['type']] | (A['required'] extends true ? never : null);
 };
 export interface SlashCommandOptionTypeMap {
     [SlashCommandOptionType.Attachment]: Attachment;
@@ -33,6 +41,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
      * @param data - The interaction data
      */
     constructor(client: CommandoClient<true>, data: CommandoChatInputCommandInteraction);
+    /** Used for compatibility with {@link CommandoMessage} in {@link CommandContext}. */
     get author(): User;
     /** The channel this interaction was used in */
     get channel(): CommandContextChannel<true, InGuild>;
@@ -44,7 +53,9 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
     isChatInputCommand(): this is CommandoInteraction<InGuild>;
     /** Whether this interaction is able to been edited (has been previously deferred or replied to) */
     isEditable(): boolean;
+    /** Checks if the {@link CommandContext} is an interaction. */
     isInteraction(): this is CommandoInteraction<InGuild>;
+    /** Checks if the {@link CommandContext} is a message. */
     isMessage(): this is CommandoMessage<InGuild>;
     /**
      * Parses the options data into usable arguments

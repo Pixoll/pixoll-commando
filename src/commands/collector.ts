@@ -26,6 +26,18 @@ export interface ArgumentCollectorResult<T = Record<string, unknown>> {
     answers: ArgumentResponse[];
 }
 
+/**
+ * Parses a raw argument info array into an `ArgumentInfo.key`-indexed object. The result from this type would ideally
+ * be used as the `Command.run` `args` parameter type (see usage examples see the `commands` or `util` folders
+ * in `pixoll-commando/src/commands`).
+ * 
+ * Parsing order:
+ * 1. Add `default` value if available, otherwise add `null` to result type if `required` is `false`.
+ * 2. Use items from `oneOf` if defined.
+ * 3. Otherwise, if defined, use result types from `type`.
+ * 4. Otherwise, if defined, use the return type from `parse`.
+ * 5. Otherwise, set result type to `unknown` (resolving failed).
+ */
 export type ParseRawArguments<Args extends CommandArgumentsResolvable = ArgumentInfo[]> = {
     // eslint-disable-next-line @typescript-eslint/sort-type-union-intersection-members
     [A in Args[number]as A['key']]: (

@@ -234,7 +234,7 @@ export default class CommandoClient<
 
     /**
      * Sets the setting provider to use, and initializes it once the client is ready
-     * @param provider Provider to use
+     * @param provider - Provider to use
      */
     public async setProvider(provider: Awaitable<Provider>): Promise<void> {
         const newProvider = await provider;
@@ -258,18 +258,25 @@ export default class CommandoClient<
         return;
     }
 
+    /** Checks if the provider is ready. */
     public isProviderReady(): this is CommandoClient<true, true, Provider> {
         return this.isReady() && !!this.provider;
     }
 
-    public async awaitEvent<K extends keyof CommandoClientEvents>(
-        event: K, listener: (this: CommandoClient, ...args: CommandoClientEvents[K]) => unknown
-    ): Promise<this> {
+    /**
+     * Await an event **once**, and get a resolved result from the `listener`.
+     * @param event - The event to listen to.
+     * @param listener - Listener function.
+     * @returns Resolved result from `listener`.
+     */
+    public async awaitEvent<K extends keyof CommandoClientEvents, T>(
+        event: K, listener: (this: CommandoClient, ...args: CommandoClientEvents[K]) => T
+    ): Promise<Awaited<T>> {
         const boundListener = listener.bind(this as CommandoClient);
-        return await new Promise<this>(resolve => {
+        return await new Promise<Awaited<T>>(resolve => {
             this.once(event, async (...args) => {
-                await boundListener(...args);
-                resolve(this);
+                const result = await boundListener(...args);
+                resolve(result);
             });
         });
     }

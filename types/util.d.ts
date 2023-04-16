@@ -127,13 +127,25 @@ export default class Util extends null {
      * @returns Whether the value is nullish.
      */
     static isNullish(val: unknown): val is null | undefined;
+    /**
+     * Checks if `value` equals **every** entry in `values`.
+     * @param value - The original value.
+     * @param values - The values to compare `value` to.
+     */
     static equals<T extends number | string, V extends T>(value: T, values: V[]): value is V;
+    /** Removes the readonly modifier from the arguments array and its objects. */
     static removeReadonlyFromArguments<T extends ReadonlyArguments>(args: T): Mutable<T>;
-    static getEnumEntries<T extends object>(obj: T): Array<[Extract<keyof T, string>, PropertiesOf<T>]>;
+    /** Get entries from a **numbered** enum. Might not work properly with enums that map to strings. */
+    static getEnumEntries<T extends object>(enumObj: T): Array<[Extract<keyof T, string>, PropertiesOf<T>]>;
+    /** Deep copy a plain object. */
     static deepCopy<T>(value: T): T;
+    /** Pick properties from an object. */
     static pick<T extends object, K extends keyof T>(object: T, keys: K[]): Pick<T, K>;
+    /** Omit properties from an object. */
     static omit<T extends object, K extends keyof T>(object: T, keys: K[]): Omit<T, K>;
+    /** JSONify a raw mongoose document. */
     static jsonifyDocument<T extends SchemaResolvable, U extends Document<T> | null>(doc: Document<T> | U): JSONIfySchema<T> | (U extends Document ? never : null);
+    /** Generalized handler for {@link Util.pick Util#pick} and {@link Util.omit Util#omit}. */
     protected static omitOrPick<Kind extends 'omit' | 'pick', T extends object, K extends keyof T>(kind: Kind, object: T, keys: K[]): Kind extends 'omit' ? Omit<T, K> : Pick<T, K>;
     /**
      * Verifies the provided data is a string, otherwise throws provided error.

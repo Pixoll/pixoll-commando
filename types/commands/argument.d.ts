@@ -9,6 +9,7 @@ type ArgumentCheckerParams<T extends ArgumentTypeString = ArgumentTypeString> = 
     argument: Argument<T>,
     currentMessage?: CommandoMessage
 ];
+/** Maps default argument type IDs to their return types. */
 export interface ArgumentTypeStringMap {
     boolean: boolean;
     'category-channel': CategoryChannel;
@@ -35,6 +36,7 @@ export interface ArgumentTypeStringMap {
     user: User;
     'voice-channel': VoiceChannel;
 }
+/** Default argument type IDs. */
 export type ArgumentTypeString = keyof ArgumentTypeStringMap;
 /** Either a value or a function that returns a value. The function is passed the CommandoMessage and the Argument. */
 export type ArgumentDefault<T extends ArgumentTypeString = ArgumentTypeString> = ArgumentTypeStringMap[T] | ((msg: CommandoMessage, arg: Argument<T>) => Promise<ArgumentTypeStringMap[T]>);

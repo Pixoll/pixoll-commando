@@ -291,6 +291,11 @@ export default class Util extends null {
         return typeof val === 'undefined' || val === null;
     }
 
+    /**
+     * Checks if `value` equals **every** entry in `values`.
+     * @param value - The original value.
+     * @param values - The values to compare `value` to.
+     */
     public static equals<T extends number | string, V extends T>(value: T, values: V[]): value is V {
         for (const val of values) {
             if (val === value) return true;
@@ -298,28 +303,34 @@ export default class Util extends null {
         return false;
     }
 
+    /** Removes the readonly modifier from the arguments array and its objects. */
     public static removeReadonlyFromArguments<T extends ReadonlyArguments>(args: T): Mutable<T> {
         return args.map(a => Object.fromEntries(Object.entries(a))) as Mutable<T>;
     }
 
-    public static getEnumEntries<T extends object>(obj: T): Array<[Extract<keyof T, string>, PropertiesOf<T>]> {
-        return Object.entries(obj).filter((entry): entry is [Extract<keyof T, string>, PropertiesOf<T>] =>
+    /** Get entries from a **numbered** enum. Might not work properly with enums that map to strings. */
+    public static getEnumEntries<T extends object>(enumObj: T): Array<[Extract<keyof T, string>, PropertiesOf<T>]> {
+        return Object.entries(enumObj).filter((entry): entry is [Extract<keyof T, string>, PropertiesOf<T>] =>
             typeof entry[1] === 'number'
         );
     }
 
+    /** Deep copy a plain object. */
     public static deepCopy<T>(value: T): T {
         return JSON.parse(JSON.stringify(value));
     }
 
+    /** Pick properties from an object. */
     public static pick<T extends object, K extends keyof T>(object: T, keys: K[]): Pick<T, K> {
         return Util.omitOrPick('pick', object, keys);
     }
 
+    /** Omit properties from an object. */
     public static omit<T extends object, K extends keyof T>(object: T, keys: K[]): Omit<T, K> {
         return Util.omitOrPick('omit', object, keys);
     }
 
+    /** JSONify a raw mongoose document. */
     public static jsonifyDocument<T extends SchemaResolvable, U extends Document<T> | null>(
         doc: Document<T> | U
     ): JSONIfySchema<T> | (U extends Document ? never : null) {
@@ -332,6 +343,7 @@ export default class Util extends null {
         return jsonified as JSONIfySchema<T>;
     }
 
+    /** Generalized handler for {@link Util.pick Util#pick} and {@link Util.omit Util#omit}. */
     protected static omitOrPick<Kind extends 'omit' | 'pick', T extends object, K extends keyof T>(
         kind: Kind, object: T, keys: K[]
     ): Kind extends 'omit' ? Omit<T, K> : Pick<T, K> {
