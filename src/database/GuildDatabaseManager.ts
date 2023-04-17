@@ -6,6 +6,7 @@ import schemas, {
     AfkSchema,
     AnySchema,
     DisabledSchema,
+    JSONIfySchema,
     McIpSchema,
     ModerationSchema,
     ModuleSchema,
@@ -64,12 +65,12 @@ export default class GuildDatabaseManager {
      * Initializes the caching of this guild's data
      * @param data - The data to assign to the guild
      */
-    protected init(data: Collection<string, LimitedCollection<string, AnySchema>>): this {
-        for (const [name, schema] of data) {
+    protected init(data: Collection<string, LimitedCollection<string, JSONIfySchema<AnySchema>>>): this {
+        for (const [name, schemaCollection] of data) {
             const dbManager = this[name as SchemaKey];
             if (!dbManager) continue;
-            // @ts-expect-error: AnySchema not assignable to individual schema types
-            dbManager.cache = schema;
+            // @ts-expect-error: AnySchema is a catch-all schema type
+            dbManager.cache.concat(schemaCollection);
         }
         return this;
     }

@@ -10,6 +10,7 @@ import {
     If,
     APIMessage,
     APIUser,
+    GuildTextBasedChannel,
 } from 'discord.js';
 import { oneLine, stripIndent } from 'common-tags';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -22,11 +23,16 @@ import CommandoGuild from './guild';
 import { 
     CommandoGuildMember,
     CommandoifiedMessage,
-    CommandContextChannel,
     CommandoTextBasedChannel,
 } from '../discord.overrides';
 import CommandoInteraction from './interaction';
 import { ArgumentCollectorResult } from '../commands/collector';
+
+export type CommandContextChannel<CanBeNull extends boolean, InGuild extends boolean = boolean> = If<
+    InGuild,
+    GuildTextBasedChannel,
+    If<CanBeNull, null, never> | TextBasedChannel
+>;
 
 /** Type of the response */
 export type ResponseType =
@@ -249,8 +255,7 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
         }
 
         // Throttle the command
-        //@ts-expect-error: method throttle is protected 
-        const throttle = command.throttle(author.id);
+        const throttle = command['throttle'](author.id);
         if (throttle && command.throttling && throttle.usages + 1 > command.throttling.usages) {
             const remaining = (throttle.start + (command.throttling.duration * 1000) - Date.now()) / 1000;
             const data = { throttle, remaining };
@@ -305,7 +310,7 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
             const isValid = retVal instanceof Message || Array.isArray(retVal) || Util.isNullish(retVal);
             if (!isValid) {
                 const retValType = retVal !== null ? (
-                    // @ts-expect-error: constructor does not exist in never
+                    // @ts-expect-error: is should never happen as the linter says
                     retVal?.constructor ? retVal.constructor.name : typeof retVal
                 ) : null;
                 throw new TypeError(oneLine`
@@ -491,7 +496,7 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
      * Finalizes the command message by setting the responses and deleting any remaining prior ones
      * @param responses - Responses to the message
      */
-    protected finalize(responses?: CommandoMessageResponse | CommandoMessageResponse[] | null): void {
+    protected finalize(responses?: CommandoMessageResponse | CommandoMessageResponse[]): void {
         if (!responses) return;
         const { responsePositions, responses: _responses } = this;
 

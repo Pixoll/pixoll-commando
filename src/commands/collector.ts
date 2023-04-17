@@ -111,12 +111,11 @@ export default class ArgumentCollector<Args extends CommandArgumentsResolvable> 
         message: CommandoMessage, provided: string[] = [], promptLimit = this.promptLimit
     ): Promise<ArgumentCollectorResult<ParseRawArguments<Args>>> {
         const { author, channelId } = message;
-        // @ts-expect-error: _awaiting should not be used outside of class CommandDispatcher
-        const { _awaiting } = this.client.dispatcher;
+        const awaiting = this.client.dispatcher['_awaiting'];
         const { args } = this;
         const id = author.id + channelId;
 
-        _awaiting.add(id);
+        awaiting.add(id);
         const values: Record<string, unknown> = {};
         const results: ArgumentResult[] = [];
 
@@ -130,7 +129,7 @@ export default class ArgumentCollector<Args extends CommandArgumentsResolvable> 
                 results.push(result);
 
                 if (result.cancelled) {
-                    _awaiting.delete(id);
+                    awaiting.delete(id);
                     return {
                         values: null,
                         cancelled: result.cancelled,
@@ -142,11 +141,11 @@ export default class ArgumentCollector<Args extends CommandArgumentsResolvable> 
                 values[arg.key] = result.value;
             }
         } catch (err) {
-            _awaiting.delete(id);
+            awaiting.delete(id);
             throw err;
         }
 
-        _awaiting.delete(id);
+        awaiting.delete(id);
         return {
             values: values as ParseRawArguments<Args>,
             cancelled: null,

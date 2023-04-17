@@ -1,9 +1,10 @@
-import { Message, EmbedBuilder, User, MessageCreateOptions, MessageReplyOptions, If } from 'discord.js';
+import { Message, EmbedBuilder, User, MessageCreateOptions, TextBasedChannel, MessageReplyOptions, If, GuildTextBasedChannel } from 'discord.js';
 import Command from '../commands/base';
 import CommandoClient from '../client';
 import CommandoGuild from './guild';
-import { CommandoGuildMember, CommandoifiedMessage, CommandContextChannel } from '../discord.overrides';
+import { CommandoGuildMember, CommandoifiedMessage } from '../discord.overrides';
 import CommandoInteraction from './interaction';
+export type CommandContextChannel<CanBeNull extends boolean, InGuild extends boolean = boolean> = If<InGuild, GuildTextBasedChannel, If<CanBeNull, null, never> | TextBasedChannel>;
 /** Type of the response */
 export type ResponseType = 'code' | 'direct' | 'plain' | 'reply';
 export type StringResolvable = Omit<MessageCreateOptions, 'flags'> | string;
@@ -136,7 +137,7 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
      * Finalizes the command message by setting the responses and deleting any remaining prior ones
      * @param responses - Responses to the message
      */
-    protected finalize(responses?: CommandoMessageResponse | CommandoMessageResponse[] | null): void;
+    protected finalize(responses?: CommandoMessageResponse | CommandoMessageResponse[]): void;
     /** Deletes any prior responses that haven't been updated */
     protected deleteRemainingResponses(): void;
     /**

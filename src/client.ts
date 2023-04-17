@@ -310,34 +310,29 @@ export default class CommandoClient<
         };
         this.on('messageCreate', async message => {
             const commando = new CommandoMessage(this as CommandoClient<true>, message);
-            // @ts-expect-error: handleMessage is protected in CommandDispatcher
-            await this.dispatcher.handleMessage(commando).catch(catchErr);
+            await this.dispatcher['handleMessage'](commando).catch(catchErr);
         });
         this.on('messageUpdate', async (oldMessage, newMessage) => {
-            if (newMessage.partial) return;
+            if (newMessage.partial || oldMessage.partial) return;
             const newCommando = new CommandoMessage(this as CommandoClient<true>, newMessage);
-            // @ts-expect-error: handleMessage is protected in CommandDispatcher
-            await this.dispatcher.handleMessage(newCommando, oldMessage).catch(catchErr);
+            await this.dispatcher['handleMessage'](newCommando, oldMessage).catch(catchErr);
         });
         this.on('messageDelete', message => {
             if (message.partial) return;
             const commando = new CommandoMessage(this as CommandoClient<true>, message);
-            // @ts-expect-error: parseMessage is protected in CommandDispatcher
-            const parsedMessage = this.dispatcher.parseMessage(commando) ?? commando;
+            const parsedMessage = this.dispatcher['parseMessage'](commando) ?? commando;
             this.emit('commandoMessageDelete', parsedMessage);
         });
 
         // Set up slash command handling
         this.once('ready', () =>
-            // @ts-expect-error: registerSlashCommands is protected in CommandoRegistry
-            this.registry.registerApplicationCommands()
+            this.registry['registerApplicationCommands']()
         );
         this.on('interactionCreate', interaction => {
             const parsedInteraction = interaction.isChatInputCommand()
                 ? new CommandoInteraction(this as CommandoClient<true>, interaction)
                 : interaction;
-            // @ts-expect-error: handleInteraction is protected in CommandDispatcher
-            this.dispatcher.handleInteraction(parsedInteraction).catch(catchErr);
+            this.dispatcher['handleInteraction'](parsedInteraction).catch(catchErr);
         });
 
         // Establishes MongoDB connection and loads all modules

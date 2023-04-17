@@ -7,6 +7,7 @@ import { CommandoGuildResolvable } from '../discord.overrides';
 import Command from '../commands/base';
 import CommandGroup from '../commands/group';
 import { Nullable } from '../util';
+import CommandoGuild from '../extensions/guild';
 
 /** Uses an SQLite database to store settings with guilds */
 export default class SyncSQLiteProvider<
@@ -165,14 +166,12 @@ export default class SyncSQLiteProvider<
         if (typeof guild !== 'string') {
             throw new TypeError('The guild must be a guild ID or "global".');
         }
-        const resolvedGuild = this.client.guilds.resolve(guild);
+        const resolvedGuild = this.client.guilds.resolve(guild) as CommandoGuild | null;
 
         // Load the command prefix
         if (typeof settings.prefix !== 'undefined') {
-            // @ts-expect-error: meant to not trigger an event
-            if (resolvedGuild) resolvedGuild._prefix = settings.prefix;
-            // @ts-expect-error: meant to not trigger an event
-            else this.client._prefix = settings.prefix;
+            if (resolvedGuild) resolvedGuild['_prefix'] = settings.prefix;
+            else this.client['_prefix'] = settings.prefix;
         }
 
         // Load all command/group statuses
@@ -222,8 +221,7 @@ export default class SyncSQLiteProvider<
 
         // @ts-expect-error: client type override
         shard.broadcastEval((client: CommandoClient) => {
-            // @ts-expect-error: settings is protected in SettingProvider
-            const settings = client.provider?.settings;
+            const settings = client.provider?.['settings'];
             if (!settings || client.shard?.ids.some(id => ids.includes(id))) return;
             let global = settings.get('global') as Record<string, unknown> | undefined;
             if (!global) {

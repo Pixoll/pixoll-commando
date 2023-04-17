@@ -68,14 +68,16 @@ async function cacheDB(client: CommandoClient<true>): Promise<void> {
         data.set(schemaName, documents);
     }
 
-    const clientData = data.mapValues(coll => coll.filter(doc => typeof doc.guild !== 'string'));
-    // @ts-expect-error: init is protected in ClientDatabaseManager
-    database.init(clientData);
+    const clientData = data.mapValues(coll =>
+        coll.filter(doc => typeof doc.guild !== 'string') as LimitedCollection<string, JSONIfySchema<GeneralSchema>>
+    );
+    database['init'](clientData);
 
     for (const guild of (guilds as unknown as CommandoGuildManager).cache.values()) {
-        const guildData = data.mapValues(coll => coll.filter(doc => doc.guild === guild.id));
-        // @ts-expect-error: init is protected in GuildDatabaseManager
-        guild.database.init(guildData);
+        const guildData = data.mapValues(coll =>
+            coll.filter(doc => doc.guild === guild.id) as LimitedCollection<string, JSONIfySchema<GeneralSchema>>
+        );
+        guild.database['init'](guildData);
         databases.set(guild.id, guild.database);
     }
     client.emit('debug', 'Database caching process finished');

@@ -21,13 +21,12 @@ import {
     CommandoChannel,
     CommandoChatInputCommandInteraction,
     CommandoGuildMember,
-    CommandContextChannel,
     CommandoRole,
     CommandoUser,
 } from '../discord.overrides';
 import Util, { PropertiesOf } from '../util';
 import CommandoGuild from './guild';
-import CommandoMessage from './message';
+import CommandoMessage, { CommandContextChannel } from './message';
 import { capitalize } from 'lodash';
 
 /**
@@ -104,12 +103,12 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
         return super.guild as If<InGuild, CommandoGuild>;
     }
 
-    // @ts-expect-error: This is meant to narrow this extension's types
+    // @ts-expect-error: Caused by command getter override
     public inGuild(): this is CommandoInteraction<true> {
         return super.inGuild();
     }
 
-    // @ts-expect-error: This is meant to narrow this extension's types
+    // @ts-expect-error: Caused by command getter override
     public isChatInputCommand(): this is CommandoInteraction<InGuild> {
         return super.isChatInputCommand();
     }
@@ -154,8 +153,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
             const apiName = name.replace(/[A-Z]/g, '-$&').toLowerCase();
             const value = isSubCommand
                 ? optionsManager[getOptionName]()
-                // @ts-expect-error: signatures are compatible
-                : optionsManager[getOptionName](apiName);
+                : (optionsManager[getOptionName] as (name: string) => unknown)(apiName);
 
             if (args[argName] || (isSubCommand && name !== value)) continue;
             args[argName] = value;

@@ -1,9 +1,9 @@
 import { APIApplicationCommandOption as APISlashCommandOption, ApplicationCommandOptionType as SlashCommandOptionType, Attachment, ChatInputCommandInteraction, If, Snowflake, User } from 'discord.js';
 import CommandoClient from '../client';
 import Command from '../commands/base';
-import { CommandoChannel, CommandoChatInputCommandInteraction, CommandoGuildMember, CommandContextChannel, CommandoRole, CommandoUser } from '../discord.overrides';
+import { CommandoChannel, CommandoChatInputCommandInteraction, CommandoGuildMember, CommandoRole, CommandoUser } from '../discord.overrides';
 import CommandoGuild from './guild';
-import CommandoMessage from './message';
+import CommandoMessage, { CommandContextChannel } from './message';
 /**
  * Parses a raw slash command option array into an `APISlashCommandOption.name`-indexed object.
  *

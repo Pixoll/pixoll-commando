@@ -1,7 +1,7 @@
 import { Collection, LimitedCollection } from 'discord.js';
 import CommandoClient from '../client';
 import DatabaseManager from './DatabaseManager';
-import { AnySchema, DisabledSchema, ErrorSchema, FaqSchema, PrefixSchema, ReminderSchema, TodoSchema } from './Schemas';
+import { AnySchema, DisabledSchema, ErrorSchema, FaqSchema, JSONIfySchema, PrefixSchema, ReminderSchema, TodoSchema } from './Schemas';
 /** The client's database manager (MongoDB) */
 export default class ClientDatabaseManager {
     /** Client for this database */
@@ -20,5 +20,5 @@ export default class ClientDatabaseManager {
      * Initializes the caching of this client's data
      * @param data - The data to assign to the client
      */
-    protected init(data: Collection<string, LimitedCollection<string, AnySchema>>): Promise<void>;
+    protected init(data: Collection<string, LimitedCollection<string, JSONIfySchema<AnySchema>>>): this;
 }

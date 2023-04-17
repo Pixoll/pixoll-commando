@@ -150,11 +150,9 @@ export default class CommandDispatcher {
                 }
             }
 
-            // @ts-expect-error: finalize is protected in CommandoMessage
-            cmdMsg.finalize(responses);
+            cmdMsg['finalize'](responses);
         } else if (oldCmdMsg) {
-            // @ts-expect-error: finalize is protected in CommandoMessage
-            oldCmdMsg.finalize(null);
+            oldCmdMsg['finalize'](null);
             if (!nonCommandEditable) _results.delete(message.id);
         }
 
@@ -304,8 +302,7 @@ export default class CommandDispatcher {
             if (!command.patterns) continue;
             for (const pattern of command.patterns) {
                 const matches = pattern.exec(content);
-                // @ts-expect-error: initCommand is protected in CommandoMessage
-                if (matches) return message.initCommand(command, null, matches);
+                if (matches) return message['initCommand'](command, null, matches);
             }
         }
 
@@ -334,12 +331,10 @@ export default class CommandDispatcher {
         if (!matches) return null;
         const commands = registry.findCommands(matches[commandNameIndex], true);
         if (commands.length !== 1 || !commands[0].defaultHandling) {
-            // @ts-expect-error: initCommand is protected in CommandoMessage
-            return message.initCommand(registry.unknownCommand, prefixless ? content : matches[1], null);
+            return message['initCommand'](registry.unknownCommand, prefixless ? content : matches[1], null);
         }
         const argString = content.substring(matches[1].length + (matches[2]?.length ?? 0));
-        // @ts-expect-error: initCommand is protected in CommandoMessage
-        return message.initCommand(commands[0], argString, null);
+        return message['initCommand'](commands[0], argString, null);
     }
 
     /**

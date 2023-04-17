@@ -123,8 +123,9 @@ export interface OverwrittenClientEvents extends ClientEvents {
         members: Collection<Snowflake, CommandoGuildMember>,
         guild: CommandoGuild,
         data: {
-            count: number;
             index: number;
+            count: number;
+            notFound: unknown[];
             nonce: string | undefined;
         },
     ];
@@ -790,10 +791,4 @@ export type CommandoifiedInteraction<Cached extends CacheType = CacheType> =
 export type CommandoRepliableInteraction<Cached extends CacheType = CacheType> = Exclude<
     CommandoifiedInteraction<Cached>,
     CommandoAutocompleteInteraction<Cached>
->;
-
-export type CommandContextChannel<CanBeNull extends boolean, InGuild extends boolean = boolean> = If<
-    InGuild,
-    CommandoGuildTextBasedChannel,
-    CommandoTextBasedChannel | If<CanBeNull, null, never>
 >;

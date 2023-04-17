@@ -24,6 +24,7 @@ export {
 export { default as CommandoGuild } from './extensions/guild';
 export {
     default as CommandoMessage,
+    CommandContextChannel,
     CommandoMessageResponse,
     ResponseOptions,
     ResponseType,
@@ -145,7 +146,6 @@ export type {
     CommandoGuildResolvable,
     CommandoGuildScheduledEvent,
     CommandoGuildTextBasedChannel,
-    CommandContextChannel,
     CommandoInteractionOverride,
     CommandoInvite,
     CommandoMappedChannelCategoryTypes,

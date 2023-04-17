@@ -1,7 +1,7 @@
 import { Collection, LimitedCollection } from 'discord.js';
 import CommandoGuild from '../extensions/guild';
 import DatabaseManager from './DatabaseManager';
-import { ActiveSchema, AfkSchema, AnySchema, DisabledSchema, McIpSchema, ModerationSchema, ModuleSchema, PollSchema, PrefixSchema, ReactionRoleSchema, RuleSchema, SetupSchema, StickyRoleSchema, WelcomeSchema } from './Schemas';
+import { ActiveSchema, AfkSchema, AnySchema, DisabledSchema, JSONIfySchema, McIpSchema, ModerationSchema, ModuleSchema, PollSchema, PrefixSchema, ReactionRoleSchema, RuleSchema, SetupSchema, StickyRoleSchema, WelcomeSchema } from './Schemas';
 /** A guilds' database manager (MongoDB) */
 export default class GuildDatabaseManager {
     /** Guild for this database */
@@ -27,5 +27,5 @@ export default class GuildDatabaseManager {
      * Initializes the caching of this guild's data
      * @param data - The data to assign to the guild
      */
-    protected init(data: Collection<string, LimitedCollection<string, AnySchema>>): this;
+    protected init(data: Collection<string, LimitedCollection<string, JSONIfySchema<AnySchema>>>): this;
 }
