@@ -88,28 +88,28 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
     }
 
     /** The channel this interaction was used in */
-    public get channel(): CommandContextChannel<true, InGuild> {
+    public override get channel(): CommandContextChannel<true, InGuild> {
         return super.channel as CommandContextChannel<true, InGuild>;
     }
 
     /** Command that the interaction triggers */
     // @ts-expect-error: This is meant to override CommandInteraction's command getter.
-    public get command(): Command<InGuild> {
+    public override get command(): Command<InGuild> {
         return this._command;
     }
 
     /** The guild this interaction was used in */
-    public get guild(): If<InGuild, CommandoGuild> {
+    public override get guild(): If<InGuild, CommandoGuild> {
         return super.guild as If<InGuild, CommandoGuild>;
     }
 
     // @ts-expect-error: Caused by command getter override
-    public inGuild(): this is CommandoInteraction<true> {
+    public override inGuild(): this is CommandoInteraction<true> {
         return super.inGuild();
     }
 
     // @ts-expect-error: Caused by command getter override
-    public isChatInputCommand(): this is CommandoInteraction<InGuild> {
+    public override isChatInputCommand(): this is CommandoInteraction<InGuild> {
         return super.isChatInputCommand();
     }
 

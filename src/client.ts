@@ -223,11 +223,11 @@ export default class CommandoClient<
         throw new RangeError('The client\'s "owner" option is an unknown value.');
     }
 
-    public isReady(): this is CommandoClient<true> {
+    public override isReady(): this is CommandoClient<true> {
         return super.isReady();
     }
 
-    public async destroy(): Promise<void> {
+    public override async destroy(): Promise<void> {
         super.destroy();
         await this.provider?.destroy();
     }
@@ -357,19 +357,19 @@ export default class CommandoClient<
     }
 
     // @ts-expect-error: method type override
-    declare public on<K extends keyof CommandoClientEvents>(
+    declare public override on<K extends keyof CommandoClientEvents>(
         event: K, listener: (this: this, ...args: CommandoClientEvents[K]) => unknown
     ): this;
     // @ts-expect-error: method type override
-    declare public once<K extends keyof CommandoClientEvents>(
+    declare public override once<K extends keyof CommandoClientEvents>(
         event: K, listener: (this: this, ...args: CommandoClientEvents[K]) => unknown
     ): this;
     // @ts-expect-error: method type override
-    declare public emit<K extends keyof CommandoClientEvents>(event: K, ...args: CommandoClientEvents[K]): boolean;
+    declare public override emit<K extends keyof CommandoClientEvents>(event: K, ...args: CommandoClientEvents[K]): boolean;
     // @ts-expect-error: method type override
-    declare public off<K extends keyof CommandoClientEvents>(
+    declare public override off<K extends keyof CommandoClientEvents>(
         event: K, listener: (this: this, ...args: CommandoClientEvents[K]) => unknown
     ): this;
     // @ts-expect-error: method type override
-    declare public removeAllListeners<K extends keyof CommandoClientEvents>(event?: K): this;
+    declare public override removeAllListeners<K extends keyof CommandoClientEvents>(event?: K): this;
 }

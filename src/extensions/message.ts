@@ -101,21 +101,21 @@ export default class CommandoMessage<InGuild extends boolean = boolean> extends 
         this.responsePositions = new Map();
     }
 
-    public get member(): CommandoGuildMember | null {
+    public override get member(): CommandoGuildMember | null {
         return super.member as CommandoGuildMember | null;
     }
 
     /** The guild this message was sent in */
-    public get guild(): If<InGuild, CommandoGuild> {
+    public override get guild(): If<InGuild, CommandoGuild> {
         return super.guild as If<InGuild, CommandoGuild>;
     }
 
     /** The channel this message was sent in */
-    public get channel(): CommandContextChannel<false, InGuild> {
+    public override get channel(): CommandContextChannel<false, InGuild> {
         return super.channel as CommandContextChannel<false, InGuild>;
     }
 
-    public inGuild(): this is CommandoMessage<true> {
+    public override inGuild(): this is CommandoMessage<true> {
         return super.inGuild();
     }
 

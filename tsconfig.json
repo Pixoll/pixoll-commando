@@ -16,6 +16,8 @@
         "resolveJsonModule": true,
         "incremental": true,
         "tsBuildInfoFile": ".tsbuildinfo",
+        "noImplicitOverride": true,
+        "noImplicitAny": true
     },
     "include": [
         "src",

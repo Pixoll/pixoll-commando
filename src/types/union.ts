@@ -50,7 +50,7 @@ export default class ArgumentUnionType<T extends ArgumentTypeString = ArgumentTy
         throw new Error(`Couldn't parse value "${value}" with union type ${this.id}.`);
     }
 
-    public isEmpty(value: string, message: CommandoMessage, argument: Argument): boolean {
+    public override isEmpty(value: string, message: CommandoMessage, argument: Argument): boolean {
         return !this.types.some(type => !type.isEmpty(value, message, argument));
     }
 }
