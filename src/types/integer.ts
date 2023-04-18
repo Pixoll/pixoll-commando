@@ -11,7 +11,7 @@ export default class IntegerArgumentType extends ArgumentType<'integer'> {
     public validate(value: string | undefined, _: unknown, argument: Argument<'integer'>): boolean | string {
         if (typeof value === 'undefined') return false;
         const int = /^\d+$/.test(value) && parseInt(value);
-        if (!int || isNaN(int)) return false;
+        if (int === false || isNaN(int)) return false;
 
         if (argument.oneOf && !argument.oneOf.includes(int)) {
             return `Please enter one of the following options: ${argument.oneOf.map(opt => `\`${opt}\``).join(', ')}`;
