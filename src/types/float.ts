@@ -11,7 +11,7 @@ export default class FloatArgumentType extends ArgumentType<'float'> {
     public validate(value: string | undefined, _: unknown, argument: Argument<'float'>): boolean | string {
         if (typeof value === 'undefined') return false;
         const float = /^[\d.]+$/.test(value) && parseFloat(value);
-        if (!float || isNaN(float)) return false;
+        if (float === false || isNaN(float)) return false;
 
         if (argument.oneOf && !argument.oneOf.includes(float)) {
             return `Please enter one of the following options: ${argument.oneOf.map(opt => `\`${opt}\``).join(', ')}`;
