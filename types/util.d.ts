@@ -95,6 +95,11 @@ export default class Util extends null {
      */
     static kebabToCamelCase<S extends string>(string: S): KebabToCamelCase<S>;
     /**
+     * Converts the first character of string to upper case and the remaining to lower case.
+     * @param string — The string to capitalize.
+     */
+    static capitalize<S extends string>(string: S): Capitalize<Lowercase<S>>;
+    /**
      * Splits a string into multiple chunks at a designated character that do not exceed a specific length.
      * @param text - Content to split
      * @param options - Options controlling the behavior of the split

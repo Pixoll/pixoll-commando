@@ -1,5 +1,4 @@
 import { Client, Collection, Guild, If, Message, MessageCreateOptions, PartialMessage, PermissionsString } from 'discord.js';
-import { capitalize } from 'lodash';
 import { Document } from 'mongoose';
 import CommandoClient from './client';
 import { JSONIfySchema, SchemaResolvable } from './database/Schemas';
@@ -192,8 +191,16 @@ export default class Util extends null {
     public static kebabToCamelCase<S extends string>(string: S): KebabToCamelCase<S> {
         const arr = string.split('-');
         const first = arr.shift();
-        const rest = arr.map(capitalize).join('');
+        const rest = arr.map(Util.capitalize).join('');
         return (first + rest) as KebabToCamelCase<S>;
+    }
+
+    /**
+     * Converts the first character of string to upper case and the remaining to lower case.
+     * @param string — The string to capitalize.
+     */
+    public static capitalize<S extends string>(string: S): Capitalize<Lowercase<S>> {
+        return (string[0].toUpperCase() + string.slice(1).toUpperCase()) as Capitalize<Lowercase<S>>;
     }
 
     /**

@@ -27,7 +27,6 @@ import {
 import Util, { PropertiesOf } from '../util';
 import CommandoGuild from './guild';
 import CommandoMessage, { CommandContextChannel } from './message';
-import { capitalize } from 'lodash';
 
 /**
  * Parses a raw slash command option array into an `APISlashCommandOption.name`-indexed object.
@@ -149,7 +148,7 @@ export default class CommandoInteraction<InGuild extends boolean = boolean> exte
             const isSubCommand = Util.equals(getOptionName, ['getSubcommand', 'getSubcommandGroup']);
             const argName = getOptionName === 'getSubcommand' ? 'subCommand'
                 : getOptionName === 'getSubcommandGroup' ? 'subCommandGroup'
-                    : name.split('-').map((s, i) => i === 0 ? s : capitalize(s)).join('');
+                    : name.split('-').map((s, i) => i === 0 ? s : Util.capitalize(s)).join('');
             const apiName = name.replace(/[A-Z]/g, '-$&').toLowerCase();
             const value = isSubCommand
                 ? optionsManager[getOptionName]()
