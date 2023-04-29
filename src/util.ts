@@ -68,6 +68,10 @@ export interface SplitOptions {
 
 type ReadonlyArguments = ReadonlyArray<Readonly<Record<string, unknown>>>;
 
+export type KebabToCamelCase<S extends string> = S extends `${infer Before}-${infer After}`
+    ? `${Before}${Capitalize<KebabToCamelCase<After>>}`
+    : S;
+
 const permissions = Object.freeze<Record<PermissionsString, string>>({
     CreateInstantInvite: 'Create instant invite',
     KickMembers: 'Kick members',
@@ -121,10 +125,10 @@ export default class Util extends null {
 
     /**
      * Escapes the following characters from a string: `|\{}()[]^$+*?.`.
-     * @param str - The string to escape.
+     * @param string - The string to escape.
      */
-    public static escapeRegex(str: string): string {
-        return str.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&');
+    public static escapeRegex(string: string): string {
+        return string.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&');
     }
 
     /**
@@ -132,8 +136,7 @@ export default class Util extends null {
      * @param n - The probability percentage, from 0 to 100.
      */
     public static probability(n: number): boolean {
-        n /= 100;
-        return !!n && Math.random() <= n;
+        return !!n && Math.random() <= (n / 100);
     }
 
     /**
@@ -149,11 +152,11 @@ export default class Util extends null {
 
     /**
      * Removes the reply ping from a message if its sent in DMs.
-     * @param msg - The message instance.
+     * @param message - The message instance.
      * @returns A {@link MessageCreateOptions} object.
      */
-    public static noReplyPingInDMs(msg: CommandoMessage | Message): Pick<MessageCreateOptions, 'allowedMentions'> {
-        const options: Pick<MessageCreateOptions, 'allowedMentions'> = msg.channel.isDMBased() ? {
+    public static noReplyPingInDMs(message: CommandoMessage | Message): Pick<MessageCreateOptions, 'allowedMentions'> {
+        const options: Pick<MessageCreateOptions, 'allowedMentions'> = message.channel.isDMBased() ? {
             allowedMentions: { repliedUser: false },
         } : {};
 
@@ -167,6 +170,9 @@ export default class Util extends null {
      * @param property - The property to read from the objects (only usable if `items` is an array of objects).
      * @returns A string with the disambiguated items.
      */
+    public static disambiguation<T extends object>(items: T[], label: string, property: keyof T): string;
+    public static disambiguation<T extends { name: string }>(items: T[], label: string, property?: keyof T): string;
+    public static disambiguation(items: string[], label: string): string;
     public static disambiguation<T extends object | string>(
         items: T[], label: string, property?: T extends string ? never : keyof T
     ): string {
@@ -180,14 +186,14 @@ export default class Util extends null {
     }
 
     /**
-     * Removes the dashes from a string and capitalizes the characters in front of them.
-     * @param str - The string to parse.
+     * Turns kebab-case to camelCase
+     * @param string - The string to parse.
      */
-    public static removeDashes(str: string): string {
-        const arr = str.split('-');
+    public static kebabToCamelCase<S extends string>(string: S): KebabToCamelCase<S> {
+        const arr = string.split('-');
         const first = arr.shift();
         const rest = arr.map(capitalize).join('');
-        return first + rest;
+        return (first + rest) as KebabToCamelCase<S>;
     }
 
     /**
@@ -284,11 +290,11 @@ export default class Util extends null {
 
     /**
      * Checks if a value is undefined.
-     * @param val - The value to check.
+     * @param value - The value to check.
      * @returns Whether the value is nullish.
      */
-    public static isNullish(val: unknown): val is null | undefined {
-        return typeof val === 'undefined' || val === null;
+    public static isNullish(value: unknown): value is null | undefined {
+        return typeof value === 'undefined' || value === null;
     }
 
     /**
@@ -297,10 +303,7 @@ export default class Util extends null {
      * @param values - The values to compare `value` to.
      */
     public static equals<T extends number | string, V extends T>(value: T, values: V[]): value is V {
-        for (const val of values) {
-            if (val === value) return true;
-        }
-        return false;
+        return values.some(val => val === value);
     }
 
     /** Removes the readonly modifier from the arguments array and its objects. */

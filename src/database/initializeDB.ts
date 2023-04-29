@@ -56,7 +56,7 @@ async function cacheDB(client: CommandoClient<true>): Promise<void> {
 
     const data = new Collection<string, LimitedCollection<string, JSONIfySchema<GeneralSchema>>>();
     for (let i = 0; i < schemas.length; i++) {
-        const schemaName = Util.removeDashes(schemas[i].collection.name);
+        const schemaName = Util.kebabToCamelCase(schemas[i].collection.name);
         const entries = schemasData[i].map<[string, JSONIfySchema<GeneralSchema>]>(doc =>
             [doc._id?.toString() ?? '', Util.jsonifyDocument(doc)]
         );

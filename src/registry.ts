@@ -439,7 +439,7 @@ export default class CommandoRegistry {
         const defaultTypes = Object.keys(requireAll(path.join(__dirname, '/types')))
             .filter(k => k !== 'base' && k !== 'union')
             .reduce<DefaultTypesOptions>((obj, k) => {
-                const key = Util.removeDashes(k) as keyof DefaultTypesOptions;
+                const key = Util.kebabToCamelCase(k) as keyof DefaultTypesOptions;
                 obj[key] = true;
                 return obj;
             }, {});

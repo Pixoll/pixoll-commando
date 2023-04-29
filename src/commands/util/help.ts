@@ -57,9 +57,7 @@ export default class HelpCommand extends Command<boolean, RawArgs> {
             }
 
             if (commands.length > 1) {
-                await context.reply(Util.disambiguation(
-                    commands as unknown as Array<Record<string, string>>, 'commands'
-                ));
+                await context.reply(Util.disambiguation(commands, 'commands'));
                 return;
             }
 

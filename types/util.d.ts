@@ -51,15 +51,16 @@ export interface SplitOptions {
     append?: string;
 }
 type ReadonlyArguments = ReadonlyArray<Readonly<Record<string, unknown>>>;
+export type KebabToCamelCase<S extends string> = S extends `${infer Before}-${infer After}` ? `${Before}${Capitalize<KebabToCamelCase<After>>}` : S;
 /** Contains various general-purpose utility methods and constants. */
 export default class Util extends null {
     /** Object that maps every PermissionString to its representation inside the Discord client. */
     static get permissions(): Readonly<Record<PermissionsString, string>>;
     /**
      * Escapes the following characters from a string: `|\{}()[]^$+*?.`.
-     * @param str - The string to escape.
+     * @param string - The string to escape.
      */
-    static escapeRegex(str: string): string;
+    static escapeRegex(string: string): string;
     /**
      * Basic probability function.
      * @param n - The probability percentage, from 0 to 100.
@@ -72,10 +73,10 @@ export default class Util extends null {
     static isPromise<T, S>(obj: PromiseLike<T> | S): obj is PromiseLike<T>;
     /**
      * Removes the reply ping from a message if its sent in DMs.
-     * @param msg - The message instance.
+     * @param message - The message instance.
      * @returns A {@link MessageCreateOptions} object.
      */
-    static noReplyPingInDMs(msg: CommandoMessage | Message): Pick<MessageCreateOptions, 'allowedMentions'>;
+    static noReplyPingInDMs(message: CommandoMessage | Message): Pick<MessageCreateOptions, 'allowedMentions'>;
     /**
      * Disambiguate items from an array into a list.
      * @param items - An array of strings or objects.
@@ -83,12 +84,16 @@ export default class Util extends null {
      * @param property - The property to read from the objects (only usable if `items` is an array of objects).
      * @returns A string with the disambiguated items.
      */
-    static disambiguation<T extends object | string>(items: T[], label: string, property?: T extends string ? never : keyof T): string;
+    static disambiguation<T extends object>(items: T[], label: string, property: keyof T): string;
+    static disambiguation<T extends {
+        name: string;
+    }>(items: T[], label: string, property?: keyof T): string;
+    static disambiguation(items: string[], label: string): string;
     /**
-     * Removes the dashes from a string and capitalizes the characters in front of them.
-     * @param str - The string to parse.
+     * Turns kebab-case to camelCase
+     * @param string - The string to parse.
      */
-    static removeDashes(str: string): string;
+    static kebabToCamelCase<S extends string>(string: S): KebabToCamelCase<S>;
     /**
      * Splits a string into multiple chunks at a designated character that do not exceed a specific length.
      * @param text - Content to split
@@ -123,10 +128,10 @@ export default class Util extends null {
     static filterNullishValues<K, V>(collection: Collection<K, V | null | undefined>): Collection<K, V>;
     /**
      * Checks if a value is undefined.
-     * @param val - The value to check.
+     * @param value - The value to check.
      * @returns Whether the value is nullish.
      */
-    static isNullish(val: unknown): val is null | undefined;
+    static isNullish(value: unknown): value is null | undefined;
     /**
      * Checks if `value` equals **every** entry in `values`.
      * @param value - The original value.
