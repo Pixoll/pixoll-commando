@@ -11,7 +11,7 @@ export { default as CommandoMessage, CommandContextChannel, CommandoMessageRespo
 export { default as Command, APISlashCommand, ArgumentTypeToSlashMap, CommandArgumentsResolvable, CommandBlockData, CommandBlockReason, CommandContext, CommandInfo, SlashCommandInfo, Throttle, ThrottlingOptions, } from './commands/base';
 export { default as CommandGroup } from './commands/group';
 export { default as ArgumentCollector, ArgumentCollectorResult, ParseRawArguments, } from './commands/collector';
-export { default as Argument, ArgumentDefault, ArgumentInfo, ArgumentInfoResolvable, ArgumentResponse, ArgumentResult, ArgumentTypeString, ArgumentTypeStringMap, } from './commands/argument';
+export { default as Argument, ArgumentDefault, ArgumentInfo, ArgumentInfoResolvable, ArgumentResponse, ArgumentResult, ArgumentTypeString, ArgumentTypeStringMap, ReadonlyArgumentInfo, } from './commands/argument';
 export { default as ArgumentType } from './types/base';
 export { default as ArgumentUnionType } from './types/union';
 export { default as FriendlyError } from './errors/friendly';

@@ -1,5 +1,6 @@
 import { stripIndents, oneLine } from 'common-tags';
 import CommandoClient from '../../client';
+import { ReadonlyArgumentInfo } from '../argument';
 import Command, { CommandContext } from '../base';
 import { ParseRawArguments } from '../collector';
 
@@ -9,7 +10,7 @@ const args = [{
     type: 'string',
     max: 15,
     default: '',
-}] as const;
+}] as const satisfies readonly ReadonlyArgumentInfo[];
 
 type RawArgs = typeof args;
 type ParsedArgs = ParseRawArguments<RawArgs>;

@@ -4,6 +4,7 @@ import Command, { CommandContext } from '../base';
 import CommandoClient from '../../client';
 import CommandoMessage from '../../extensions/message';
 import { ParseRawArguments } from '../collector';
+import { ReadonlyArgumentInfo } from '../argument';
 
 declare const require: NodeRequire;
 
@@ -29,7 +30,7 @@ const args = [{
         delete require.cache[cmdPath];
         return require(cmdPath);
     },
-}] as const;
+}] as const satisfies readonly ReadonlyArgumentInfo[];
 
 type RawArgs = typeof args;
 type ParsedArgs = ParseRawArguments<RawArgs>;

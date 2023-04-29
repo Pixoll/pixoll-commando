@@ -288,7 +288,7 @@ type BasicSlashCommandOptionData = Exclude<SlashCommandOptionData, {
     type: SlashCommandOptionType.Subcommand | SlashCommandOptionType.SubcommandGroup;
 }>;
 
-const argumentTypeToSlashMap/* : Record<ArgumentTypeString, SlashCommandOptionType> */ = {
+const argumentTypeToSlashMap = {
     boolean: SlashCommandOptionType.Boolean,
     'category-channel': SlashCommandOptionType.Channel,
     channel: SlashCommandOptionType.Channel,
@@ -313,7 +313,7 @@ const argumentTypeToSlashMap/* : Record<ArgumentTypeString, SlashCommandOptionTy
     time: SlashCommandOptionType.String,
     user: SlashCommandOptionType.User,
     'voice-channel': SlashCommandOptionType.Channel,
-} as const;
+} as const satisfies Record<ArgumentTypeString, SlashCommandOptionType>;
 
 export type ArgumentTypeToSlashMap = typeof argumentTypeToSlashMap;
 

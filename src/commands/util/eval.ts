@@ -4,6 +4,7 @@ import Util from '../../util';
 import Command, { CommandContext } from '../base';
 import CommandoClient from '../../client';
 import { ParseRawArguments } from '../collector';
+import { ReadonlyArgumentInfo } from '../argument';
 
 const nl = '!!NL!!';
 const nlPattern = new RegExp(nl, 'g');
@@ -12,7 +13,7 @@ const args = [{
     key: 'script',
     prompt: 'What code would you like to evaluate?',
     type: 'string',
-}] as const;
+}] as const satisfies readonly ReadonlyArgumentInfo[];
 
 type RawArgs = typeof args;
 type ParsedArgs = ParseRawArguments<RawArgs>;

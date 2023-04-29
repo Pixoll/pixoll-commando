@@ -58,6 +58,7 @@ export {
     ArgumentResult,
     ArgumentTypeString,
     ArgumentTypeStringMap,
+    ReadonlyArgumentInfo,
 } from './commands/argument';
 export { default as ArgumentType } from './types/base';
 export { default as ArgumentUnionType } from './types/union';

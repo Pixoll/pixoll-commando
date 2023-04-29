@@ -143,7 +143,7 @@ export interface ArgumentInfo<T extends ArgumentTypeString = ArgumentTypeString>
     autocomplete?: boolean;
 }
 
-type ReadonlyArgumentInfo = Readonly<Omit<ArgumentInfo, 'oneOf' | 'type'> & {
+export type ReadonlyArgumentInfo = Readonly<Omit<ArgumentInfo, 'oneOf' | 'type'> & {
     [P in keyof Pick<ArgumentInfo, 'oneOf' | 'type'>]:
     Pick<ArgumentInfo, 'oneOf' | 'type'>[P] extends Array<infer U> | infer S
     ? S | readonly U[]

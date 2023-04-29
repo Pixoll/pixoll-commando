@@ -1,5 +1,6 @@
 import { oneLine } from 'common-tags';
 import CommandoClient from '../../client';
+import { ReadonlyArgumentInfo } from '../argument';
 import Command, { CommandContext } from '../base';
 import { ParseRawArguments } from '../collector';
 
@@ -8,7 +9,7 @@ const args = [{
     label: 'command/group',
     prompt: 'Which command or group would you like to disable?',
     type: ['group', 'command'],
-}] as const;
+}] as const satisfies readonly ReadonlyArgumentInfo[];
 
 type RawArgs = typeof args;
 type ParsedArgs = ParseRawArguments<RawArgs>;

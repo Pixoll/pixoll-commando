@@ -5,13 +5,14 @@ import Util from '../../util';
 import CommandoClient from '../../client';
 import { ParseRawArguments } from '../collector';
 import CommandGroup from '../group';
+import { ReadonlyArgumentInfo } from '../argument';
 
 const args = [{
     key: 'command',
     prompt: 'Which command would you like to view the help for?',
     type: 'string',
     default: '',
-}] as const;
+}] as const satisfies readonly ReadonlyArgumentInfo[];
 
 type RawArgs = typeof args;
 type ParsedArgs = ParseRawArguments<RawArgs>;
