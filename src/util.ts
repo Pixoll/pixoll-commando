@@ -200,7 +200,7 @@ export default class Util extends null {
      * @param string — The string to capitalize.
      */
     public static capitalize<S extends string>(string: S): Capitalize<Lowercase<S>> {
-        return (string[0].toUpperCase() + string.slice(1).toUpperCase()) as Capitalize<Lowercase<S>>;
+        return (string[0].toUpperCase() + string.slice(1).toLowerCase()) as Capitalize<Lowercase<S>>;
     }
 
     /**
