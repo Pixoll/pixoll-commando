@@ -62,11 +62,6 @@ export default class Util extends null {
      */
     static escapeRegex(string: string): string;
     /**
-     * Basic probability function.
-     * @param n - The probability percentage, from 0 to 100.
-     */
-    static probability(n: number): boolean;
-    /**
      * Checks if the argument is a promise.
      * @param obj - The object of function to check.
      */
@@ -112,11 +107,6 @@ export default class Util extends null {
      * @param newObj - The data to assign.
      */
     static mutateObjectInstance<T extends object>(obj: object, newObj: T): T;
-    /**
-     * Gets the last item of an array.
-     * @param array - An array.
-     */
-    static lastFromArray<T>(array: T[]): T;
     /**
      * **For arrays.**
      * Filters all nullish (`undefined` | `null`) items from an array. Mostly useful for TS.

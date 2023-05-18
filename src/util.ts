@@ -131,14 +131,6 @@ export default class Util extends null {
     }
 
     /**
-     * Basic probability function.
-     * @param n - The probability percentage, from 0 to 100.
-     */
-    public static probability(n: number): boolean {
-        return !!n && Math.random() <= (n / 100);
-    }
-
-    /**
      * Checks if the argument is a promise.
      * @param obj - The object of function to check.
      */
@@ -265,14 +257,6 @@ export default class Util extends null {
         Object.setPrototypeOf(obj, prototype);
 
         return obj as T;
-    }
-
-    /**
-     * Gets the last item of an array.
-     * @param array - An array.
-     */
-    public static lastFromArray<T>(array: T[]): T {
-        return array[array.length - 1];
     }
 
     /**
