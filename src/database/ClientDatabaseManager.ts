@@ -47,8 +47,10 @@ export default class ClientDatabaseManager {
         for (const [name, schemaCollection] of data) {
             const dbManager = this[name as SchemaKey];
             if (!dbManager) continue;
-            // @ts-expect-error: AnySchema is a catch-all schema type
-            dbManager.cache.concat(schemaCollection);
+            for (const [id, obj] of schemaCollection) {
+                // @ts-expect-error: AnySchema is a catch-all schema type
+                dbManager.cache.set(id, obj);
+            }
         }
         return this;
     }
